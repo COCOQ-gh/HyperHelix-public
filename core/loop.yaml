@@ -1,0 +1,225 @@
+# =============================================================================
+# HyperHelix — core/loop.yaml
+# Task loop definition. AI-facing artifact (English only).
+#
+# Synthesis (HH-000): phase model from MetaHelix with Evaluate made explicit
+# (Helix_Reflex); planning depth modes from HelixPDCA; exceptions from MetaHelix.
+# Changing the phase structure or gate rules is an amendment-class change
+# (amendments.md).
+# =============================================================================
+schema_version: 1
+
+loop:
+  phases: [search, plan, execute, evaluate, distill]
+  rules:
+    - "Every task passes all five phases. Depth modes shrink steps inside a phase; they never delete a phase."
+    - "Each phase produces artifacts. Each artifact is evaluated."
+    - "Improvements discovered in any phase are captured and routed through the distill pipeline (core/routing.yaml)."
+    - "Mistakes are process problems, never executor problems. The improvement target is always the process."
+
+# --- depth modes (from HelixPDCA) ---
+depth_modes:
+  micro:
+    # HH-022: smaller than light, for enumerated trivial fixes only. use_when is a
+    # FIXED VOCABULARY (no subjective "small") so the phase-gate stays unambiguous (R4).
+    use_when: [typo-fix, link-fix, heading-number-fix, obvious-removed-term-replacement, readme-1-2-line]
+    forbidden_when: [ambiguous, destructive, security-sensitive, user-facing-behavior-change, cross-module, durable-rule-likely, any-logic-change, any-gate-or-axiom-touch]
+    minimum_outputs: [objective, change, validation, D7]
+    record_in: "commit-message-body OR brief file (HH-047: a micro task needs NO separate tasks/ brief file — the objective/change/validation/D7 lines MAY live in the commit body; the commit IS the task record per routing.yaml. standard+ still require a brief file). Format: assets/workflows/git-conventions.md (micro commit body). DISTILL_CAPTURE / archive-briefs operate on brief FILES and simply do not apply to a briefless micro — acceptable because micro forbids any-logic-change / security-sensitive, so failure-capture scenarios are out of scope by construction."
+    note: "Phases are not deleted (S/P/E/V/D spirit kept). Record the depth decision with the matched fixed-vocabulary term (in the brief OR the commit body). A misclassification escalates to standard in the next task (distill via D2)."
+  light:
+    use_when: [small, reversible, low-risk]
+    forbidden_when: [ambiguous, destructive, security-sensitive, user-facing-behavior-change, cross-module, durable-rule-likely]
+    minimum_outputs: [objective, acceptance_criteria, validation_plan, result_summary]
+    note: "Record the reason for light mode in the task brief; backfill skipped distill steps in the next unhurried task."
+  standard:
+    use_when: [normal-implementation, normal-document-change, framework-application-change]
+    # framework-application-change (HH-005): applying ratified changes, annotations,
+    # reference wiring, or counter updates — no structural edits. Record the depth
+    # decision and its reason in the brief.
+    required_steps: [S1, S2, S3, S4, P1, P2, P3, P5, P6, E1, E2, E3, E4, V1, V2, D1, D2b, D3, D4, D7]
+    conditional_steps: "D2 and D6 become REQUIRED when the V2 results table has any Fail, or a confirmed failure case exists (HH-006). D2b is ALWAYS required (success-signal scan; HH-036)."
+  full:
+    use_when: [ambiguous-objective, multi-module, user-facing-behavior, durable-rule-candidate, framework-structural-change]
+    # framework-structural-change (HH-005): touches phase structure, gate rules,
+    # axioms, or schemas. Application-only framework changes go to standard.
+    required_steps: all
+  spike:
+    use_when: [feasibility-check, evidence-gathering-before-decision]
+    deliverable: "findings document only; no code and no NEW framework materials / structural edits (D7 counter bookkeeping in core/knowledge.yaml still applies — every task counts)"
+    handoff: "carry findings into the next task's S1 as Known/Assumptions"
+
+# --- phase gate (from MetaHelix) ---
+phase_gate:
+  rule: >
+    Before starting any phase, verify the artifacts of all earlier phases exist
+    and meet their exit conditions. If anything is missing, fall back to the
+    earliest incomplete phase. When in doubt, start at the earliest safe phase.
+  evidence: "Empty templates, unfilled tables, and unchecked boxes are not evidence."
+  conditional_evidence: >
+    Some evidence artifacts are required only WHEN APPLICABLE (HH-036): change-list and
+    risk-list for implementation tasks (a non-editing spike/review has none); failure-case-log
+    only when EX-5 exploration occurred. A task that legitimately lacks one records why; the
+    gate does not demand an artifact the task type cannot produce.
+  table:
+    search:   {requires: [],                                evidence: [task-request]}
+    plan:     {requires: [search],                          evidence: [requirements, survey-notes, unknowns-list, retrieved-materials]}
+    execute:  {requires: [search, plan],                    evidence: [work-plan, task-list, acceptance-criteria, validation-plan, change-list]}
+    evaluate: {requires: [search, plan, execute],           evidence: [implementation, execution-log, failure-case-log]}
+    distill:  {requires: [search, plan, execute, evaluate], evidence: [verification-results]}
+  checklist: assets/checklists/phase-gate.md
+
+# --- phase definitions ---
+phases:
+  search:
+    purpose: "Understand the problem space. Never build a solution from an unknown state."
+    steps:
+      S1: >
+        Clarify the request: what / why / success conditions / out of scope.
+        Treat ambiguity as improvable signal, not user fault; convert gaps into
+        explicit assumptions or one concise clarification question.
+      S2: >
+        Query existing assets BEFORE searching anew: tag-match core/knowledge.yaml
+        notes (top gates.search.top_n, ordered by last_used desc = recency, HH-045;
+        playbook notes are the primary target, scoped to the current project + shared
+        per gates.search.project_scope, HH-032) — the PRIMARY
+        retrieval layer — and check assets/ai/anti-patterns.md. Past task briefs are
+        an on-demand audit log: open by explicit task-id, NOT full-text-grepped
+        (tasks/ is excluded from default search via tasks/.rgignore, HH-031 Phase 1).
+        Archived briefs (HH-031 Phase 2) are not in tasks/: find them in tasks/INDEX.md
+        and restore via `git show <hash>:tasks/<task-id>.md`.
+        Record retrieved note ids in the task brief (feeds D7 strength updates).
+      S3: "List unknowns; resolve each, or proceed on an assumption with the reason recorded."
+      S4: >
+        Target-state survey (implementation tasks; HH-037). Read the CURRENT state of the
+        materials this task will change and extract the exact anchors P6 needs — target file
+        + a UNIQUE existing string/line per edit point — recording them in survey-notes /
+        retrieved-materials. This is discovery (distinct from S2's lesson lookup); Plan's P6
+        only COMPOSES the change-list from it, it does not re-investigate. Non-editing tasks
+        (spike/review) skip S4.
+    artifacts: [requirements, survey-notes, unknowns-list, retrieved-materials]
+    checklist: assets/checklists/search.md
+
+  plan:
+    purpose: "Decide strategy before acting."
+    task_list_schema: assets/workflows/task-list-schema.md
+    steps:
+      P1: "Decompose into minimal units, each independently verifiable and rollbackable."
+      P2: "Order units by dependency."
+      P3: "Define observable acceptance criteria per unit."
+      P4: "List risks with countermeasures; if the solution is unknown, plan an exploration loop (EX-5)."
+      P5: "Write the validation plan (core/routing.yaml validation section) BEFORE any edit."
+      P6: >
+        Resolve each Execute unit to a MECHANICAL change (HH-035): target file +
+        exact anchor (existing text/line to match) + the new content or transform.
+        Execute then APPLIES the change-list; it does not discover. Anchors come from the
+        Search S4 target-state survey (HH-037) — P6 composes, it does not re-investigate.
+        If a unit's target/anchor is unresolved, return to S4 — or route a genuine unknown
+        to EX-5/spike. A mechanical change-list is what makes Execute delegable (agent-roles
+        implementation WO carries it).
+    artifacts: [work-plan, task-list, acceptance-criteria, risk-list, validation-plan, change-list]
+    checklist: assets/checklists/plan.md
+
+  execute:
+    purpose: >
+      Apply the planned change-list (P6), in verifiable steps. Execute is MECHANICAL
+      application — discovery (deciding WHAT or WHERE to change) belongs to Search/Plan.
+      If discovery becomes necessary mid-Execute, that is a Plan gap: E4 -> return to Plan.
+    agent_roles: assets/workflows/agent-roles.md   # HH-011: orchestrator/executor delegation contract
+    async_delegation: >
+      When every Execute unit for a task is delegated to an executor, the
+      orchestrator may begin the NEXT task's Search and Plan before the executor
+      finishes (plan-ahead pattern; concurrency.md §7). Invariants: (1) D7
+      counter update (task_index +1) is gated on V+D completion, never on P
+      completion; (2) the next task's S/P must not read uncommitted executor
+      output (concurrency.md §5 applies across async tasks too).
+    steps:
+      E1: "Change one minimal unit at a time; never bundle unrelated changes."
+      E2: "Verify each change against its acceptance criterion before moving to the next."
+      E3: "Record actions, results, and failure cases (EX-5 log) in the task brief."
+      E4: >
+        Rework / judgment-error gate (conditional). When rework, a premise error,
+        unnecessary work, or a repeated judgment error is detected during Execute,
+        STOP and investigate the root cause BEFORE continuing. Fix the originating
+        procedure (checklist / anti-pattern / note) immediately; do not queue.
+        Record "no rework" explicitly when none occurred. See execute.md E4.
+    artifacts: [implementation, execution-log, failure-case-log]
+    checklist: assets/checklists/execute.md
+
+  evaluate:
+    purpose: "Judge artifacts mechanically; keep human judgment to one bit (accept/reject)."
+    steps:
+      V1: >
+        Run machine signals: tests / lint / run. When framework materials changed,
+        also run: node tools/hyperhelix.mjs validate. SECURITY (constitution
+        security axiom, HH-019): before any commit, run the secret scan
+        (core/routing.yaml validation.secret_scan) over the staged diff; a raw
+        credential is a hard block, never a warning. Commit variable names /
+        placeholders only.
+      V2: "Check every acceptance criterion; on failure return to execute (or to plan if the plan itself was wrong)."
+      V3: "Surface accept/reject to the human only when intent fidelity is in question."
+    failure_attribution: >
+      Per application: notes applied to a failing artifact get strength -1;
+      mere retrieval is never charged (core/knowledge.yaml header).
+    artifacts: [verification-results]
+    checklist: assets/checklists/evaluate.md
+
+  distill:
+    purpose: "Convert experience into durable, slim materials. No distill, no improvement."
+    steps:
+      D1: "Extract success factors; judge reusability."
+      D2: >
+        Extract failure factors as process problems: which phase, which missing
+        material (procedure / criteria / knowledge / tool / automation).
+      D2b: >
+        Process-failure signal scan (ALWAYS required; HH-036): detect cases where a
+        task's success exposes a PAST process failure (false blockers, unreferenced
+        patterns, Search misses); queue prevention work to the framework process-backlog
+        (docs/process-backlog.md; a host-project task uses that project's own TODO).
+        Record "none detected" if clean. See distill.md D2b.
+      D3: "Propose improvements. Priority: recurrence prevention > reusability > effort > implementation cost."
+      D4: "Route each durable finding per core/routing.yaml. Human-gate items become amendments.md proposals — never apply them directly."
+      D5: "Slim AI-facing materials: merge duplicates, drop stale criteria, archive one-off detail. Keep what reproducibility, verifiability, and safety need."
+      D6: "Anti-pattern any confirmed failure case (assets/ai/anti-patterns.md schema). Skip if none; MANDATORY (cannot record 'none') if the case is a re-occurrence of a previously fixed failure — see distill.md D6 for the full sub-rule (TASK-289)."
+      D7: >
+        Apply this task's deltas in core/knowledge.yaml (HH-016 note ledger):
+        counters.task_index +1; AT MOST ONE note move — add a note (id from
+        counters.next_note_id, then next_note_id +1; set project: <current-slug>
+        or `shared`, HH-032) OR nudge an existing note's
+        strength +/-1 with last_used. No recompute, no derived fields. Tool:
+        node tools/hyperhelix.mjs bump --task ID [--use N-..|--miss N-..] [--review];
+        then: node tools/hyperhelix.mjs validate.
+    artifacts: [lessons, note-updates, counter-updates]
+    checklist: assets/checklists/distill.md
+
+# --- exceptions (from MetaHelix; details in assets/workflows/exception-handling.md) ---
+exceptions:
+  reference: assets/workflows/exception-handling.md
+  EX-1: {name: block,         action: "log it; transient -> retry max 3 (1/5/15 min); fundamental -> back to S1; impossible -> EX-3"}
+  EX-2: {name: scope-change,  action: "append to brief (keep history); structural -> redo P1-P4; criteria-only -> redo P3; resume execute"}
+  EX-3: {name: abort,         action: "record state + resume conditions; light distill triage (D2/D3/D5/D6); mint a material if the lesson is durable"}
+  EX-4: {name: time-pressure, action: "switch to light mode; record the reason; backfill distill in the next unhurried task"}
+  EX-5: {name: exploration,   action: "hypothesis -> trial -> failure log -> next plan reads the log; >3 stalls -> back to S2/S3; failures are artifacts, never deleted"}
+
+# --- meta strand (framework self-improvement, folded into the same pipeline) ---
+meta_strand:
+  fold: >
+    Framework improvement needs no separate loop: a process lesson is an ordinary
+    learning note (HH-016) captured by the same Distill pipeline. There are no
+    separate gates — notes carry framework-related tags and a strength sort-hint.
+  review_triggers:
+    - "every-5-tasks: counters.task_index - counters.last_framework_review >= 5 (counter set by framework-review.md Completion)"
+    - after-framework-material-change
+    - judgment-hesitation
+    - same-problem-twice
+  review: assets/checklists/framework-review.md
+  anti_self_purpose: >
+    Single authority: constitution.md governance axiom 5. Operational status
+    (active/suspended), the reactivation condition, and the recording rule
+    live in assets/checklists/framework-review.md R6 (status is NOT restated
+    here; consult that authority).
+
+# --- required output at task completion ---
+task_summary:
+  required_when: "meaningful task: standard/full depth, or any task that changed durable materials"
+  fields: [objective, acceptance-criteria-results, validation-summary-including-skips, distilled-materials, counter-updates, pending-amendments]

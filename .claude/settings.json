@@ -1,0 +1,24 @@
+{
+  "hooks": {
+    "PostCompact": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"$CLAUDE_PROJECT_DIR/.claude/commands/hooks/compaction-recovery.sh\""
+          }
+        ]
+      }
+    ],
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"$CLAUDE_PROJECT_DIR/.claude/commands/hooks/userpromptsubmit-compaction-recovery.sh\""
+          }
+        ]
+      }
+    ]
+  }
+}

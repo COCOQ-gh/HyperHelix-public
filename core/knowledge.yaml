@@ -1,0 +1,576 @@
+# =============================================================================
+# HyperHelix — core/knowledge.yaml
+# Learning-note ledger. AI-facing artifact (English only).
+#
+# MODEL (HH-016): flat notes, not tiered materials. Purpose is narrow — at task
+# start, surface relevant past lessons so the next task is a little better.
+# No automatic ranking/promotion. "Don't aim for perfect; improve a bit next time."
+#
+# INDEX / 索引 (retrieval — this ledger is NOT read in full): S2 retrieves notes by
+# TAG MATCH (core/gates.yaml search.top_n, ordered by last_used desc = recency,
+# HH-045; active only). The tag set IS the index; only the header + counters below
+# are always-read. INDEX TIER (HH-045): playbook notes (kind: playbook) are the
+# PRIMARY retrieval target — one authoritative note per recurring topic, pointing
+# via `leaves:` to its leaf notes (kind: leaf) for drill-down. This mirrors
+# amendments.md's HH-024 index→drill (HH-026 R7b: a mandatory-tier file's index need
+# not be a literal table when tag-search is its lookup). Grep a tag to find a
+# playbook (or a plain note); open its leaves only when you need the evidence.
+#
+# NOTE FIELDS (10; kind/leaves/topic are the HH-045 playbook tier, OPTIONAL):
+#   id        : N-NNN, unique, never reused.
+#   text      : the lesson, one line. Operating language OK.
+#   tags      : free words (>=1), for retrieval match. No dictionary gate.
+#               PROHIBITION notes: always tag the PROHIBITED term (not just the
+#               preferred alternative) — searchers look for what they're about
+#               to use, not its replacement (TASK-288: SETBGCOLOR note missing
+#               "setbgcolor" tag → S2 miss even if run).
+#   project   : OPTIONAL scope slug (HH-032). The project the lesson belongs to
+#               (e.g. Project001, hyperhelix) or `shared` for cross-project. ABSENT ==
+#               shared (backward-compatible). S2 retrieves only current-project +
+#               shared notes (core/gates.yaml search.project_scope). Free string, no gate.
+#   strength  : integer legacy hint. start 1; +1 when the note helped a passing
+#               artifact; -1 when it was wrong/insufficient on a failing one.
+#               Not a gate; not auto-promoted (avoids Goodhart; HH-009 spirit).
+#               HH-045: DEMOTED from primary sort key to a secondary tiebreak.
+#   last_used : counters.task_index when last used. HH-045: PRIMARY retrieval sort
+#               key (recency desc) — a fact, not a score. Also the prune hint.
+#   state     : active | archived. Archiving is a HUMAN action at /cycle (glance
+#               stale / least-recently-used notes). No automatic orphaning.
+#   kind      : playbook | leaf (HH-045 index tier, OPTIONAL; absent == plain note).
+#               playbook = authoritative topic note (S2 primary target). leaf =
+#               evidence note folded under a playbook. Plain notes omit kind.
+#   leaves    : playbook only — inline single-line list of leaf ids it indexes
+#               (e.g. [N-011, N-019]). Single line (N-005: fixed-schema parser).
+#   topic     : leaf only — the playbook id this note drills down from (e.g. N-059).
+#
+# PER-TASK (D7): at most one move — add a note, or nudge a note's strength +/-1
+# (with last_used). No recompute, no derived fields, no global consistency pass.
+# See core/loop.yaml D7 and assets/checklists/distill.md.
+#
+# CANON LIVES IN THE USER LAYER: when a lesson is important/durable enough, a
+# human lifts it into constitution.md or files it via amendments.md. There is no
+# automatic axiom path here. The ledger is working memory, not law.
+#
+# CONCURRENCY (HH-015): counters update by commutative +1 delta; never overwrite
+# with a stale absolute. notes append; strength nudges are last-writer-small and
+# tolerated (imperfection is acceptable — fix next time).
+#
+# REVIEW-ONLY (HH-023): a pure inspect-and-report session with ZERO tracked-file
+# change does NOT increment task_index (it is not a task). The instant any tracked
+# file changes it is a real task and task_index applies. Authority:
+# assets/workflows/review-only.md.
+# =============================================================================
+schema_version: 1
+
+# --- persistent counters ---
+counters:
+  # HH-016 adoption (TASK-073): merged feature/hh-016-notes-ledger into main.
+  # Reconciled from main's old-schema counters: task_index 277 (branch base) +
+  # TASK-067..072 (6 tasks) + this merge task (073) = 284. last_framework_review
+  # 283 (high-water; /cycle TASK-072 ran the last framework review). Removed
+  # HH:ACTIVE-SCAN-ALLOW reason="names the HH-016-abolished counters as history"
+  # counters (tasks_since_tuning / tuning_signals / id_seq) are abolished by HH-016.
+  # /HH:ACTIVE-SCAN-ALLOW
+  task_index: 508   # +1 TASK-20260705-006
+  last_framework_review: 506   # set by /cycle TASK-20260705-004 (high-water)
+  next_note_id: 62           # high-water: max(main=62 via N-061 HH-052, project/Project001=59)
+  last_always_read_lines: 454  # convergence R7a baseline: written by cost-report each /cycle run
+  last_backlog_open_count: 18  # convergence R8c baseline: written by consolidation-report each /cycle run
+
+# --- learning notes (flat; retrieval sorts by last_used desc = recency, HH-045) ---
+notes:
+  - id: N-001
+    text: "Wrap idempotent network calls in bounded exponential-backoff retry; cap attempts and surface the final failure."
+    tags: [retry, network, backoff]
+    project: hyperhelix
+    strength: 2
+    last_used: 184
+    state: archived
+
+  - id: N-002
+    text: "Build the minimal working implementation first; expand only after it runs."
+    tags: [implementation, minimal-first]
+    project: shared
+    strength: 9
+    last_used: 335
+    state: archived
+
+  - id: N-003
+    text: "Read requirements before planning to avoid missed specs."
+    tags: [search, requirements]
+    project: shared
+    strength: 2
+    last_used: 188
+    state: archived
+
+  - id: N-004
+    text: "Confirm phase-gate evidence exists before starting a later phase; an empty template is not evidence."
+    tags: [phase-gate, evidence]
+    project: hyperhelix
+    strength: 4
+    last_used: 273
+    state: active
+
+  - id: N-005
+    text: "Keep inline arrays in core YAML on a single line; the fixed-schema parser does not read multi-line flow sequences."
+    tags: [parser, yaml]
+    project: hyperhelix
+    strength: 2
+    last_used: 205
+    state: archived
+
+  - id: N-006
+    text: "Under same-branch parallel sessions, automate per-task counter bookkeeping (hyperhelix.mjs bump) to cut friction and arithmetic errors."
+    tags: [concurrency, counters]
+    project: hyperhelix
+    strength: 2
+    last_used: 267
+    state: active
+
+  - id: N-007
+    text: "In era/Project001 ERB, a file whose every line is ';FUNC-GATE '-prefixed is intentionally gated off; a load-error citing such a function is the standby state, not a regression."
+    tags: [erb, func-gate]
+    project: Project001
+    strength: 2
+    last_used: 210
+    state: archived
+
+  - id: N-008
+    text: "Port a low-coupling Project002 COMF command into Project001 without per-command survey: assign a free Project001 Train number (label-driven; rename on collision e.g. add 改), stub D-04 deps (口上/COM_ORDER_COMMON/JUDGE_COM_RESULT/relation/SLG/捕虜/MEQUIP), convert SOURCE labels to existing Project001 source.csv labels via a helper, delegate to the existing SOURCE_CHECK path unchanged; verify with a FLAG:9000 smoke asserting SOURCE>0 and PALAM increase after CUPCHECK."
+    tags: [erb, erb-port, source-conversion]
+    project: Project001
+    strength: 49
+    last_used: 380
+    state: archived
+
+  - id: N-009
+    text: "Assess an Project002 system's real porting scope by post-exclusion coupling, not raw file count: per-Touhou-character files and SLG-country deps (battle/COUNTRY/CAPTURE) inflate size but are excluded (D-04/D-08/D-10). Measure via unresolved-coupling + group breakdown (e.g. CLOTH 315 files but only 5 generic-helper deps; SKILLS 554 files but mostly excluded)."
+    tags: [erb-port, scope, dependency]
+    project: Project001
+    strength: 4
+    last_used: 323
+    state: active
+
+  - id: N-010
+    text: "Project001 TEQUIP/tequip.csv is training-equipment (調教器具), NOT clothing. Project002 CLOTH (衣装) is net-new with no Project001 counterpart; do not assume the PORTING-doc's CLOTH->TEQUIP mapping."
+    tags: [erb-port, cloth, tequip]
+    project: Project001
+    strength: 2
+    last_used: 421
+    state: active
+
+  - id: N-011
+    text: "After a framework schema/tooling migration (e.g. HH-016), grep removed-term dangling refs across ALL materials: templates, checklists, workflows, entry points (AGENTS/CLAUDE), README, anti-patterns — and duplicated command files. .claude/commands/{cycle,helix}.md exists in BOTH the outer project AND the nested framework repo; fix both."
+    tags: [framework, migration, dangling-refs]
+    project: hyperhelix
+    kind: leaf
+    topic: N-059
+    strength: 4
+    last_used: 447
+    state: active
+
+  - id: N-012
+    text: "Porting an Project002 system that declares #DIM SAVEDATA CHARADATA (e.g. CLOTH's CLOTH var) fails to LOAD unless Project003's binary-save option is enabled — a game-wide save-format decision (user gate). For a first slice, drop SAVEDATA (session-only) and defer persistence. Also: #FUNCTION/#FUNCTIONS expression methods declare args via builtin ARG/ARGS (like COLOR_EXT), not comma-form named args."
+    tags: [erb-port, savedata, config]
+    project: Project001
+    strength: 4
+    last_used: 418
+    state: active
+
+  - id: N-013
+    text: "Do not directly edit a shared file another session is actively churning (e.g. tools/Project003-autotest/AUTOTEST.ERB): it may be UTF-8/no-BOM with MIXED EOL (CRLF+LF) — read/insert via ReadAllText preserving EOL, never ReadAllLines+WriteAllText (normalizes all lines) and never CP932 (corrupts). Worse, the other session's in-flight broken WIP (a half-ported COMF with a parse error) breaks the harness baseline so you cannot verify green. Hand off via a spec; verify your own change via build-artifact injection instead."
+    tags: [concurrency, harness, autotest]
+    project: Project001
+    strength: 1
+    last_used: 293
+    state: active
+
+  - id: N-014
+    text: "After dispatching a background executor job (codex exec with run_in_background), schedule a watchdog check at the wall-clock budget deadline (default 5 min for pattern work, 10 min for novel). Completion notifications can be silently lost to context compaction or sandbox crashes. Never enter an unbounded wait — especially under autonomous-execution mandates where the user cannot intervene."
+    tags: [delegation, timeout, watchdog, autonomous]
+    project: shared
+    strength: 1
+    last_used: 300
+    state: active
+
+  - id: N-015
+    text: "Branch-context governance status goes stale on merge: a flag set with a branch-specific rationale (e.g. R6 SUSPENDED because 'this branch has no real project') becomes false when merged into a branch with different reality (main has real project tasks). After merging, re-verify status-bearing governance text (constitution toggles, checklist enable/suspend flags) against the TARGET branch's facts, not the source branch's."
+    tags: [merge, governance, consistency]
+    project: shared
+    strength: 2
+    last_used: 320
+    state: active
+
+  - id: N-016
+    text: "When direct measurement is unavailable (no API usage endpoint, no token count in tool results), use effort-based estimation with order-of-magnitude accuracy. Record estimates distinctly from measurements (e.g. '(est)' suffix) so future calibration can separate the two. Precision matters less than having a directional signal for capacity decisions."
+    tags: [estimation, capacity, tokens, delegation]
+    project: shared
+    strength: 3
+    last_used: 324
+    state: active
+
+  - id: N-022
+    text: "Project003 のデフォルト CSV 配列サイズ(EXP/TCVAR 等)は 100(index 0-99)。ラベル追加時は空き番号が上限内か事前確認し、既存 ERH の変数名と重複しないか grep で検証する。"
+    tags: [Project003, csv, array-bounds, erb-port]
+    project: Project001
+    strength: 1
+    last_used: 329
+    state: active
+
+  - id: N-017
+    text: "Before implementing a tool/format design, delegate an independent read-only review (survey WO) to a separate executor (e.g. Codex). It catches design holes the orchestrator missed — e.g. a re-run double-count in a counter bump that the orchestrator's own ordering fix did not cover. Spot-check every cited file:line (HH-012 §5) before adopting, but the second pair of eyes pays for itself on pre-implementation design review."
+    tags: [delegation, survey, review, design]
+    project: shared
+    strength: 4
+    last_used: 345
+    state: active
+
+  - id: N-018
+    text: "When implementing a DETECTOR (validator scan, anchor parser, lint rule), always write a positive test — an input that SHOULD be flagged — not just a negative one. A silent miss looks identical to 'clean'. Example: a marker name regex [A-Z_]+ silently skipped HH:D7 because the name has a digit; only a positive test caught it. Also: a detector that scans active docs will flag its own spec and migration-explanation comments — give it a file-level + range allow mechanism and dogfood it."
+    tags: [validator, detector, testing, tooling]
+    project: shared
+    strength: 13
+    last_used: 441
+    state: archived
+
+  - id: N-019
+    text: "When adding a new enumerated value (e.g. a depth mode like 'micro'), update EVERY place that enumerates it, not just the authority file: core/loop.yaml AND the brief template's depth-mode line AND README's depth-mode list AND any checklist. The active-term scan catches REMOVED vocabulary, not enumeration drift of CURRENT values — that still needs manual R1 review (or a future dedicated cross-enumeration check)."
+    tags: [framework, consistency, enumeration, depth-mode]
+    project: hyperhelix
+    kind: leaf
+    topic: N-059
+    strength: 4
+    last_used: 423
+    state: active
+
+  - id: N-059
+    text: "フレームワーク資材を変更したら、その全消費側を同一変更で更新する(AP-003 declare↔consume の playbook)。移行/用語撤去後は全資材を grep して dangling ref を除去し(N-011)、列挙値を追加したら authority だけでなく列挙する全箇所(loop.yaml/brief テンプレ/README/checklist)を更新する(N-019)。新規 declaration は宣言と同じ change-list で consumer を配線する。"
+    tags: [framework, consistency, cross-reference, ap-003, declare-consume]
+    project: hyperhelix
+    kind: playbook
+    leaves: [N-011, N-019, N-060]
+    strength: 1
+    last_used: 480
+    state: active
+
+  - id: N-060
+    text: "新スキーマ概念(例 HH-045 の playbook/leaf)を追加したら、validate/checklist だけでなく informational レポート(consolidation-report 等)の検出器も同一変更で配線する。HH-045 は playbook↔leaf を consolidation-report の note-merge 検出が false-positive 化させた(AP-003 declare↔consume の漏れ・次 /cycle で自己検出)。"
+    tags: [framework, ap-003, declare-consume, consolidation-report, schema]
+    project: hyperhelix
+    kind: leaf
+    topic: N-059
+    strength: 1
+    last_used: 481
+    state: active
+
+  - id: N-061
+    text: "新しい enforcement 機構(ゲート/レンズ)を設計したら、main の branch-context 例外(R6/R7d STOPPED — framework 開発が目的なので enforcement 停止・measurement 継続・人間の運用判断に委ねる)との整合を必ず確認する。HH-048 外部価値ゲートは main で R4 unverified を毎 /cycle マークし、この例外規則と矛盾した(HH-052 で是正)。"
+    tags: [framework, branch-context, governance, consistency, enforcement]
+    project: hyperhelix
+    strength: 1
+    last_used: 495
+    state: active
+
+  - id: N-020
+    text: "Before a change that REVERSES a prior reasoned decision, check the design doc / amendments for a settled ruling first. A cross-session review (e.g. another branch's task) re-added brief anchors that the doc explicitly excluded with reasons (HH:COMMIT circularity, FRAMEWORK_REVIEW bloat) — it 'aligned to the design' but missed that the design had already settled the opposite. A second pair of eyes catches real bugs but can also undo deliberate decisions; reconcile against the written ruling, not the older intent."
+    tags: [review, design, consistency, regression]
+    project: shared
+    strength: 1
+    last_used: 334
+    state: active
+
+  - id: N-021
+    text: "Chat output to the user should carry ONLY user-facing information — outcomes, decisions, things to confirm, final results — in user-facing form. Do NOT narrate work steps ('first I'll…', 'next…'), echo raw tool output, or emit AI self-talk. Still make the tool calls; just keep the accompanying prose minimal or absent. Narration is ceremony, not signal (same spirit as brief lightweighting)."
+    tags: [communication, reporting, user-facing, signal-vs-ceremony]
+    project: shared
+    strength: 1
+    last_used: 343
+    state: active
+
+  - id: N-023
+    text: "Project002 の @function を Project001 へ移植する前に、Project001 側に同名 @function が既存しないか grep する。同名で別意味の関数が実在する(例: EXP_GOT_CHECK = Project002:COM_EXP加算 vs Project001:CUP系痛苦快楽チェック TRACHECK.ERB)。衝突時は接頭辞で改名(例 COM_EXP_GOT_CHECK)。改名せず定義すると既存関数を黙って上書き/二重定義しバグ化する。"
+    tags: [erb-port, name-collision, function, blocker-analysis]
+    project: Project001
+    strength: 1
+    last_used: 384
+    state: active
+
+  - id: N-024
+    text: "CRLF ファイルへ正規表現でアンカー行の後に挿入する際、.NET regex の `.*$` は行末の `\\r` まで捕捉する($は\\nの直前で一致)。捕捉値の後に `\\r\\n` を付けると `行\\r\\r\\n` となり、余分な `\\r` が次トークン/関数名に連結して照合失敗する(例: Project003 で `CALL SOURCE_BASE\\r` が @SOURCE_BASE 未定義エラー)。対策: アンカーは `\\r?` を含めて消費するか、挿入後に `\\r\\r\\n`→`\\r\\n` を正規化する。"
+    tags: [encoding, crlf, regex, powershell, cp932, insertion]
+    project: Project001
+    strength: 1
+    last_used: 385
+    state: active
+
+  - id: N-025
+    text: "Project001 AUTOTEST のテストキャラ(TARGET=1 等)は ADDCHARA で CSV 由来の素質/能力/装備を持つ。能力Lv閾値・ソース・パラメータ等の決定的な数値計算テストでは、補正源(素質 例:Ｃ鈍感/Ｃ敏感 の x1.2/x0.8、装備、CONFIG)をテスト内で明示ゼロクリアしてから検証する。クリアしないとキャラ固有の補正で期待値がずれFAILする(ABLUP CALC で実証)。早期returnする経路(cap/存在チェック)は補正前なので誤って通り、補正後の経路だけ落ちるのが兆候。"
+    tags: [autotest, determinism, talent, character, calculation]
+    project: Project001
+    strength: 3
+    last_used: 442
+    state: active
+
+  - id: N-026
+    text: "Project002→Project001 のシステム移植で、index/label テーブルが乖離している場合(Project001は感覚0-3以外の能力表を再編済み: Project00212=欲望/Project00112=技巧, Project00250=武闘/Project00150=神位)、Project002 の index/label verbatim 移植は誤り。target(Project001)自身のデータ(例: 手動ABLUP{N}が gate する EXP:N)から駆動値を導出する。SLG/特殊/曖昧な対象は除外し設計判断として明示保留。閾値等のバランス値は統一curveの設計仮定とし文書化(後で調整可能に)。"
+    tags: [erb-port, mapping, divergence, ability, design-assumption]
+    project: Project001
+    strength: 1
+    last_used: 388
+    state: active
+
+  - id: N-027
+    text: "Python で `open(p,'wb').write(text.encode('cp932'))` は危険: open('wb') がファイルを先に0バイトへ切詰めてから write 引数(.encode())を評価するため、encode 例外(CP932に無い文字 例: em-dash —/U+2014)が起きるとファイルが空になり破壊される。対策: encode を先に実行して bytes を得てから open/write する(`out=text.encode(...); open(p,'wb').write(out)`)。CP932ドキュメント編集では em-dash/波ダッシュ等の非CP932文字も混入回避。破壊時は `git checkout HEAD -- <file>` で復旧。"
+    tags: [python, file-write, encoding, cp932, data-loss]
+    project: Project001
+    strength: 2
+    last_used: 391
+    state: active
+
+  - id: N-028
+    text: "Project002機能の移植/新規実装に着手する前に、Project001が既にその系を実装済でないか grep/read で確認する。Project001はProject002から多くを移植済で、TODO/設計docが [!]ブロックや未実装と書いていても実体は完成していることがある(実証: CLOTH第一スライス=実装済セッション限定、D-05 NG+基盤=START_NEWGAME/FLAG:7周回数で実装済・IP FLAGも周回保持)。真のギャップは細部の配線(hook未接続・効果未適用)に局在しがち。@関数名/主要変数/FLAG番号で先に現状把握し、再実装でなく差分のみ埋める。"
+    tags: [erb-port, existing-state, verification, scope, blocker-analysis]
+    project: Project001
+    strength: 1
+    last_used: 390
+    state: active
+
+  - id: N-029
+    text: "CSV⇔ERB cross-validation テストパターン: CSV で定義された全エントリに対し、ERB マッピング関数(SELECTCASE等)の戻り値を AUTOTEST で全件検証する。表示漏れ系バグの検知に有効。ABL表示で実証済み。"
+    tags: [autotest, csv-erb, cross-validation, display]
+    project: Project001
+    strength: 5
+    last_used: 426
+    state: active
+
+  - id: N-030
+    text: "関数移植のスコープ外判定時、「値を読む関数」と「値を書くシステム」を区別せよ。CSV ラベル追加だけで読み側関数が移植可能なら即実行。書き込み元システム(D-04等)の未移植は読み側のブロッカーではない。また、先行タスクで同種の問題を解決済み(hex置換等)なら、そのパターンを適用し安易にブロック扱いしない。"
+    tags: [erb-port, scope, dependency, blocker-analysis]
+    project: Project001
+    strength: 4
+    last_used: 347
+    state: active
+
+  - id: N-031
+    text: "Project003 0.2.6.0 の #FUNCTIONS + RETURNF: LOCALS=FUNC() 代入は文字列を返さない（numericとして評価される）。SELECTCASE FUNC() は正常動作する。テストでの文字列関数検証は SELECTCASE パターンで LOCAL:N に結果を格納してから数値アサーションする。"
+    tags: [Project003, functions, returnf, autotest, string]
+    project: Project001
+    strength: 1
+    last_used: 345
+    state: active
+
+  - id: N-032
+    text: "Project002(UTF-8)→Project001(CP932)移植で EXP/ABL ラベル名が異なる場合、PowerShell の .Replace() はUTF-8⇔CP932間のコードポイント不一致で失敗する。バイト直接置換で回避: [System.IO.File]::ReadAllBytes → 旧バイト列パターンを新バイト列に置換 → WriteAllBytes。EXP:自慰経験値(CP932末尾 92 6C = 値) → EXP:自慰経験への変換に実証済み。"
+    tags: [erb-port, encoding, cp932, bytes, exp]
+    project: Project001
+    strength: 1
+    last_used: 368
+    state: active
+
+  - id: N-033
+    text: "新規ERBファイルはUTF-8 BOM付き(EF BB BF)で作成する。Project003はBOMなしUTF-8をCP932として読むため日本語文字列が文字化けする。PowerShellでは New-Object System.Text.UTF8Encoding($true) + [System.IO.File]::WriteAllLines($path, $content, $encoding) でBOM付き出力。CALLFORMF対象関数には#FUNCTIONとRETURNFが必要(RETURNは不可)—使用前にgrep確認すること。"
+    tags: [erb, encoding, utf8-bom, callformf, function]
+    project: Project001
+    strength: 1
+    last_used: 382
+    state: active
+
+  - id: N-034
+    text: "Project001: Project003起動が必要な時は必ず autotest ハーネス(tools/Project003-autotest/Invoke-Project001Autotest.ps1 -Clean)経由。隔離.autotest/にData+Project003.exeをコピーしWindowStyle Hiddenで無人起動、[[AUTOTEST]] SUMMARY pass=N fail=M をログ解析する。手動Project003.exe起動+computer-useでのlive GUI駆動は禁止(サンドボックス迂回・無人不可・アプリ非認識)。autotestで検知できない表示内容の目視(能力表示崩れ等, test-plan.md §3B)はユーザーのプレイテスト(D-24)に委ね、AIはGUIを駆動しない。使い方は tools/Project003-autotest/README.md。"
+    tags: [Project001, Project003, autotest, launch, testing, workflow]
+    project: Project001
+    strength: 1
+    last_used: 397
+    state: active
+
+  - id: N-035
+    text: "資材整理で『陳腐化』ドキュメントを削除する時、まだ真である運用知識(ツールの起動コマンド・ログ契約・隔離手順)を道連れにしない。削除前にスリムな操作専用形へ再ホームする。実例: TASK-183がtools/Project003-autotest/のREQUIREMENTS/STATUS(ハーネス起動方法・回帰網ワンショット手順を含む)を削除→使い方docが消失→次タスクでハーネスに手が伸びずProject003手動起動の判断ミスを誘発(cleanup-caused gap, distill.md D2b)。対策: 削除対象に運用手順が含まれるなら、要点をREADME等へ移してから削除する。"
+    tags: [cleanup, docs, discoverability, distill, tooling]
+    project: shared
+    strength: 1
+    last_used: 398
+    state: active
+
+  - id: N-036
+    text: "テスト用隔離サンドボックス準備で大物の全コピーを避ける。同一ボリュームなら巨大単一ファイル(exe等)はハードリンク(New-Item -ItemType HardLink、失敗時Copy-Itemフォールバック)、多数ファイルのツリーは robocopy /MIR 差分ミラー(初回全コピー・再実行は変更分のみ、終了コード<8が成功)。隔離・再現性・読み取り専用は維持される。注意: /MIRはdestの余剰を purge するため、テスト専用注入ファイル(AUTOTEST.ERB等)はミラー後に注入する。実測: Project001 autotest で 1ラン23.3MB中88%がexe→ハードリンク化で実コピー2.9MB、再実行4.0s。"
+    tags: [autotest, sandbox, performance, hardlink, robocopy, tooling]
+    project: Project001
+    strength: 1
+    last_used: 400
+    state: active
+
+  - id: N-037
+    text: "CP932 の ERB/CSV を UTF-8 として読み書きすると、非UTF-8バイトが U+FFFD(バイト EF BF BD)へ化けて原文字が永久消失し、Project003 は ERB を CP932 として読むため日本語リテラルが全画面化けする(変数展開は無傷なので『リテラルだけ化ける』のが特徴)。検知: Data配下を `EF BF BD` バイト走査(コード構造は無傷なので autotest 関数検証は素通り=test-plan §3B)。原因commit特定: 各ファイルの履歴blobをCP932妥当性とFFFD数で二分。復旧: U+FFFDは復元不能なので git親commitのクリーンCP932版から復元し、破損commitの機能差分のみ再適用(.gitattributes * -text でバイト保全)。実例: Project001 TASK-187で COM_ACT/INFO1/SHOW_CHARA の3ファイルが encoding『正規化』commitで破損。予防: コミット前のEF BF BD走査を回帰ガード化。"
+    tags: [erb, encoding, cp932, utf8, corruption, u-fffd, regression-guard]
+    project: Project001
+    strength: 4
+    last_used: 420
+    state: active
+
+  - id: N-038
+    text: "多部にわたるユーザー指示(『効率順に〜まで実装』等)は1タスクに束ね、スコープを完了させてからコミットする(repo毎に1コミット)。指示を小タスクに刻んで各々逐次 micro-commit すると履歴が細切れになりレビュー困難。複数の実装単位は1タスクの TL として扱い、外側repoとネストrepoで各1コミットに集約する。例外: 真に独立した別タスクは別コミットで可(細切れとは別物)。"
+    tags: [git, commit-granularity, workflow, task-scoping]
+    project: shared
+    strength: 1
+    last_used: 404
+    state: active
+
+  - id: N-039
+    text: "ツール呼び出しは常に正規の function-call 書式のみで出力する。呼び出し直前に余計なトークン(例: 'count')を置かない/素の <invoke>・<parameter> タグを単独で出さない。書式崩れは致命的=未パースで未実行→ターンがサイレント終了し作業停止・直前編集が未コミットで放置・状態不整合になる(AP-007, 人間ゲート HH-029)。『malformed』を受けたら即座に正規書式で再送し、実行成立を確認してから次へ進む。"
+    tags: [tool-call, execution, fatal, serialization, discipline]
+    project: shared
+    strength: 2
+    last_used: 406
+    state: active
+
+  - id: N-040
+    text: "encoding鋭敏ファイル(UTF-8 BOMのAUTOTEST.ERB / CP932のERB・CSV)へPowerShellで行挿入する時は .NET String.Split([string[]]@(\"\\r\\n\"),None) で分割する。-split \"\\r\\n\", -1 は第2引数が配列束縛され分割失敗→全文が1行に潰れ破損する。UTF8Encoding.GetBytes() はBOMを出力しないのでEF BB BFを明示付与する。編集後は byte数・BOM・FFFD=0・git diff --stat の加算性を必ず確認。新規ERBは可能ならASCII限定にしてencoding問題を回避(N-308併用)。"
+    tags: [powershell, encoding, cp932, utf8-bom, file-edit, autotest]
+    project: Project001
+    strength: 1
+    last_used: 412
+    state: active
+
+  - id: N-041
+    text: "Framework AP-003 (a declaration shipped without its consumer — a dead gate param, a brief/template field nothing fills, a dangling destination like 'project TODO', a declared-but-unconsumed action like prune) is the MOST-recurring framework miss; omissions (a rule not covering all states, e.g. S2 retrieval ignoring archived) are its cousin. Routine catches: framework-review R1 declare↔consume + omission sweep (manual) and validate GATE_DEAD_CONFIG (gate params unreferenced in core/assets/tools). Semantic/omission cases that resist a mechanical check need a periodic Codex adversarial audit (process-backlog standing practice). Always wire declaration + consumer in the SAME change."
+    tags: [framework, ap-003, declare-consume, detection, validator]
+    project: shared
+    strength: 5
+    last_used: 450
+    state: active
+
+  - id: N-042
+    text: "After a long run of framework-only self-improvement (audit -> fix -> add detector -> audit again), R7d/R7e flag a SELF-REFERENTIAL cadence: validate is green and mechanical checks pass, but external ROI is unproven and per-task ceremony keeps growing. The tell is N consecutive framework-only tasks + new required steps each cycle. On main R6 is STOPPED (no auto-enforcement), so the HUMAN decides — SURFACE it, don't bury it: the fix is to apply the framework to a REAL project and validate ROI before adding more rigor (constitution governance axiom 5 spirit)."
+    tags: [framework, roi, self-referential, r7, governance]
+    project: shared
+    strength: 1
+    last_used: 433
+    state: active
+
+  - id: N-043
+    text: "PowerShellで読み取り補助の短い関数名(例 Rd/R/Cp/Mv)を定義すると組込みエイリアス(rd=Remove-Item, ri=Remove-Item, cp=Copy-Item, mv=Move-Item, sc=Set-Content等)に解決され、意図せず破壊的コマンドが走る。実例: CP932 CSV を読む関数 Rd($p) のつもりが `Rd \"Palam.csv\"` が `rd Palam.csv`=Remove-Item となり tracked な Abl.csv/Palam.csv を削除→PALAM/ABL名テーブル未読込で autotest が無関係な既存行から全崩れ。対策: 補助関数は破壊的動詞と衝突しない明確な独自名(ReadCp932 等)にする。誤削除した tracked file は `git checkout HEAD -- <file>` で復元。回帰autotestが silent data loss の即時検知に有効。CP932/non-ASCIIパスは『ファイル不在』に見え原因を取り違えやすい→git status の D 行で削除を確認する。"
+    tags: [powershell, alias, destructive, data-loss, tooling, discipline]
+    project: shared
+    strength: 1
+    last_used: 415
+    state: active
+
+  - id: N-044
+    text: "Project003: CALL で呼ぶプロシージャに #FUNCTION/#FUNCTIONS を付けてはいけない。#FUNCTION(S) は式メソッド(関数呼び出し+RETURNF で値を返す)であり、`CALL 名前, 引数` で呼ぶと『#FUNCTION(S)として定義された関数に対し通常のCALLが行われました』でロード時エラー。CALL 方式で RESULT を返す補助は RETURN 値で返し #FUNCTION を付けない(既存 @DEBUG_ADD_CHARA/@DEBUG_ENDING_PLAY が手本)。引数は組込み ARG 経由、index 化代入は LOCAL を介す(VAR:TARGET:LOCAL)。N-012 の #FUNCTION/ARG 規約の姉妹則。"
+    tags: [Project003, erb, function, call, returnf, blocker-analysis]
+    project: Project001
+    strength: 1
+    last_used: 418
+    state: active
+
+  - id: N-045
+    text: "Project001でコマンド単位に @COM_ABLE<n> を autotest 隔離検証する際は、本体全文の inline SIF 状態ゲート(例: COM18 `SIF TEQUIP:58==0 RETURN 0`=お風呂場必須、COM43 `BASE:TARGET:潤滑<2000`/`GET_PENIS,PLAYER`=潤滑・主神penis必須)まで読む。CALL する再利用述語(COM_ABLE_*)の抽出だけでは前提状態を見落とし baseline が偽 fail する。状態前提の重いコマンドは isolated 検証に不適=述語テスト(P0)+全件 smoke(CREATE_COMABLE_LIST)で担保し、command-level spot-check は inline ゲート無しの代表に絞る。"
+    tags: [Project001, autotest, com-able, ground-truth, blocker-analysis]
+    project: Project001
+    strength: 2
+    last_used: 428
+    state: active
+
+  - id: N-046
+    text: "Project001の対話UI(INPUT/ONEINPUT/PRINTW)はautotest化できる: autotest-kitのPostMessage注入(`Run-Project001Autotest.ps1 -EnableInputInjection`)でERB側の`[[AUTOTEST]] WAITING_INPUT <値>`/`WAITING_ONEKEY <c|ENTER>`+OUTPUTLOGマーカーを検知し、RICHEDIT子窓へWM_CHAR/WM_KEYDOWNを送る。注入時はHidden不可でMinimized(AK-003)。注意: (1)kitの汎用ランナーはerrorLine正規表現が良性の起動時`警告Lv2`を誤fatal扱いし中断するため、Project001自前ランナー(errorLineは`エラーが発生しました|例外|未定義`のみ・SUMMARY待ち)を使う。(2)注入ERBはCP932 no-BOMで配置(UTF-8 BOMのままだとload失敗、Project003.log空)。実証: WAITING_INPUT 7/42→INPUT受領 pass=2/2。"
+    tags: [Project001, autotest, input-injection, postmessage, playtest, tooling]
+    project: Project001
+    strength: 4
+    last_used: 441
+    state: active
+
+  - id: N-047
+    text: "対話 autotest スイート ERB を隔離ツリーへ注入する際、PowerShell [System.IO.File]::ReadAllText は BOM 無し CP932 を UTF-8 と誤読し日本語を ???? 化する。marker と描画が両方化けると EXPECT_TEXT が偽 pass(????同士一致)、片方だけだと偽 fail になる。対策: CP932 no-BOM ソースは Copy-Item でバイト保全注入(Project003 は CP932 no-BOM を正しく読む=本番 ERB と同条件)、または UTF-8 BOM ソースなら ReadAllText(BOM検出)+WriteAllText cp932。Invoke-Project001Interactive.ps1 は Copy-Item 方式。実証: SELECT_ASSI marker 助手 が ???? 化し fail→Copy-Item で pass。"
+    tags: [Project001, autotest, encoding, cp932, injection, false-pass, tooling]
+    project: Project001
+    strength: 1
+    last_used: 45
+    state: archived
+
+  - id: N-048
+    text: "Project003 は Project003.log(OUTPUTLOG 出力)を UTF-8(BOMなし)で書く。autotest ランナーの text-assert(EXPECT_TEXT/EXPECT_NO_MOJIBAKE)は Project003.log を **UTF-8 で読む**こと。Default(CP932)で読むと日本語が化け、marker と描画が両方同じ化け方をして present-check が偶然一致する(=脆い偽 pass)。ASCII は不変。UTF-8 読みなら日本語照合が正しく、U+FFFD(EF BF BD)も検出可。加えて、最終 EXPECT marker が SUMMARY と同 flush で取りこぼされるため、ポーリングループ後に最終 text-scan を1回行う。実証: 508/対話スイートとも UTF-8 読みで TextPass 正常化(神位/助手/title)。"
+    tags: [Project001, autotest, encoding, utf8, Project003-log, text-assert, tooling]
+    project: Project001
+    strength: 4
+    last_used: 437
+    state: active
+
+  - id: N-049
+    text: "Project001 はキャラ番号が疎(実在 Chara CSV=0-32,100-104,148-151;33-99 等は欠番)。Project003 の CSVNAME(n,x) は未定義テンプレートで **エラー『定義していないキャラクタを参照しようとしました』**(空文字を返さない)→ STRLENS(CSVNAME(..)) ガード不可。CSVEXIST は本 Project003 で **未対応**(『解釈できない識別子』)、Project003.config が SPキャラ:NO のため CSVTALENT 第3引数(SPキャラ)も使用不可。さらにアイテム ID と『キャラ購入アイテム ID=100+キャラ番号』が一部重複(例: item264 ピアス=100+164)。よって ITEMPRICE:(100+n)>0 を『キャラ存在』の代理にした 0-199 走査は非キャラ(ピアス)を誤検出し CSVNAME で落ちる。対策: GETCHARA(n)>=0(在籍=テンプレート確実)でガード(SHOP_CHARABUY:120 既存イディオム)。相性(RELATION)は在籍キャラ間でのみ発生するため表示は保全。実証: 能力表示 PAGE_2→PRINT_RELATION→SET_CALLNAME のクラッシュを修正(TASK-233)。移植元 Project002 はキャラ連番密で顕在化しなかった前提崩れ。"
+    tags: [Project001, Project003, csvname, chara-template, crash, getchara, info-screen, port-assumption]
+    project: Project001
+    strength: 2
+    last_used: 459
+    state: active
+
+  - id: N-050
+    text: "Project001 の能力表示 ABL リスト(SHOW_INFO_ABL/INFO1)は全 ABL を走査せず、PRINT_ABL_COUNT(SHOW_CHARA)という『COUNT 0-N の算術写像ホワイトリスト』+ REPEAT 数で表示対象を決める。写像に無い ABL は値があっても恒久非表示(Project001 では既定で 15 性技/16 奉仕 が 10-14 で写像が止まり抜けていた、70-92 感度/性傾向/SLG も非表示)。ABL を表示追加する時は[PRINT_ABL_COUNT の写像/INFO1 の REPEAT 数/既存 autotest カバレッジテスト]を同時更新する——既存テスト(abl.display_covers_*)は旧仕様(写像/REPEAT)を符号化しており、写像変更で 50/60 が COUNT 22/23 へ動くと REPEAT 22 のテスト側ループが取りこぼし fail する(=テストがバグを符号化していた典型)。SHOW_CHARA の表示順コメントは Project002 由来で陳腐化(実 ABL 名と不一致)につき信用しない。実証: 15/16 を自然順写像に追加(TASK-234)。"
+    tags: [Project001, abl, info-screen, display-whitelist, test-encodes-bug, port-assumption]
+    project: Project001
+    strength: 2
+    last_used: 507
+    state: active
+
+  - id: N-051
+    text: "Project002→kami の ERB 移植で頻出する Project003 文法/環境の落とし穴: (1) CALL に文字列リテラル引数を渡す時は必ずクォートする(CALL F(\"基礎\",0); 無クォートだと『\"基礎\"は解釈できない識別子です』)。(2) PRINTFORM/PRINTFORML 内で整数式は {式}、文字列式は %式% (整数に %% を使うと『%%の中の式が文字列式ではありません』)。(3) #DIM I / #DIM N は Project003 予約変数名と衝突し警告Lv2(『変数名\"I\"はProject003の変数名として使われています』)→ ローカルは L_I 等にする。(4) autotest 回帰ブロックで ADDCHARA など CHARANUM/キャラ前提を変える処理を suite 途中に置くと後続テストの index 前提を撹乱し count 不一致(fail=0 のまま pass が1足りない)→ chara 変異を伴う回帰は suite 末尾に置く。(5) literal 丸写しは依存差で不能なことが多く『構造を忠実移植+kamiデータ流用(ABLNAME名前ベース反復)+未実装はプレースホルダ/仮値』が現実解。実証: 能力表示8タブUI移植(TASK-235)。"
+    tags: [Project001, Project003, erb-port, syntax-gotcha, printform, reserved-var, autotest, info-screen]
+    project: Project001
+    strength: 8
+    last_used: 458
+    state: active
+
+  - id: N-052
+    text: "『UI変更が反映されない』報告は、同一機能の入口経路を全 grep して真因を特定する。Project001 の能力表示は2経路: (A) ステータスメニュー SHOP→SHOW_CHARADATA_MENU→SHOW_CHARADATA_PAGE(+SHOP_SEARCHCHARA) は TASK-235 で新8タブUI に差替済、(B) 調教画面 PRINT_TRAIN→SHOW_INFO_PAGE_1→SHOW_INFO_ABL は旧共有レンダラのまま。最頻は (B)。新UIだけ作っても (B) には波及しないので『反映されない』。共有レンダラ(SHOW_INFO_ABL)を直すと両経路に効く=波及効率が高い。また SHOW_INFO_ABL は ABL>0 でレベル0能力を隠していた→全mapped能力を常時表示に(性技/奉仕が値0でも見える)。"
+    tags: [Project001, info-screen, entry-points, shared-renderer, abl, train-screen, not-reflected]
+    project: Project001
+    strength: 2
+    last_used: 455
+    state: active
+
+  - id: N-053
+    text: "Project003 のレイアウト/配色は HTML_GETPRINTEDSTR で autotest 自動検証できる(『ピクセルが見えない』を構造検証で代替)。HTML_GETPRINTEDSTR(0)=最新の論理行(末尾相対, LINECOUNT とは別系。0が最新)。色=<font color='#RRGGBB'>, 太字=<b>, 整列=<p align='..'>, ボタン=<button value='..'>。使い方: PRINTL で行を確定→ %HTML_GETPRINTEDSTR(0)% を RESULTS:n 等の組込文字列配列に form 代入(#DIMS ローカルへの form 代入は『式が異常』で不可)→ STRCOUNT(cap, needle)>=N で検査。重要: 同一行に複数 needle を当てる時は『一度キャプチャしてから複数 assert』にする(AUTOTEST_ASSERT が PASS/FAIL を PRINTL して line0 を次行へずらすため、2回目の HTML_GETPRINTEDSTR(0) は assert 行を読んでしまう)。版確認: HSV_TO_RGB/CSVEXIST 不在・EXISTCSV/CLIENTWIDTH/PRINTCLENGTH/STRCOUNT 在(Project003-builtins.json)。MaxLog 既定5000(Project001 は config 500→5000 に是正、E-5)。UTF-8 ERB 不可(CP932 固定)。kit 実装例: dev-support/erb-v2/tests/AUTOTEST_V2_DISPLAY.ERB。"
+    tags: [Project001, Project003, autotest, html-getprintedstr, display-verify, layout, builtins, spec]
+    project: Project001
+    strength: 3
+    last_used: 463
+    state: active
+
+  - id: N-054
+    text: "Project001 のキャラ項目(能力ABL/素質TALENT/経験EXP/基礎BASE)は定義CSV(CP932)に index 追記で増やせる。配列余裕: VariableSize ABL=1000(max92)/TALENT=1000(max400)/BASE=100(max11) は余裕、EXP=100(max99)は満杯=拡張要(EXP,100→200)。新ラベルは既存 index を変えないため**追加自体は回帰なし**(autotest緑のまま)。ただし能力表示は各ループが境界付きで、追加項目は**表示に出ない(inert)**: NEW_PRINT_ABL_FULL=FOR 0..92, 参考値 70..92 / SHOW_INFO_ABL は PRINT_ABL_COUNT の22枠ホワイトリスト / SHOW_INFO_TALENT=REPEAT 270 / SHOW_INFO_EXP=固定セット / SHOW_BODY_K=BASE 6-10。表示するには各ループ/ホワイトリストの範囲拡張が必要。CSTR(口上)はカテゴリごと kami 未実装で消費エンジン無=データ追加しても inert。実証: K-only 108項目を Chara201 へ全移植(TASK-255)、起動/551アサート緑・0警告だが新項目は能力表示に非表示。"
+    tags: [Project001, chara-csv, ablup, variablesize, display-loop, inert, erb-port, csv]
+    project: Project001
+    strength: 4
+    last_used: 468
+    state: active
+
+  - id: N-055
+    text: "Project003: 添字付き変数(LOCAL:81 等)を別のキャラ変数のキャラ/要素添字に使うときは**括弧必須** — TALENT:(LOCAL:81):238 / BASE:(LOCAL:81):6 / BASE:(LOCAL:81):8 > 0。括弧なし TALENT:LOCAL:81:238 はコロン過多でパース失敗し『NN行目でエラー』=suite全体がload不可(pass=0)になる。CALL の引数位置(CALL F, LOCAL:81)は括弧不要。単純な #DIM 変数(対象 等)を添字に使う場合は TALENT:対象:238 で可(括弧不要)。STUB差替(N-050系)で関数を実装へ移す時は元STUBを必ず削除(二重定義=システム関数上書き禁止でエラー)し、既存実装(例 GET_PENISSIZE は _COM_COMMON 既存)は再定義しない。"
+    tags: [Project003, erb, syntax, indexing, parens, stub, erb-port, autotest]
+    project: Project001
+    strength: 4
+    last_used: 473
+    state: active
+
+  - id: N-056
+    text: "客観ソースの無い per-entity データ(例: Project001 体型素質=既存キャラが体型ヒント素質を皆無)は『安定キー(NO/番号)由来の決定的割当 + 非破壊(値0=未設定のときだけ書込, CSV値優先) + 素数係数で隣接キーの分散確保』で自動差別化できる。注意: 単純な NO/divisor (例 (NO/5)%7) だと低番号がクラスタ(主要キャラが偏る)→ ((NO*3)%7) 等の乗算modで隣接を散らす。populate と派生計算は ENSURE_*(ガード付き冪等: 算出済なら即RETURN)に統合し、初期化(CHARA_INIT)と表示(SHOW_*)の両経路から呼ぶと取りこぼさない。実証: TASK-260 で 44キャラに体格/体型/バスト/ヒップサイズを番号割当しスリーサイズ差別化(569緑)。"
+    tags: [Project001, data-population, deterministic, idempotent, chara-init, erb, design]
+    project: Project001
+    strength: 1
+    last_used: 472
+    state: active
+
+  - id: N-057
+    text: "Project003: 単一英字ローカル名(h/v/s/N/I 等多数)は予約変数名と衝突し #DIM が無効化→そのグローバル変数を破壊する。ローカルは日本語名(算出値/種 等)か L_ 接頭辞で。**重大**: この種は autotest を偽通過する — (1)autotest config は @SYSTEM_TITLE 注入のため『システム関数の上書き:YES』で実 config(NO)と乖離、(2)autotest は ERB の load 警告(警告Lv2)を fail にしない、(3)autotest は CHARA_INIT 等の実起動経路を経由しない。結果、予約変数の global 破壊が起動経路(CHARA_INIT→ENSURE→SET_BODYSIZE 等)でのみ顕在化し『起動時エラー落ち』になるのに 569緑。対策: Run-Project001Autotest に reserved-name 警告ガード追加(『Project003の変数名として』を検出→classification=reserved-var, HH-028陽性テスト済)。load系/起動系の疑いは『実 config を逐語コピー(バイナリ型セーブ:YES 保持)+上書きだけYES+@SYSTEM_TITLEで LOAD_OK_MARKER 到達』を確認する実 config ブートで切り分ける。"
+    tags: [Project003, erb, reserved-variable, autotest-gap, config-divergence, startup-crash, harness, erb-port]
+    project: Project001
+    strength: 1
+    last_used: 473
+    state: active
+
+  - id: N-058
+    text: "kami Project003(0.2.6.0) HTML描画 spike(TASK-268): SETCOLOR+文字バー(■□)は <font color='#RRGGBB'> として通常行に出力されHTML_GETPRINTEDSTRで捕捉=検証可・推奨。HTML_RECT_BAR の <shape type='rect'> も行内で捕捉可。だが HTML_PRINT \"<div display='absolute-lefttop'>...\" は0エラーだがHTML_GETPRINTEDSTRで空=オーバーレイ層描画(視認はプレイテストのみ・autotest検証不可)。∴リッチUIは色付き文字バー+SETCOLORで作ると検証可、絶対配置カードは視認をユーザー playtest に委ねる。参照テンプレ doc/project-notes/SHOP.ERB は描画層のみ(C_SHOP_*_Y定数/列挙欠落・30プレースホルダ)で直接ロード不可=見た目仕様の参照に留め、移植先(現行SHOW_SHOP)が実データを持つなら見た目だけ再現が最効率。訂正(TASK-270): **SETBGCOLOR はこの Project003 で全画面(コンソール)背景色を変える=全画面点滅・バー不可視**(span背景ではない)→ バー・ボタン・任意の印字を含む**全コンテキストで使用不可**。TASK-286 でタブボタン背景色に誤用→再発(TASK-287 で再修正)。正解=前景色のみ: 充填/残を `█`(UNICODE(0x2588), 隙間なし全角ブロック)で SETCOLOR 描画し、値は**全角**にして(TOFULL_K: 半角→全角)バー中央セルへ重ねる(全角同士で桁が揃う)。■(U+25A0)は字間に隙間。全角混在の文字数えは STRLENS=表示幅(全角2)/STRLENSU=文字数(全角1)、SUBSTRING vs SUBSTRINGU も同様→全角セル処理は **STRLENSU+SUBSTRINGU で統一**(混在すると値が崩れる)。追記(TASK-295 S-1〜S-10調査): (1) HTML_PRINT第2引数デフォルト0→lineEnd=true→毎回改行。インラインは`, 1`必須。(2) div width属性は背景矩形幅のみ、レイアウト幅=テキスト幅(横並びカードは不可)。(3) **ALIGNMENT RIGHT + 複数PRINTFORM = merge bug**(ShiftPositionX累積でX座標が画面外へ飛ぶ)→1行1命令(HTML_PRINT+<font>タグ)が正解。(4) バー値テキスト背景色の正解: HTML_PRINT @\"<div background_color='%TOSTR_HTML(色)%'><font color='#FFF'>..字..</font></div>\", 1。TOSTR_HTML()は汎用関数v2(COLOR.ERB)のユーザー定義関数で整数→#RRGGBB変換。(5) padding='3'はpx無しだとFontSize/100の整数除算=0px。必ず'3px'を付ける。"
+    tags: [Project001, Project003, html, shop, ui, setcolor, setbgcolor, bgcolor, background-color, tab, highlight, prohibition, forbidden, spike, display-verify, alignment-right, html-print, tostr-html, inline, padding]
+    project: Project001
+    strength: 9
+    last_used: 550
+    state: active

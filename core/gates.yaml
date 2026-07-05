@@ -1,0 +1,49 @@
+# =============================================================================
+# HyperHelix — core/gates.yaml
+# Gate parameters. AI-facing artifact (English only).
+#
+# HH-016 simplification: the integer-count promotion machinery was removed
+# HH:ACTIVE-SCAN-ALLOW reason="explains what HH-016 removed (historical terms)"
+# (tier/scope promotion+demotion, fail windows, orphan_window, theta tuning,
+# tag dictionary gates, conflict authority, consolidation). Knowledge is now a
+# /HH:ACTIVE-SCAN-ALLOW
+# flat learning-note ledger (core/knowledge.yaml); strength is a sort hint, not
+# a gate. What remains is minimal.
+# Any change to this file is an amendment-class change and must be ratified by a
+# human via amendments.md (single approval window).
+# =============================================================================
+schema_version: 1
+
+# --- SEARCH retrieval (per-task load is bounded by N, not by store size) ---
+search:
+  top_n: 6              # tag match returns top N notes, ordered by last_used desc (recency, HH-045; strength is a secondary tiebreak, not a gate)
+  # HH-032: scope retrieval to the current project so tag-match stays precise as notes
+  # from multiple projects accumulate (post-/sync). S2 considers only notes whose
+  # `project` == the current task's project OR `shared` (absent project == shared,
+  # backward-compatible). Framework/cycle tasks use project=hyperhelix. NOT a hard gate —
+  # if scoping yields too few, the AI may widen to all. Field authority: core/knowledge.yaml header.
+  project_scope: current+shared
+
+# (HH-033: notes.strength_start removed as dead config — the initial strength "start 1"
+#  is hardcoded in the core/knowledge.yaml note-schema header, the single authority.)
+
+# --- convergence ratchet (HH-050): rising monotonicity must self-correct, not just be measured ---
+# When a baseline (knowledge.yaml last_always_read_lines / last_backlog_open_count) RISES for K
+# consecutive /cycle, the next /cycle MUST act before net-adding. Enforced: framework-review R8c / R7a.
+convergence_ratchet:
+  backlog_streak_k: 3      # backlog open ▲ K consecutive /cycle -> next /cycle must burn M first
+  backlog_burn_m: 2
+  always_read_streak_k: 3  # always-read total ▲ K consecutive /cycle -> next /cycle must D5-slim first
+
+# --- external-value gate (HH-048; main exception HH-052): the framework must earn its changes against real use ---
+# Every N /cycle a real-project consumption task should have run (project/* branch). Per branch context:
+# main = STOPPED (measurement only, NO R4 mark — human decides when to switch, like R6/R7d); project/variant = ACTIVE
+# (unconsumed -> R7c marks R4 unverified). Authority: framework-review R7c / Branch context.
+external_value_gate:
+  cycle_interval_n: 3
+
+# --- human-only knowledge actions (no automation) ---
+# lift_to_rule : a durable/important note is lifted BY A HUMAN into
+#                constitution.md or filed via amendments.md. No automatic axiom path.
+# prune        : at /cycle, a human archives low-strength or stale notes (state: archived).
+human_actions: [lift_to_rule, prune]

@@ -1,0 +1,27 @@
+# Local environment and secrets
+.env
+.env.*
+!.env.example
+
+# Dependency and build output
+node_modules/
+dist/
+build/
+coverage/
+
+# Generated logs and temporary files
+*.log
+*.trace
+*.out
+logs/
+log/
+.logs/
+tmp/
+.tmp/
+
+# OS and editor noise
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+

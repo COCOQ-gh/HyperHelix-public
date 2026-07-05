@@ -1,0 +1,97 @@
+# =============================================================================
+# HyperHelix — core/routing.yaml
+# Durable-information routing + validation policy. AI-facing artifact (English only).
+#
+# Synthesis (HH-000): routing from HelixPDCA routing-rules + MetaHelix D4 storage
+# map; validation policy condensed from HelixPDCA validation-rules.
+# =============================================================================
+schema_version: 1
+
+principles:
+  - "Chat is not storage. Durable knowledge must land in a file before the task ends."
+  - "Prefer refining an existing material over minting a duplicate."
+  - "User-layer documents and task records in the operating language (Japanese); AI-facing materials in English."
+  - "When shipping a template, include at least one complete, non-trivial example."
+
+routing:
+  - kind: "reusable heuristic / rule of thumb"
+    destination: "core/knowledge.yaml — add a note (id N-NNN from counters.next_note_id); free tags, no dictionary gate. Set `project` to the current project slug (or `shared` if cross-project); S2 retrieves only current-project + shared notes (HH-032, core/gates.yaml search.project_scope)."
+  - kind: "multi-step procedure"
+    destination: "assets/checklists/ (per-phase) or assets/workflows/ (cross-phase)"
+  - kind: "fill-in document shape"
+    destination: "assets/templates/"
+  - kind: "confirmed failure pattern"
+    destination: "assets/ai/anti-patterns.md (+ knowledge material if it recurs across tasks)"
+  - kind: "new vocabulary"
+    destination: "inline as note tags (free words; core/dictionary.yaml is deprecated by HH-016)"
+  - kind: "task working record"
+    destination: "tasks/TASK-YYYYMMDD-NNN.md (copy assets/templates/task-brief.md). Audit log, NOT a primary retrieval source: excluded from default search (tasks/.rgignore, HH-031 Phase 1); open by explicit task-id. Primary retrieval = knowledge.yaml notes. ARCHIVED briefs (HH-031 Phase 2): older briefs are pruned from the working tree (kept in git history); look them up in tasks/INDEX.md (task-id->hash) and restore with `git show <hash>:tasks/<task-id>.md`. Pruning is archival-mode only (`node tools/hyperhelix.mjs archive-briefs`), never ad-hoc `git rm`."
+  - kind: "operational cleanup report / generated-log summary"
+    destination: "task brief only (Execute/Evaluate/Distill as appropriate). Raw logs and full cleanup summaries are NOT framework materials. During Distill, route only durable findings through existing destinations: reusable lesson -> core/knowledge.yaml, process gap -> docs/process-backlog.md, confirmed failure pattern -> assets/ai/anti-patterns.md, governance-level rule -> amendments.md."
+  - kind: "constitution-level rule / theta change / note lift-to-rule / note hard-delete or mass-consolidation"
+    destination: "amendments.md proposal (HUMAN GATE — never apply directly)"
+  - kind: "significant discovery surfaced mid-chat (HH-030 trigger; see significant_discovery_parking)"
+    destination: "park ONE line immediately — candidate note in core/knowledge.yaml OR amendments.md Pending if governance-level; do not wait for Distill"
+  - kind: "capability addition (new tool subcommand / validate check / knowledge.yaml schema field / ratified HH)"
+    destination: "WIRE its consumers in the SAME P6 change-list (HH-039): the materials, procedures, and enumerations that reference it (e.g. subcommand -> README + invoking checklist; validate guard -> framework-review R1; note field -> D7 procedure). L1 validators (TOOL_DOC_CONSISTENCY / CHECK_DOC_CONSISTENCY / NOTE_FIELD_SCHEMA) enforce the mechanical subset; the rest is the plan.md P6 gate."
+
+# --- significant-discovery parking (HH-030): capture is NOT bound to phase end ---
+# The best insights often surface mid-chat, from the human, or outside any task
+# (HH-024 indexing, HH-026 R7 both came from human chat). Durable capture must not
+# depend on reaching Distill or staying inside a task, nor evaporate in a review-only
+# session. Park = capture, NOT promotion (importance judgement / rule-lifting still go
+# through Distill and the human gate).
+significant_discovery_parking:
+  triggers:                               # FIXED VOCABULARY (no subjective "important"); no match -> capture normally at Distill
+    - rule-axiom-theta-touch              # an insight that could touch a rule / constitution / theta
+    - material-contradiction-or-blindspot # a contradiction or blind spot found in existing materials
+    - human-design-insight                # a design insight raised by the human
+    - same-problem-twice                  # the same kind of problem recurring (2nd occurrence)
+  action: "Park ONE line into a durable repo file: a candidate note in core/knowledge.yaml, OR an amendments.md Pending entry if governance-level. One line = capture, not promotion."
+  task_index:                             # ratified 2026-06-20 (HH-030)
+    inside_a_task: "fold the park into the current task's D7 — no separate increment"
+    outside_a_task: "the park is a tracked-file change -> it is a micro task (task_index +1). No non-incrementing exception (keeps HH-023's anti-escape clause intact)"
+  review_only: "Even in a zero-artifact review-only session, a trigger-matching finding MUST be parked (one line) into a durable repo file; that park makes the session a micro task per task_index above (assets/workflows/review-only.md §2)."
+
+# --- validation policy (condensed from HelixPDCA validation-rules.yaml) ---
+validation:
+  plan_before_execute: true            # P5: decide how success will be confirmed BEFORE editing
+  check_against_acceptance_criteria: true
+  never_claim_unrun_checks_passed: true
+  by_change_type:
+    docs_only:
+      - "read changed sections end-to-end"
+      - "search for old and new references (no dangling links)"
+    framework_material:
+      - "node tools/hyperhelix.mjs validate"
+      - "cross-file consistency per assets/checklists/framework-review.md R1-R3"
+    code_single_function:
+      - "unit test"
+    code_module_boundary:
+      - "integration test at the boundary"
+    code_cross_module:
+      - "end-to-end test on the affected path"
+      - "regression tests for touched interfaces"
+    rename_or_format_only:
+      - "no test needed"
+    destructive_or_external_effect:
+      - "human approval BEFORE action"
+      - "rollback or recovery plan"
+      - "post-action verification"
+  test_skip_not_allowed_when:
+    - "a bug was fixed (add a regression test)"
+    - "a public interface changed"
+    - "a shared module used by multiple callers changed"
+  skip_policy:
+    allowed_when: [tooling-unavailable, dependency-not-installable-without-approval, external-effect-unapproved]
+    must_report: [skipped-check, reason, residual-risk, fallback-check-performed]
+
+  # SECURITY (constitution security axiom, HH-019): never persist raw credentials.
+  secret_scan:
+    applies_to: every-commit            # all change types, framework and product
+    rule: "Scan the staged diff before committing; commit only variable names / placeholders, never raw API keys, tokens, service-role keys, passwords, signing keys, or connection strings."
+    commit_only: [env-var-names, placeholders, secret-references]
+    on_detection: [block-commit, redact-or-move-to-env-or-secrets, rotate-if-already-exposed]
+    command_ref: "assets/workflows/git-conventions.md (commit gate) — runnable grep heuristic"
+    note: "Heuristic first line of defense, not exhaustive. Variable names and placeholders pass; the value-length threshold targets real literals. The principle is held by the constitution security axiom."
+    not_skippable: true                 # secret exposure is never an allowed skip

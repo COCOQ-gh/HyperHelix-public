@@ -1,0 +1,7 @@
+# HH-031 Phase 1 — exclude task briefs from DEFAULT ripgrep/grep content search.
+# Briefs stay git-tracked and openable by explicit path (rg searches a file given
+# explicitly on the command line even when ignored). Primary retrieval is the
+# knowledge.yaml note ledger (HH-016); briefs are an on-demand audit log opened by
+# task-id, not full-text-grepped on every search. This is search hygiene, NOT a
+# delete (git-conventions.md:106 — hard delete is human-gated; nothing is removed).
+TASK-*.md

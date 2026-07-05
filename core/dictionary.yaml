@@ -1,0 +1,92 @@
+# =============================================================================
+# HyperHelix — core/dictionary.yaml
+# Tag dictionaries. AI-facing artifact (English only, except verbatim domain terms).
+#
+# DEPRECATED (HH-016): note tags are now free words with no dictionary-resolution
+# gate. This file is retained for history/reference; the validator no longer
+# enforces tags against it. Kept until a future multi-project phase needs it again.
+#
+# Three tiers match the scope layers:
+#   universal -> cross-genre vocabulary
+#   genre     -> keyed by genre tag
+#   local     -> keyed by project id (proper nouns kept verbatim)
+#
+# Each entry maps a CANONICAL tag to observed ALIASES. Tag matching is a
+# normalized exact match against this table — that is the entire mechanism,
+# no fuzzy similarity. A tag must exist here as a canonical (with or without
+# aliases) to be a known, matchable tag; an unknown tag matches only itself
+# and cannot satisfy require_broader_tag_mapping.
+#
+# MINTING: runtime tags are coined only by the recurrence rule
+# (gates.tagging.new_tag_min_recurrence). SEED canonicals — the bootstrap
+# vocabulary below, inherited from Helix_Reflex at founding (HH-000) — are
+# exempt from that rule. The recurrence rule governs only runtime minting.
+# PROVISIONAL (HH-007): observation-tier materials may carry tags not yet
+# listed here; such tags match only themselves until minted via the
+# recurrence rule. Promotion past pattern requires dictionary resolution.
+#
+# A tag promotes with its material only if it resolves at the broader tier
+# (gates.promotion.pattern_to_principle.require_broader_tag_mapping):
+#   local term with no genre/universal mapping -> material stays project-scoped.
+# =============================================================================
+schema_version: 1
+
+universal:
+  - canonical: retry
+    aliases: [reattempt, re-try]
+  - canonical: auth
+    aliases: [authentication, login]
+  - canonical: minimal-first
+    aliases: [mvp-first, smallest-first]
+  - canonical: network
+    aliases: [net, http]
+  - canonical: backoff
+    aliases: [exponential-backoff]
+  - canonical: implementation
+    aliases: [impl]
+  - canonical: requirements
+    aliases: [specs, spec]
+  - canonical: search-phase            # one canonical per phase (alias misuse fixed in TASK-20260611-001)
+    aliases: []
+  - canonical: plan-phase
+    aliases: []
+  - canonical: execute-phase
+    aliases: []
+  - canonical: evaluate-phase
+    aliases: []
+  - canonical: distill-phase
+    aliases: []
+  - canonical: phase-gate                # seed: used by OBSERVATION.LOOP.001
+    aliases: [gate-check]
+  - canonical: evidence                  # seed: used by OBSERVATION.LOOP.001
+    aliases: [proof]
+
+genre:
+  framework:                             # the meta-strand genre: materials about HyperHelix itself
+    - canonical: distill-pipeline
+      aliases: [distillation]
+  idle-game:
+    - canonical: prestige
+      aliases: [rebirth, ascension]
+    - canonical: growth-curve
+      aliases: [progression-curve]
+  roguelike-rpg:
+    - canonical: run
+      aliases: [attempt, playthrough]
+    - canonical: reincarnation-tag
+      aliases: [past-life-tag]
+  turn-based-rpg:
+    - canonical: enchant
+      aliases: [buff-debuff]
+
+local:
+  kizamarenu:                            # 刻まれぬ残響
+    - canonical: kihaku                  # 気魄 — domain term, kept verbatim
+      aliases: []
+    - canonical: jutsushiki              # 術式
+      aliases: []
+    - canonical: shinpi                  # 神秘
+      aliases: []
+  abyss-forge:                           # 深淵の炉
+    - canonical: forge-tier
+      aliases: []
