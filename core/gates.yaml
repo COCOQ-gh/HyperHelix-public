@@ -2,13 +2,8 @@
 # HyperHelix — core/gates.yaml
 # Gate parameters. AI-facing artifact (English only).
 #
-# HH-016 simplification: the integer-count promotion machinery was removed
-# HH:ACTIVE-SCAN-ALLOW reason="explains what HH-016 removed (historical terms)"
-# (tier/scope promotion+demotion, fail windows, orphan_window, theta tuning,
-# tag dictionary gates, conflict authority, consolidation). Knowledge is now a
-# /HH:ACTIVE-SCAN-ALLOW
-# flat learning-note ledger (core/knowledge.yaml); strength is a sort hint, not
-# a gate. What remains is minimal.
+# Knowledge is a flat learning-note ledger (core/knowledge.yaml); strength is a
+# sort hint, not a gate (HH-016). What remains here is minimal.
 # Any change to this file is an amendment-class change and must be ratified by a
 # human via amendments.md (single approval window).
 # =============================================================================
@@ -24,16 +19,17 @@ search:
   # if scoping yields too few, the AI may widen to all. Field authority: core/knowledge.yaml header.
   project_scope: current+shared
 
-# (HH-033: notes.strength_start removed as dead config — the initial strength "start 1"
-#  is hardcoded in the core/knowledge.yaml note-schema header, the single authority.)
+# (Initial note strength "start 1" lives in the core/knowledge.yaml note-schema
+#  header, the single authority — no gate param here, HH-033.)
 
 # --- convergence ratchet (HH-050): rising monotonicity must self-correct, not just be measured ---
-# When a baseline (knowledge.yaml last_always_read_lines / last_backlog_open_count) RISES for K
+# When a baseline (knowledge.yaml startup-read characters / last_backlog_open_count) RISES for K
 # consecutive /cycle, the next /cycle MUST act before net-adding. Enforced: framework-review R8c / R7a.
+# Startup-read = always-read + index-read heads, in CHARACTERS (HH-073/082): last_always_read_chars + last_index_read_chars.
 convergence_ratchet:
   backlog_streak_k: 3      # backlog open ▲ K consecutive /cycle -> next /cycle must burn M first
   backlog_burn_m: 2
-  always_read_streak_k: 3  # always-read total ▲ K consecutive /cycle -> next /cycle must D5-slim first
+  always_read_streak_k: 3  # startup-read characters ▲ K consecutive /cycle -> next /cycle must D5-slim first
 
 # --- external-value gate (HH-048; main exception HH-052): the framework must earn its changes against real use ---
 # Every N /cycle a real-project consumption task should have run (project/* branch). Per branch context:

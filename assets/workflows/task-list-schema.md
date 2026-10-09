@@ -8,8 +8,10 @@ Plan P1/P2/P3 to Execute E1/E2 and Evaluate V2.
 
 ## Required Shape
 
-Use this table shape in task briefs unless a domain-specific artifact gives a
-strictly better structure:
+The task-list is a working artifact of the session (HH-081: no task file is written). Keep
+it wherever the session tracks work — a table in chat, a WO, a todo tool — in this shape.
+The commit's hh-record carries its outcome: one `phase_evidence.plan` line naming the units,
+and one `evaluate` row per acceptance check.
 
 | Field | Required | Meaning |
 |---|---|---|
@@ -17,7 +19,7 @@ strictly better structure:
 | order | yes | Integer execution order after dependency sorting. |
 | title | yes | One minimal unit of work. |
 | status | yes | One of the fixed status values below. |
-| depends_on | yes | Comma-separated task-list ids, or `none`. |
+| depends_on | yes | ARRAY of task-list ids, e.g. `[TL-001, TL-002]`; use `[]` when there is none. |
 | acceptance_check | yes | Observable check that proves this unit is done. |
 | evidence | yes | Evidence reference after completion, or `pending`. |
 
@@ -36,7 +38,7 @@ table to the task-list (one row per edit) so Execute applies without discovery:
 | anchor | yes | a UNIQUE existing string/line to match (the edit point), or `new file`. |
 | change | yes | the new content, or the transform to apply at the anchor. |
 
-> 英日対応(task-brief.md テンプレの P6 表と同一スキーマ): `target` = 対象ファイル / `anchor` = 一意の旧テキスト(`new file`) / `change` = 新内容・変換。英語 schema と日本語テンプレは同じ列を指す(語彙不一致ではなく訳語)。
+> 英日対応: `target` = 対象ファイル / `anchor` = 一意の旧テキスト(`new file`) / `change` = 新内容・変換。
 
 A unit whose target/anchor cannot be resolved is NOT ready for Execute — return to
 Search S4 for the missing anchor (HH-037: P6 composes from S4, does not re-investigate),

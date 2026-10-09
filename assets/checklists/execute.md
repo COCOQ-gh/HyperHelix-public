@@ -3,13 +3,14 @@
 ## Preconditions
 - [ ] Plan artifacts complete (phase gate).
 - [ ] Execute is MECHANICAL application of the Plan's change-list (P6 / HH-035): apply each unit at its resolved anchor. If you must investigate WHAT or WHERE to change (not just apply), that is a Plan gap — stop and return to Plan via E4.
+- [ ] Parallel-S/P freshness (HH-076): every P6 anchor still resolves uniquely at current HEAD (a prior task's Execute may have rewritten it); stale anchor -> back to S4. Disjointness gate per plan.md P6 / concurrency.md §8 L1.
 
 ## E1 — Minimal units
 - [ ] One minimal unit changed at a time; unrelated changes not bundled.
 
 ## E2 — Verify per change
 - [ ] Each change checked against its acceptance criterion before the next.
-- [ ] Materials applied to each artifact recorded in the brief (feeds D7 / failure attribution).
+- [ ] Materials applied to each artifact recorded in the task record (feeds D7 / failure attribution).
 
 ## E3 — Record
 - [ ] Execution log updated (action, result, notes).

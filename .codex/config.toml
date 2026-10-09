@@ -1,0 +1,6 @@
+# codex CLI (0.144.5 実測) resolves this RELATIVE TO THE CONFIG DIRECTORY (.codex/),
+# so the value must not repeat the directory ('.codex/...' doubled to .codex/.codex/).
+experimental_compact_prompt_file = "compact-prompt.md"
+
+[features]
+hooks = true

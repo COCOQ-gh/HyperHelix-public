@@ -2,6 +2,7 @@
 
 局所改善が累積して生じる冗長・supersession・bloat を**全体最適へ整理する**実行手順。
 framework-review **R8** がトリガ、`node tools/hyperhelix.mjs consolidation-report` が候補を測定する。
+既定はbounded decision set（note 5 + backlog 5）、`--full` は全候補を出す。
 本ファイルは「どう統合するか」の権威。**何を人間ゲートに残すかは constitution 統治の公理2 / routing**。
 
 ## 位置づけ(既存の全体健全性系との対応)
@@ -37,8 +38,31 @@ framework-review **R8** がトリガ、`node tools/hyperhelix.mjs consolidation-
 
 ## backlog 焼却(R8c)とトリガ(R8d)
 
-- `docs/process-backlog.md` の各 open 項目は `class:<根本原因>` を持つ(形式参照)。R8c は毎 /cycle、各項目を**処理 or 期限付き再正当化**する(R7e と同型)。
+- `docs/process-backlog.md` の各 open 項目は `class:<根本原因>` を持つ。R8c は通常、priority/oldest順の最大5件を**処理 or 期限付き再正当化**する。5回ごと・ratchet・>300行・same-problem・明示fullでは`--full`で全件を走査する。
+- **`last_backlog_open_count` の測定時点は pre-burn(焼却前)である**(2026-08-24 確定)。`/cycle` 手順は
+  `consolidation-report --write-baseline` を step 3 = **R8 の処理より前**に置くので、記録される数は必ず
+  その回の焼却前の値になる。∴ **trend と ratchet(`backlog_streak_k`)の比較対象も pre-burn 同士**であり、
+  `/cycle` の record は**トレンド値として pre-burn の数を報告する**(焼却した件数は別途「今回 -N」として書く)。
+  post-burn の数をトレンド欄に書くと基準の異なる比較になり、ratchet の発火・不発が両方とも信用できなくなる。
+  これは尺度の単位(行数 vs 文字数、HH-073)とは独立した問題で、**先に片方だけ確定できる**。
+- **行の宛先 `dest:main` / `dest:here`(2026-08-24 実測)**: project ブランチの backlog には、是正先が
+  `main` にしか無い行(tools/CLI の書き換え・main 所有ノート・cross-branch sync)が混ざる。**その行はこの
+  branch では構造的に焼却できない**のに、R8c のラチェットは accretion として数え、R8d は class を集計して
+  発火していた — どちらのゲージも project ブランチで過大報告になる。∴ 該当行に **`dest:main`** を付す:
+  - `consolidation-report` が open 総数と**このブランチで焼却可能な数**を分けて出力する(消費者)。
+  - **R8c の burn 義務・再正当化回数の対象は「焼却可能な行」だけ**。`dest:main` 行は再正当化不要で、
+    main の /cycle が所有する(global な open 総数には残るので main 側では通常どおり焼却対象)。
+  - ラチェット(`backlog_streak_k`)の比較も**焼却可能な数**同士で行う。
+  - **R8d の class 集計も焼却可能な行だけを数える**(下記 R8d 節)。
+  - 既定は `dest:here`(無印)。判定に迷う行は無印のまま扱う — 免除は明示だけが根拠になる。
 - R8d は `class:` を集計し、同一 class が **K=3** 回再発したら**1つの統合タスク**を起票(per-task の `same-problem-twice` を跨タスク化)。
+  **集計対象は焼却可能な行だけ**(`dest:main` 行を除く)。**2026-08-30(/cycle ordinal 15)に配線した** — 上の
+  `dest:main` 節は問題文で「R8c のラチェットは accretion として数え、**R8d は class を集計して発火していた**」と
+  両方のゲージを名指ししながら、消費者リストは R8c とラチェットしか挙げておらず、**R8d だけ配線されずに残っていた**
+  (AP-003 declare↔consume。宣言は両方・実装は片方)。実測 ordinal 15: `class:enforcement-gap` が 6 件で K=3 を
+  超えて発火したが、**6件すべてが `dest:main`** ∴ この branch では1件も処理できない class に対して統合タスクの
+  起票を要求していた。除外後は 0 件で不発火が正しい。
+- `cost-report --write-baseline` と `consolidation-report --write-baseline` は同じknowledge正本writerなので必ず順次実行し、並列化しない。
 
 ## 自己防衛(R8e)
 

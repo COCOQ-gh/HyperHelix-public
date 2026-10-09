@@ -1,0 +1,1022 @@
+# HyperHelix Project001 project leaf ledger.
+# Note schema and authority live in core/knowledge.yaml header (HH-045).
+# Every note in this file has project: Project001.
+schema_version: 1
+
+notes:
+  - id: N-Project001-20260824c
+    text: "**Project003.NET 0.2.6.0 の `<div>` でコンソール内へベクター実線を引くときの4つの罠と正解形(全て実測)。** 背景: テキスト罫線(`|`/`-`)は文字繰り返しの構造上必ず点線に見える。完全な実線は `HTML_PRINT` の `<div border_width>`(GDI+ Pen・DashStyle=Solid)で描く(Project003LabH docs/51 の裏取り = RESEARCH-solid-frame-border.md)。**罠①: 空 div は要素を生成しない** — div 要素はタグ内テキスト検出時にのみ作られ、`</div>` は状態を戻すだけ(HtmlManager.cs:316/690)。半角空白1個を入れて回避。**罠②: PRINT バッファ→HTML_PRINT の順で行結合は不可** — `PrintHtml` が先行バッファを行として確定させる(Project003Console.Print.cs:389)。結合は `HTML_PRINT s,1`→PRINT の一方向のみ。**罠③: div の空白テキストはコンソール等幅と別のフォント計測**でフロー幅が 9px にならない(実測 ≈6.4px)。同一行に div を積んで `-k*9` 補正する設計は必ずずれる。**正解形 = 各 div を `<nonbutton pos='0'>` で包む**: pos は PointX を絶対ロックする(単位 FontSize% だが 0 は無次元)ので、div の `xpos='Npx'` がそのまま絶対座標になる。全 div を1本の空行(スペーサ行)へ集約し、ypos 負値で上の行へ・大きい height で下の行へ延伸すれば、本文行は純テキストのまま(桁計算も既存アサートも無傷)。縦線は width=0・横線は height=0 の縮退矩形で実線になる(実機PNG確認)。**罠④: div は `HTML_GETPRINTEDSTR` に直列化されない**(DisplayLine2Html は StyledString/Image/Shape のみ)ので捕捉ベースの回帰は書けない — 生成側純関数の戻り値(`STRCOUNT(…,\"border_color\")` 等)で検証し、見た目は実機PNGへ。純空行の直列化署名は `<p align='left'><nobr> </nobr></p>`(空白1個)。付随: FORM 代入の `%…%` は文字列式専用で整数ローカルは `{L_X}`(混用は実行時エラー)。`描画インターフェース:GRAPHICS` では div の塗り(background_color)は描かれない(枠線は描画モード非依存)ためチップ/パネル背景には使えない。行の高さは `GETCONFIG(\"一行の高さ\")`(既定19px)。関連 [[N-Project001-20260824a]] [[N-Project001-20260824b]]。"
+    tags: [Project001, Project003-net, html-print, div, border, solid-line, vector, nonbutton-pos, pointx-lock, form-syntax, html-getprintedstr, serialization, graphics-mode, background-color, frame, shop, autotest]
+    project: Project001
+    strength: 11
+    last_used: 1079
+    state: active
+  - id: N-Project001-20260824b
+    text: "**『直近N行を捕る』共有バッファでアサートするテストは、N と1画面の行数の関係を明示していないと前の描画を数えて偽陽性になる。とくに『個数を数える/存在を見る』側が危ない。** 実例(TASK-Project001-20260824-004 / §1-V⑥): Project001 の autotest は `CAPTURE_HTML_RANGE, 120` で `RESULTS:60` に直近120行を積むが、ショップ1画面は約43行しかない。∴ 窓は**常に2〜3画面ぶんを含む**。その上で『交神の儀が未達ならボタンとして出ないこと』を見るはずの `goui.shop.koushin_button_hidden` は `STRCOUNT(RESULTS:60, ...) == 0` ではなく **`== LOCAL:339`(解放時に数えた個数)** と書かれていた — 窓に前の(解放時の)描画が残るので 0 にならず、**辻褄を合わせるために期待値が定数でなくなっていた**。名前と中身が食い違ったまま生き延び、§1-V⑥ で描画を1回増やしたら窓から押し出されて初めて落ちた。**一般形**: (1) 『無いこと』のアサートは窓が広いほど厳しくなるので安全側だが、**『あること・個数』のアサートは窓が広いほど前の状態を拾う**。同じ API でも向きで危険度が逆になる。(2) **期待値が定数でなく別の測定値との比較になっていたら、汚染を吸収するために書かれた疑いを持つ** — テスト名が主張していることを式が言っているか読み直す。(3) 直し方は最小で済む: **描画し直してから1画面より狭い窓(Project001 では 20行)で捕る**。なお同じ理由で『計測はアサートより先に済ませる』も要る(アサートの PRINTFORML が最新行を汚す。[[N-Project001-20260824a]])。 **同時に踏んだ小さな罠**: ①`#FUNCTIONS` の `RETURNF` は**式**しか取れないので、FORM 記法の日本語文字列は一度変数へ代入してから返す(`L_R = %…%` → `RETURNF L_R`)。②既存コードの日本語を移設するときは**読まずに行ごとコピーする**スクリプトを書くと、文字化けも書き間違いも起きない(本タスクは条件文9件をこの方法で無改変に移した)。③その際 Python の `open(newline='\r
+
+      ')` と `'\r
+
+      '.join` を併用すると CR が二重になり、.NET 側で1行ごとに空行が入る。**生成側は `
+
+      ` で書き、変換は1箇所に集約する**。**設計面の収穫**: 『画面外から解放条件を出す』が成立したのは、`@SHOW_SHOP` が `LOCAL:0-9` を `SET_LIST` で LIST へ複製していたから (`GET_LIST(0)`/`GET_LIST(2)` で同じ値が読める)。**関数ローカルに見える値でも、永続配列への複製があれば画面外の再利用口になる** — 切り出す前にその複製を探す。これにより条件文は `@SHOP_CMD_LOCK_REASON` 一箇所になり、[[N-Project001-20260821b]] が勧めていた `<nonbutton title>` ツールチップ方式は §1-V④/⑥ で置き換わった。関連 [[N-Project001-20260824a]] [[N-Project001-20260721n]] [[N-111]]。"
+    tags: [Project001, autotest, capture-window, html_getprintedstr, capture-html-range, false-positive, assert-design, negative-vs-positive-assert, expected-value-smell, printplainform, returnf, functions, set-list, get-list, single-authority, unlock-page, shop, crlf, code-migration]
+    project: Project001
+    strength: 5
+    last_used: 976
+    state: active
+  - id: N-Project001-20260824a
+    text: "**engine ソースを読める相手への調査委託でも、(a) こちらが渡した前提が実機で効いているか (b) 回答の『〜にはならない』という否定的主張が実物のマークアップでそうか、の2点は自分で測り直す。** 実例(TASK-Project001-20260824-003 / §1-V④ 1行3コマンド): Project003LabH の回答(doc/project-notes/RESEARCH-shop-command-layout.md)は `HTML_PRINT` が直前の printBuffer を `IsLineEnd=true` で flush する件も `PRINTCを並べる数` が ERB に効かない件も**ソース行つきで正しかった**が、2箇所で実装が通らなかった。**(1) 回答 §3『PRINTC / PRINTLC は非ボタン』は `[数字]` で始まるラベルでは偽** — Project003 は印字テキスト中の `[数字]` を入力値つき要素へ**自動でボタン化**する(eramaker 系の標準挙動。`SHOP.ERB` のページ送り `PRINTFORMLC ... # [1001]` 自身がこれに依存)。実測マークアップは `<button value='902'><font color=…>[902] …</font></button>` で、条件未達コマンドが**全部クリックできる状態**になっていた。正解は `PRINTPLAINFORM`(入力値を持たない → `<font color=…>` だけ)＋**列幅 `PRINTCLENGTH()+1` バイトの自前パディング**(`PRINTPLAIN` 系に C/LC 変種は無い。`PRINTCLENGTH()` は回答に無いが実在)。**この誤りを捕まえたのは既存の否定アサート**(`shop.cmd103.button_hidden_no_target` 等『未達コマンドが button として出ないこと』)10件 — **機能を作り替えるとき、古い実装を前提にした回帰テストは『邪魔な赤』ではなく最良の受入条件**。**(2) WO §2 に載せた config 値(`PRINTCの文字数:26` ほか)は実際には効いていなかった** — Data 直下の Project003.config は読まれない([[N-Project001-20260721n]])のに前提として渡してしまい、回答の幅計算が既定値 25 とずれた。∴ **委託前に『渡す前提が実機で効いているか』を1回測る**。**ERB/autotest 側の付随の罠(いずれも本タスクで踏んだ)**: ①引数なしの `RETURN` は **`RESULT` を 0 に戻す** → 値を返す関数は必ず `RETURN 式`(『期待1が全部0、期待0だけ通る』はこの症状) ②`STRCOUNT` の needle は**正規表現**で、かつ ERB の文字列リテラルがバックスラッシュを食うため**角括弧をエスケープできない** → 角括弧を含む needle は使えず数字だけで照合する ③`HTML_GETPRINTEDSTR(0)` は**最新行**で、`AUTOTEST_ASSERT` の `PRINTFORML` が索引をずらす → **計測は全部アサートより前に済ませて変数へ退避する** ④文字列変数の `=` は FORM(`%…%` が要る)・`+=` は式(`%…%` を書くと『式が異常です』)。**視覚要素の検証は最悪ケースを実機で撮るのが最短** — 『巫女なし＝未達コマンド最大』の PNG キャプチャが ④のクラッシュも凡例の行数(実測4行)も一発で出した。関連 [[N-Project001-20260721n]] [[N-Project001-20260823b]] [[N-034]]。"
+    tags: [Project001, Project003, delegation, work-order, external-research, printc, printbuttonlc, printplainform, printclength, auto-button, bracket-number, html_print, html_getprintedstr, strcount, return-result, form-vs-expression, negative-assert, regression-as-acceptance, config-not-read, shop-grid, visual-verification, worst-case-capture]
+    project: Project001
+    strength: 3
+    last_used: 962
+    state: active
+  - id: N-Project001-20260823e
+    text: "**「この番号/値でも動くはず」という主張の検証は、経路ごとに分けて測る — 同じ値でも層によって答えが逆になる。** 実例(TASK-Project001-20260823-053): 『キャラは NO 250 以上でも口上呼び出しに問題ないはず』というユーザー指摘は、**口上については完全に正しく、CSV 参照については誤り**だった。口上ディスパッチは `TRYCCALLFORM TRY_{NO}` → 本体 / `CATCH` → `_X`(TEXT_KOJO.ERB:43-48 ほか全ディスパッチが同形)なので **NO に依存しない**(実測: NO=251 で `KOJO_CATCH_TAKEN` → 生存 / 対照 NO=1 は `TRY_FOUND`)。一方 **CharaCSV を持たない NO は落ちる**: `CSVNAME`/`CSVTALENT`/`CSVCFLAG` は **0 や空文字を返さず『定義していないキャラクタを参照しようとしました』で実行時エラー**、`ADDCHARA` は『作成しようとしました』。**最重要の本番経路**は能力ページの説明タブ — `SHOW_INFO_UI.ERB:470-472`(と `SHOW_CHARA.ERB:421-423`)が `TFLAG:201 = NO:対象` を置いて `@CHARA_PROFILE` を呼び、その冒頭の `CALL CALC_CHARABUY` が **買値算出のために `ADDCHARA ARG`(SHOP_CHARALIST.ERB:448)で CSV から一時キャラを実体化する**ため、CSV 不在番号では**無条件に落ちる**(実測: NO=250 生存 / NO=251 で :448 エラー)。∴ **制約の正体は『250 固定』ではなく『CharaCSV が実在する番号であること』** — `Chara251-299.csv` を用意すれば 251-299 も使え、生成巫女が個体別 NO を持てるようになる([[N-Project001-20260821e]] の `TFLAG:210` 回避策が不要になる)。**教訓の一般形**: (1) 反証は『真か偽か』の二値で扱わず、**経路(層)ごとに独立のプローブ**を立てる。片方の結論でもう片方を塗り潰さない。(2) **コードのそばにある前提コメントを信じない** — `TALENT_NEWBORN.ERB:77` は『CSV に無い場合 CSVTALENT は 0 を返す』と書いていたが実測と逆で、誤情報が実装のすぐ上に居座っていた(本タスクで是正)。(3) ガードの有無で結論が変わるので、**同じ関数でも `EXISTCSV`/`GETCHARA` ガード済みの呼び出しと素の呼び出しを分けて数える**(実測: 家系表示・`@CHARA_PRICE`・名前テーブルはガード済みで安全、`@CALC_CHARABUY`・`@SHOW_ADDITIONAL_INFO`・`@PARENT_TALENT` が素)。関連 [[N-Project001-20260823d]] [[N-049]] [[N-Project001-20260823b]]。"
+    tags: [Project001, Project003, chara-no, existcsv, csvname, csvtalent, addchara, calc_charabuy, chara-profile, kojo, tryccallform, fallback, per-path-verification, false-comment, guard-audit, randchara]
+    project: Project001
+    strength: 1
+    last_used: 951
+    state: active
+
+  - id: N-Project001-20260823d
+    text: "**エンティティを別の世界(セーブ/インスタンス)へ運ぶ機能では、壊れるのは配列の中身ではなく「識別子の意味」である。設計の第一手は、その識別子が何層あるかを数えること。** Project001 の巫女は3層あった — ①**個体ID** `CFLAG:3109`(採番カウンタ `FLAG:998`・発行は `SYSTEM_GENERAL.ERB`:278-279 と `SYSTEM_CHILD.ERB`:146-147) ②**キャラ登録番号(index)**(`TARGET`/`ASSI`/`MASTER`、配列の第1添字) ③**キャラ番号 `NO:`**(CharaCSV を引く鍵。`EXISTCSV`/`CSVNAME`/`@CHARA_PROFILE`/口上ディスパッチ)。`SAVECHARA`/`LOADCHARA` は**全配列を忠実に運ぶ**ので①②③も一緒に運ばれ、持ち込み先では**別人を指す**。実害の重さは ①>②>③ で、**①が最も危険なのに最も気づかれない** — `SYSTEM_CHILD.ERB`:119-120 の `FINDCHARA(CFLAG:3109, CFLAG:ARG:3003, 0)` が**別人を親だと判定する**。ユーザー裁可は『相性(RELATION)と親子関係をクリア/NO 衝突は再割当』という②③の言葉で来たが、**①は名指しされていなかった**。∴ 裁可の字面を実装せず、**裁可の意図を変数名の集合へ実測で展開してから書く**。③の再割当先は『CharaCSV が実在する番号』に限る(Project001 では 250-299 帯に実在するのは **250 だけ**＝45ファイルを実測)。また**衝突していない識別子まで潰さない** — 手書きキャラの NO を無条件に 250 化すると CSV 由来の個性(手書き解説・口上)が消える。テスト設計は『**運べたもの**(TALENT/ABL/BASE)』と『**断ち切ったもの**(個体ID/血統/妊娠/RELATION/加入日)』を**別々の assert** に分けると、忠実さと後始末の両方が同時に回帰検知できる。なお副作用として、この種の機能のテストは**エンジンが外部ファイルを作る**(`dat/chara_*.dat`)ため run 間に残る — 『空きスロット前提』の assert を置くと2回目から落ちる。**【2026-08-23 是正・TASK-Project001-20260823-054】本ノートは当初 `RELATION` を『index 参照』と書いていたが誤り。`RELATION:<登録番号>:<相手のキャラ番号 NO>` であり、第2添字は ③の `NO` 層に属する**(権威: `@GET_RELATION` SYSTEM_GET_CHARADATA.ERB:218 `RELATION:(NO:ARG)` / `@PRINT_RERELATION` PRINT_STATE.ERB:148 / `@PRINT_RELATION` の添字が `CSVNAME(NO)` 由来の名前表と対)。この取り違えは実装バグになった — 受け入れ後始末が `RELATION:他:登録番号` で他キャラの行を消し、**`NO` がその登録番号と同値の無関係キャラへの相性を全員分 0 にしていた**。**一般化した教訓: ブラックボックス実測は『値が往復するか』は示せても『添字の意味』は示せない。**配列の意味論は (a) エンジンのソース由来資料 か (b) 自プロジェクトの権威アクセサ関数(`@GET_*`/`@PRINT_*`)から引く。『既存コードがこう書いている』は反証にならない — 主人公は index 0 かつ NO 0 で**たまたま一致する**ため、`RELATION:ARG:MASTER`(SHOP_CHARASALE.ERB:707) のような書き方が動いてしまう。**同 NO のキャラが複数居る設計(生成巫女は全員 NO:250)では、NO キーの配列は枠が共有される**点も併せて効く — 『そのキャラ宛だけ消す』は表現できないので、消せるのは本人の行だけ。関連 [[N-Project001-20260823b]] [[N-Project001-20260821e]] [[N-Project001-20260823e]]。"
+    tags: [Project001, chara-transport, import-export, savechara, loadchara, identity, unique-id, cflag3109, findchara, relation, chara-no, existcsv, sanitize, ratification-to-variables, test-design, stateful-test-artifacts]
+    project: Project001
+    strength: 1
+    last_used: 949
+    state: active
+
+  - id: N-Project001-20260823c
+    text: "**索引(TODO/設計文書)に書いた行番号とコード前提は数日で腐る — 着手時に必ず採り直す**。同日に2例(same-problem-twice): ①§1-V④ の S4(2026-08-22)が記録した `SHOP.ERB` のアンカー(L261/L298/L332-349/L384)が翌日以降のタスク(-038 ほか)で**最大10行ずれ**ていた ②§1-K③(起票 2026-06-28)の『主HUD が過密だから経営詳細を神社運営タブへ移す』という前提が、2026-08-19 の HUD 再設計(裁可 Q1-Q9・§1-V② で実装)により**主HUD に置くのが正**へ反転していたのに更新されていなかった。**根は同じで『索引に書いた事実が実体の変化に追随しない』**。loop.yaml の dispatch freshness gate は同一セッション内の並行計画を守るが、**日をまたいで索引に置いたアンカー/前提は射程外**。対策は『索引にアンカーを書かない』ではない(書くと着手が速い)——**書いたうえで、着手した実装タスクの S4 で必ず採り直す**。採り直しは安く、①アンカーは一意文字列で grep して行番号を取り直す ②前提は『この単位を上書きしうる裁可がその後に無いか』を設計文書の日付順で1回見る、の2手で済む。索引側には**採り直しの起点になる不変の手がかり**(ファイル名・関数名・一意なリテラル)を残し、行番号は補助として書く。関連 [[N-Project001-20260817a]]。"
+    tags: [Project001, todo, index, anchor, staleness, line-number, freshness, s4, supersede, ratified-design, same-problem-twice, process]
+    project: Project001
+    strength: 1
+    last_used: 947
+    state: active
+
+  - id: N-Project001-20260823b
+    text: "**「エンジンにその機能があるか」は、自プロジェクトの使用実績ではなくエンジンの命令表から引く — そして表に載っていることを証拠にせず実呼び出しで確かめる**。実例(TASK-Project001-20260823-047 / §1-W① キャラ import-export): 先行 S4 は『本プロジェクトの ERB は保存系命令を一度も使っていない(使用実績0件)』まで正しく測ったうえで、搬送媒体の候補を SAVEGLOBAL / SAVETEXT / OUTPUTLOG の3つに絞り『23,000要素をどう疎エンコードするか』という大きな設計課題を立てていた。実際には **SAVECHARA / LOADCHARA というキャラ1体専用のシリアライズ命令**があり、実測で別プロセス起動を跨いだ 11項目の往復に成功(出力は dat/chara_<名前>.dat・1体≒1.4KB のバイナリ・magic \\x89ERA・セーブ枠の外なのでコピーで別インストールへも渡せる)。**設計課題そのものが消えた**。∴ 新機能の S4 では『自分が何を使っているか』の走査で止めず、**エンジンの命令表を目的語(chara/save/file)で一度 grep する**工程を必ず挟む。ただし表は証拠にならない — doc/Project003-v2-portable/data/Project003-builtins.json は別ビルド(Project003LabH)由来で、実際 SAVECHARA は載っていたが**第1引数の型が違って初回は実行時エラー**だった(正: SAVECHARA <ファイル名:文字列>, <コメント:文字列>, <キャラ登録番号...> / LOADCHARA <ファイル名> は ADDCHARA 相当で追加 / CHKCHARADATA(名前) は 0=あり・1=なし)。実測レシピ: Prepare-Project001Autotest -SkipAutotest でサンドボックスを作り @SYSTEM_TITLE スタブを CP932 で注入して**1段階=1起動**(未実装や型不一致はロード時でなく実行時に落ちるため、1本に詰めると最初の失敗で以降が測れない)。**付随の落とし穴**: Project003 は `QUIT` を書いてもプロセスが残ることがある(実測)ので、ad-hoc ランチャは成功パスでも無条件に Stop-Process する — 『END マーカーを見たら break』だけで抜けたら 11本のプロセスが残ってサンドボックス削除がロックされた。既存の Invoke-Project001BootWarnings.ps1 は無条件停止で正しく、写さず自作したのが原因。関連 [[N-034]] [[N-104]] [[N-Project001-20260817b]]。"
+    tags: [Project001, Project003, savechara, loadchara, chkchardata, saveglobal, savetext, import-export, chara-transport, engine-capability, builtins-json, probe, sandbox, quit-does-not-exit, orphan-process, s4-scope, spike]
+    project: Project001
+    strength: 4
+    last_used: 955
+    state: active
+
+  - id: N-Project001-20260823a
+    text: "**ファイルを編集する前に実測するのは encoding だけではない — 行末(CRLF/LF)も同じくファイルごとに違う**。実測(TASK-Project001-20260823-045): 同じ `Data/ERB/システム/` 配下でも `CHARA_DESC_GEN.ERB` だけが LF で、他は CRLF。encoding を実測する習慣は身についていたのに『encoding を実測する』という個別則として学習していたため、CRLF を決め打ちして LF ファイルへ CRLF を1行混入させた(行数検査が 232→3 と出て即露見)。**一般則は『ファイルごとに違いうる属性は書く前に測る』**で、その属性には encoding / 行末 / BOM の有無 / 末尾改行 / 字下げ(タブ vs スペース)が含まれる。対策=編集スクリプトの冒頭で対象ファイルの属性を実測する関数(`Get-Eol` 等)を通し、書いた後ではなく**書く内容に対して**事前検査する。関連: [[N-Project001-20260722a]](CP932 の編集レシピ)。"
+    tags: [Project001, file-attribute, encoding, line-ending, crlf, lf, script-edit, measure-before-write, silent-corruption, powershell]
+    project: Project001
+    strength: 5
+    last_used: 1057
+    state: active
+
+  - id: N-Project001-20260821e
+    text: "手書きテーブル(SELECTCASE/IF連鎖)で個別対応しているものに『それ以外』の受け皿を足すときは、対象リストを呼出側へ複製せず**既存連鎖の末尾に ELSEIF を1本**足す。実例(2026-08-21): @CHARA_PROFILE(SHOP_CHARALIST.ERB:65-410)は TFLAG:201=Chara番号 の IF 連鎖で 0-32/100-104/148/149 に手書き解説を持ち ELSE が無いため、手続き生成巫女(NO:250)は番号行だけで説明が空だった。呼出側に『どの番号が手書きを持つか』を書くと二重管理(AP-003 declare-consume)になるので、連鎖末尾に ELSEIF を1本 + 呼出側は index を渡すだけ、にした(既存340行は無変更)。なお TFLAG:201 は **番号** であり index ではない — 生成キャラは全員同じ番号なので個体を特定できず、index を運ぶチャネル(未使用の TFLAG:210 を実測で確保し index+1・0=実体なし)が別途要る点が S4 の肝。もう一点: 生成する文の語彙は名前 CSV(TALENTNAME/ABLNAME)から引き、生成器側に素質名・能力名の文字列を焼き付けない。Talent.csv/Abl.csv が単一の権威になり、出力を完全一致で固定した autotest が名前の乖離検知も兼ねる。文の組み立てを全て #FUNCTIONS 純関数にすれば、乱数を含む fixture(RANDCHARA_MATERIALIZE)の上でも出力文字列を完全一致で assert できる。関連 [[N-Project001-20260821d]] [[N-093]]。"
+    tags: [Project001, Project003, erb, fallback, hand-written-table, if-chain, declare-consume, ap-003, chara-profile, description-generator, talentname, ablname, single-source-of-truth, pure-function, tflag-channel]
+    project: Project001
+    strength: 3
+    last_used: 913
+    state: active
+  - id: N-Project001-20260821d
+    text: "生成器/初期化ロジックの『どの index に値を振るか』は、配列定義(Abl.csv 等)の全件ではなく **UI がその配列をどう分帯して描いているか**から引く。Project001 の ABL は Abl.csv に 58 index 定義されるが、NEW_PRINT_ABL_FULL(SHOW_INFO_UI.ERB:349/369) は 0-69 を色付きランク=駆動帯26(0-3,10-16,20-23,30-34,40-43,50,60)、70-199 を灰色『◆ 参考値(K由来・kami未駆動)』=参考帯32(70-101) と自ら宣言しており、さらに ABL:70/71 は -1000..1000、ABL:76 は 0..1000 のスライダ(SHOW_BASE_K:465/472/479)で 0-10 LV スケールですらない=単一のレンジ表では書けない。∴『全 index を明示代入せよ』という是正方針は、帯を見ずに立てると 『未駆動と UI が明言している帯』へ値を入れて生成キャラだけ浮かせる。**生成器のスコープ判定則**: 既存データ(全 CharaCSV)を走査し『既存キャラも空なら全キャラ共通のコンテンツ未実装＝生成器スコープ外』『生成キャラだけ空なら生成器の欠陥』と切り分ける。実測(45 CharaCSV): ABL 60 と 70-92 は実在キャラ0体、BASE:11(精神バー)は代入がリポジトリ全 ERB で0件 — いずれも表示されているが誰も駆動していない全キャラ共通項目だった。また『0 を明示代入する』こと自体には実益がない(既存 CharaCSV も疎で Project003 既定0に任せている)。実益は ①型ごとのカバレッジ設計 ②同関数の再適用時に前回値が残らないこと(APPLY_ROLL は TALENT 0-999 を明示クリアするが ABL を触らない)。副産物として本監査は実害を1件検出: KOUSHIN_CONTACT_OK(GOUI.ERB:31) が ABL:キャラ:40>=2 を要求するのに 生成器が RAND:3(0/1/2 一様)を振るため、裁可『交神対象=最初から対象』に反して生成巫女の 2/3 が交神不可だった。関連 [[N-Project001-20260821a]]。"
+    tags: [Project001, character-generation, abl, randchara, ui-driven-scope, coverage-audit, sparse-vs-dense, all-chara-common, undriven-band, koushin-gate, design-scope]
+    project: Project001
+    strength: 3
+    last_used: 899
+    state: active
+  - id: N-Project001-20260821b
+    text: "この Project003 ビルドは SET_BUTTON_TAG(label, \"\", tooltip) の空ボタン値で <nonbutton title='...'> を生成し、クリック不可・SHOP 入力値にならないグレー可のツールチップ要素になる。条件つきコマンドを『満たすまで選べないが条件はホバーで分かる』形にできる(選択可能ボタンにはしない)。tooltip の実ホバー表示は autotest 不能で、HTML/title 文字列の存在までを assert で固定し見た目は playtest 委譲。適用例: SHOP 巫女カテゴリ [101]交神の儀/[116]人化逢瀬 の未達時グレー非選択エントリ(TASK-Project001-20260819-034, WO-015)。dispatch 側の既存ガードは維持し未達押下は no-op にする(表示層だけで実行可否を判断しない)。"
+    tags: [Project001, Project003, ui, tooltip, set-button-tag, nonbutton, html-print, conditional-command, gating, autotest-limit]
+    project: Project001
+    strength: 2
+    last_used: 895
+    state: active
+
+  - id: N-Project001-20260819c
+    text: "era 系の一括経過(参籠)は EVENTTURNEND_CORE(PRINTW/BEGIN SHOP を含む対話プリミティブ)を流用せず、EVENT_NEXTDAY→DAY/TIME/CALENDAR_CHECK→朝処理を呼ぶ非対話 1 日関数を新設し、ランダム日次イベントは進行フラグ(FLAG:402)で抑止する。朝処理が二重実行され得る場合は当日ガード(TFLAG:日付==DAY)を挿す。autotest は実 N 日送りを回して完走(ハング=runner timeout で検出)を assert する。適用例: SANROU.ERB @SANROU_ONE_DAY/@SANROU_RUN(TASK-Project001-20260819-024, WO-010)。"
+    tags: [Project001, Project003, bulk-advance, sanrou, non-interactive, day-loop, printw, hang, event-suppression, autotest]
+    project: Project001
+    strength: 1
+    last_used: 871
+    state: active
+
+  - id: N-Project001-20260821a
+    text: "ABL(能力)とTALENT(素質)は配列の性質が違い、生成/初期化ロジックを混同すると欠陥になる。TALENTは疎な二値配列(持つ/持たない、未言及=0が正しい設計)——CSVで数個だけ列挙し残りは黙って0のままで問題ない。ABLは全キャラが持つ数値スキル配列(Project001ではAbl.csvに58種定義、ABL_MENU.ERBで0-10のLvスケール表示)であり、値が0でも『その能力の水準を0と決定した』ことを生成ロジックが明示的に扱う必要がある。実例(2026-08-19): RANDCHARA_GEN.ERB(手続き生成巫女、TASK-Project001-20260818-012で出荷済み)がABL:40とABL:13/41の**2つだけ**にRAND:3を代入し残り56種を一切参照しなかった——TALENT的な『1-2個選んで残りは触れない』パターンをABLへ誤って適用していた。この誤りは事前の設計文書(design-random-chara-gen.md §5.4)に『能力ABLは0〜2を1〜2種のみ=初期巫女は伸びしろを残す』と明記され、裁可済み文書として無検証で引用されたまま実装に反映されていた(TASK-Project001-20260819-017が同じ誤りを『意図的仕様』と断定して踏襲し、ユーザー指摘で発覚)。教訓: (1) 数値配列/二値配列が混在する設計文書は、裁可済みでも記述の妥当性を実コード(配列定義・既存生成ロジック)で裏取りしてから引用する。(2) 新規キャラ/エンティティ生成ロジックを書く/監査するときは、対象の各パラメータが『疎で正しい(TALENT型)』か『密で全設定が要る(ABL型)』かを先に分類する。(3) 修整方針=全indexを走査し型別レンジ表に従って明示的に代入するループ構造にする(既存の『特別扱いする2箇所』はそのまま高めに振る枠として残してよい)。"
+    tags: [Project001, character-generation, abl, talent, data-model, sparse-vs-dense, design-review, self-rework, hh-043, randchara]
+    project: Project001
+    strength: 2
+    last_used: 896
+    state: active
+
+  - id: N-Project001-20260819a
+    text: "executor(Codex)成果物の受入で機械ゲートが赤になったら、直す前に『変更あり／HEAD(stash)』を交互に各2〜3回回して変更由来か harness 由来かを切り分ける。実例: WO-004(UI 4件)の受入で Interactive suite の pd.omikuji.text が 3/4 で text-fail、HEAD では pass、executor 側の run では pass — 最終 Project003.log には期待文字列が存在しており、原因は Run-Project001Autotest.ps1 の in-loop EXPECT_TEXT 判定が OUTPUTLOG の truncate+rewrite 途中の部分ログを読んで偽 fail を確定し、final pass が processed 済みとしてスキップしていた race。修正=final pass で $textPass/$textFail/$textProcessed を最終ログから再計算(以後 3/3 pass)。教訓: (1)『判定を最初に見た時点で確定し後で再評価しない』設計は部分観測の race を抱える=最終状態で再計算する。(2)偶発 fail を『flaky』で流さず切り分ける(過去に流された可能性がある)。(3)executor 側 pass/orchestrator 側 fail の食い違いは harness 由来を疑う根拠になる。"
+    tags: [Project001, autotest, interactive, harness, race, false-fail, flaky, expect-text, outputlog, codex, delegation, acceptance, bisect]
+    project: Project001
+    strength: 1
+    last_used: 861
+    state: active
+
+  - id: N-Project001-20260818d
+    text: "乱数を含む生成手続き(ランダム巫女生成の APPLY_ROLL 等)の『不変条件×Nロール』autotest は、1回 PASS しても確率的欠陥を見逃す — RAND を使う調整ループ(例: 体質ペア数を 2-4 に整える『ランダム試行×40回で当たりを引くまで』)は当たり確率が低いと収束せず、約2割の run で違反が出るのに初回は緑で通った(TASK-Project001-20260818-012 でコミット→-013 の再実行で 4連続 FAIL として顕在化)。対策: (1) 調整ループは『ランダム開始点から全候補を走査して必ず1件処理する』決定的収束に書く(試行回数上限に頼らない)。(2) 必須素質を最後に再保証するなら相方(対立ペア/排他ペア)を同時に落とす — 排他修正の後に必須を立て直すと両立違反が復活する。(3) 不変条件テストを追加した直後は同じ suite を最低 3-4 回連続で回して安定を確認してからコミットする(1回の緑は証拠にならない)。(4) 違反時の切り分けは『SIF 条件 → カウンタ+1』を『IF 条件 → カウンタ+1 → PRINTFORML [[DBG]] t={型} r={回} v={番号} → ENDIF』へ機械変換して種別を特定する(SIF の直後に行を足すと無条件実行になるので必ず IF/ENDIF 化)。"
+    tags: [Project001, autotest, randomness, invariant, flaky, stochastic, generator, randchara, deterministic-termination, exclusive-pair, must-talent, debug-instrumentation, sif-pitfall]
+    project: Project001
+    strength: 4
+    last_used: 949
+    state: active
+
+  - id: N-Project001-20260818a
+    text: "インクリメンタル/経営の『生産式』(信者→参拝者、施設→資源 等)は、必ず『生産(合流率)・減衰(離反)・上限(転換率cap)』を1セットで設計し、同じタスクで入れる。片方だけ先に入れると無制動の複利が即発火する(実例: Project001 P1-3 で布教→信者転換を先行実装し、信者が毎日全員参拝者へ合流+離反ゼロ+上限なしのまま=1日+3.3%の等比→4年で10^20、受入=周回1天井十万に必要なのは+0.5%/日。TASK-Project001-20260817-017 で自己検出、-018 で合流3%/上限25%/離反2%を追加)。受入は『N日シミュレーションを純関数 autotest で回し、到達帯を assert』にする — 係数を触った瞬間に帯超過を検知でき(実際 合流5%→1.3万で帯超過→3%へ)、playtest は手触りだけに専念できる。設計文書に成長式を書くときは、等比になるかを一度手計算(r=日次成長率、(1+r)^期日)してから係数を置く。"
+    tags: [Project001, incremental, game-design, growth-formula, compounding, exponential, believers, sanpai, cap, decay, simulation, autotest, pure-function, balance]
+    project: Project001
+    strength: 3
+    last_used: 859
+    state: active
+
+  - id: N-Project001-20260817f
+    text: "SETCOLOR/RESETCOLOR で色を挟んだ隣接テキスト(例: `PRINTFORM ラベル:` の直後に SETCOLOR して1文字だけ出す)を CAPTURE_HTML(HTML_GETPRINTEDSTR 経由)で assert するとき、`AUTOTEST_ASSERT_HTMLCAP, \"ラベル:値\"` のような隣接文字列一致は失敗しうる — 通常の PRINTFORM ログ(プレーンテキスト)では隣接して見えても、HTML capture 側は SETCOLOR の境界でマークアップが挟まり非隣接になる(実測: TASK-Project001-20260817-008、`巫女ランク:A` のプレーンログは正しく隣接表示されるのに HTML capture の隣接一致だけ actual=0 で FAIL)。安全な代替: (1) ラベル単体の存在確認と (2) 適用されるべき色の hex 文字列(`#RRGGBB`、UI_COLOR.ERH の #DIM CONST 値と同じ表記)の存在確認、の**2アサートに分ける**。色 hex の存在確認は『そのランク/状態の色が実際に使われた』ことをテキスト一致より頑健に証明する(このパターンは既存の `list.life.hp_green`(`#78B783`)等でも使われている=新規発明ではなく確立済みパターンの再確認)。 **【same-problem-twice 追記, TASK-Project001-20260817-015】** CAPTURE_HTML(=`HTML_GETPRINTEDSTR(0)`)は**直前に完了した行**を取る。`CALL 何か描画する関数` の直後に間を置かず `CALL CAPTURE_HTML` すると、その描画がまだ現在行(未確定)のままで**1つ前の行**を掴み、期待した文字列も色hexも一致せず actual=0 で FAIL する(TASK-013 の `@PRINT_MIYANICHI_BAR` 直後、TASK-015 の `SHOP_BAR_INLINE` 直後の**2回**で同型再発)。**恒久ルール: 単発PRINTFORM系で行を完結させていない関数呼び出しの直後は、`CALL CAPTURE_HTML` の前に必ず `PRINTL` を1行はさんで現在行を確定させる**(呼び出し元が既に改行済みなら不要)。TASK-013 では場当たりで直しただけでノート化せず、同じ罠を TASK-015 で再び踏んだ = ノートに『何を確認するか』だけでなく『何をいつ呼ぶか』の手順まで書かないと再発することの実例。"
+    tags: [Project001, autotest, html-capture, setcolor, assert, adjacency, false-fail, color-hex, ui-color, printl, line-completion, same-problem-twice]
+    project: Project001
+    strength: 4
+    last_used: 839
+    state: active
+
+  - id: N-Project001-20260817e
+    text: "同じ『ファミリー』(例: tools/Project003-autotest/ 配下の AUTOTEST*.ERB 群)でも、ファイルごとに encoding が異なりうる — 決め打ちしない。実例: AUTOTEST.ERB は UTF-8(BOMなし)だが、隣接する AUTOTEST_INTERACTIVE.ERB は CP932 だった。先頭バイトが両方 ASCII 範囲('; '等)のため BOM 有無チェックだけでは区別できない。誤って UTF-8 で ReadAllText/WriteAllText すると CP932 の日本語バイト列が silent に文字化けし(.NET の既定 UTF8Encoding は無効バイト列を例外なく U+FFFD へ置換)、そのまま書き戻すと**元データを破壊的に失う**(TASK-Project001-20260817-007 で実際に発生・62行相当の破損)。対策: 編集前に FFFD カウントで検証するだけでなく、疑わしい場合は strict decode(`New-Object Text.UTF8Encoding($false,$true)` で GetString)を試し、無効バイト列で例外が出れば UTF-8 でない証拠として扱う(CP932 は無効バイト列がほぼ無く FFFD=0 で『成功』したように見えても実は誤読=false negative になりうるため、CP932 decode の FFFD=0 だけでは正しさの証明にならない)。書込み後は必ず git diff --stat で『意図した行数だけ変化したか』を確認し、想定外の広範な差分が出たら即 git restore で復旧する(tracked ファイルなら実害ゼロで戻せる)。同じ理由で Project003.log 自体も実行コンテキストによって encoding が変わりうる(同タスクで CP932 decode が実際には誤読=文字化けを生み、UTF-8 decode が正しかった例を確認)。"
+    tags: [Project001, encoding, cp932, utf8, bom, autotest, false-negative, strict-decode, git-restore, safe-edit, near-miss, Project003-log]
+    project: Project001
+    strength: 5
+    last_used: 899
+    state: active
+
+  - id: N-Project001-20260817c
+    text: "コメントと実装が食い違う既存コードを直す前に、同一ファイル/同一関数群の中に『同じルールの別実装』がないか探す。era系は経路ごと(単親/両親・娘/息子)に同じ規則を複製する書き方が多く、片方が正しい実装＝仕様の一次証拠になる。実例: Project001 の子生成で単親経路の狂気継承が `TALENT:145 = 1` であるべきところ `= 0`(直前で既に0＝死文)だったが、両親経路 CHILD_TALENT_SET2 に同一コメント『最初から狂気持ちの子のみ狂気が付く』+ 正しい `= 1` があり、推測でなく証拠でタイプミスと確定できた(TASK-Project001-20260817-005)。移植元(Project002)を当たっても該当ロジックが無い場合があるので、外部原版より先に手元の双子経路を読む。派生教訓: 分岐のある関数の挙動を autotest で固定するときは『実経路を特定した』と『全分岐を網羅した』は別物で、分岐ごとに決定論化の手段(乱数分岐は両側を同一入力にする等)を先に決める。"
+    tags: [Project001, erb, refactor, bugfix, duplicated-logic, twin-path, evidence, comment-mismatch, characterization-test, branch-coverage, determinism]
+    project: Project001
+    strength: 2
+    last_used: 850
+    state: active
+
+  - id: N-Project001-20260817b
+    text: "設計/仕様文書で『できない・不可・非対応』と断定する前に、必ず実査で裏を取る(該当ビルドの builtins 一覧・file:line・実データ)。一般論のエンジン知識で書くと、根拠のない却下理由が設計判断として固定化する。実例: ランダム巫女生成の案C却下を『Project003 はファイル書き出し不可』と書いたが未確認で、実査すると本ビルドのテキスト出力命令は OUTPUTLOG のみ+CharaCSV は起動時ロード、が正確な理由だった(TASK-Project001-20260817-002 E4)。肯定的主張と同様、否定的断定にも file:line を付ける。逆に『既存にあるか』の実査は再利用を生む — 同タスクでは CHILD_TALENT_SET の整合ルール・未使用 TALENT:444/445・Str.csv の STR:1001- 運用・口上の _X フォールバックを先に洗ったため、提案の大半が新規発明でなく再利用になった。"
+    tags: [Project001, design, spec, proposal, evidence, negative-claim, verification, builtins, reuse, survey]
+    project: Project001
+    strength: 11
+    last_used: 920
+    state: active
+
+  - id: N-Project001-20260817a
+    text: "起票専用バブルを書くダッシュボード(Project001 doc/project-notes/TODO.md §0.5)は、起票タスクと完了タスクが別なため『NEW …へ起票』のまま腐り、後追いの整理専用タスクが繰り返し必要になる(4回目: TASK-20260701-010 / TASK-20260702-010b / TASK-Project001-20260722-005 / TASK-Project001-20260817-001)。対策=起票バブルを書いたら、その項目を実装したタスクの Distill で同じバブルを完了表記へ畳むことを完了条件に含める(起票と完了が同じ節を触る)。併せて履歴表(§3)も完了タスク側で1行追記する。一般化: 『起票』と『完了』を別タスクが書く索引は、完了側に索引更新義務を配線しないと必ず陳腐化する。"
+    tags: [Project001, todo, dashboard, doc, stale, distill, d2b, process, same-problem-twice, index-maintenance]
+    project: Project001
+    strength: 12
+    last_used: 1084
+    state: active
+
+  - id: N-007
+    text: "In era/Project001 ERB, a file whose every line is ';FUNC-GATE '-prefixed is intentionally gated off; a load-error citing such a function is the standby state, not a regression."
+    tags: [erb, func-gate]
+    project: Project001
+    strength: 2
+    last_used: 210
+    state: archived
+
+  - id: N-008
+    text: "Port a low-coupling Project002 COMF command into Project001 without per-command survey: assign a free Project001 Train number (label-driven; rename on collision e.g. add 改), stub D-04 deps (口上/COM_ORDER_COMMON/JUDGE_COM_RESULT/relation/SLG/捕虜/MEQUIP), convert SOURCE labels to existing Project001 source.csv labels via a helper, delegate to the existing SOURCE_CHECK path unchanged; verify with a FLAG:9000 smoke asserting SOURCE>0 and PALAM increase after CUPCHECK."
+    tags: [erb, erb-port, source-conversion]
+    project: Project001
+    strength: 49
+    last_used: 380
+    state: archived
+
+  - id: N-009
+    text: "Assess an Project002 system's real porting scope by post-exclusion coupling, not raw file count: per-Touhou-character files and SLG-country deps (battle/COUNTRY/CAPTURE) inflate size but are excluded (D-04/D-08/D-10). Measure via unresolved-coupling + group breakdown (e.g. CLOTH 315 files but only 5 generic-helper deps; SKILLS 554 files but mostly excluded)."
+    tags: [erb-port, scope, dependency]
+    project: Project001
+    strength: 4
+    last_used: 323
+    state: active
+
+  - id: N-010
+    text: "Project001 TEQUIP/tequip.csv is training-equipment (調教器具), NOT clothing. Project002 CLOTH (衣装) is net-new with no Project001 counterpart; do not assume the PORTING-doc's CLOTH->TEQUIP mapping."
+    tags: [erb-port, cloth, tequip]
+    project: Project001
+    strength: 2
+    last_used: 421
+    state: active
+
+  - id: N-012
+    text: "Porting an Project002 system that declares #DIM SAVEDATA CHARADATA (e.g. CLOTH's CLOTH var) fails to LOAD unless Project003's binary-save option is enabled — a game-wide save-format decision (user gate). For a first slice, drop SAVEDATA (session-only) and defer persistence. Also: #FUNCTION/#FUNCTIONS expression methods declare args via builtin ARG/ARGS (like COLOR_EXT), not comma-form named args."
+    tags: [erb-port, savedata, config]
+    project: Project001
+    strength: 5
+    last_used: 512
+    state: active
+
+  - id: N-013
+    text: "Do not directly edit a shared file another session is actively churning (e.g. tools/Project003-autotest/AUTOTEST.ERB): it may be UTF-8/no-BOM with MIXED EOL (CRLF+LF) — read/insert via ReadAllText preserving EOL, never ReadAllLines+WriteAllText (normalizes all lines) and never CP932 (corrupts). Worse, the other session's in-flight broken WIP (a half-ported COMF with a parse error) breaks the harness baseline so you cannot verify green. Hand off via a spec; verify your own change via build-artifact injection instead."
+    tags: [concurrency, harness, autotest]
+    project: Project001
+    strength: 1
+    last_used: 293
+    state: active
+
+  - id: N-022
+    text: "Project003 のデフォルト CSV 配列サイズ(EXP/TCVAR 等)は 100(index 0-99)。ラベル追加時は空き番号が上限内か事前確認し、既存 ERH の変数名と重複しないか grep で検証する。"
+    tags: [Project003, csv, array-bounds, erb-port]
+    project: Project001
+    strength: 2
+    last_used: 512
+    state: active
+
+  - id: N-023
+    text: "Project002 の @function を Project001 へ移植する前に、Project001 側に同名 @function が既存しないか grep する。同名で別意味の関数が実在する(例: EXP_GOT_CHECK = Project002:COM_EXP加算 vs Project001:CUP系痛苦快楽チェック TRACHECK.ERB)。衝突時は接頭辞で改名(例 COM_EXP_GOT_CHECK)。改名せず定義すると既存関数を黙って上書き/二重定義しバグ化する。"
+    tags: [erb-port, name-collision, function, blocker-analysis]
+    project: Project001
+    strength: 3
+    last_used: 513
+    state: active
+
+  - id: N-024
+    text: "CRLF ファイルへ正規表現でアンカー行の後に挿入する際、.NET regex の `.*$` は行末の `\\r` まで捕捉する($は\\nの直前で一致)。捕捉値の後に `\\r\\n` を付けると `行\\r\\r\\n` となり、余分な `\\r` が次トークン/関数名に連結して照合失敗する(例: Project003 で `CALL SOURCE_BASE\\r` が @SOURCE_BASE 未定義エラー)。対策: アンカーは `\\r?` を含めて消費するか、挿入後に `\\r\\r\\n`→`\\r\\n` を正規化する。"
+    tags: [encoding, crlf, regex, powershell, cp932, insertion]
+    project: Project001
+    strength: 1
+    last_used: 385
+    state: active
+
+  - id: N-025
+    text: "Project001 AUTOTEST のテストキャラ(TARGET=1 等)は ADDCHARA で CSV 由来の素質/能力/装備を持つ。能力Lv閾値・ソース・パラメータ等の決定的な数値計算テストでは、補正源(素質 例:Ｃ鈍感/Ｃ敏感 の x1.2/x0.8、装備、CONFIG)をテスト内で明示ゼロクリアしてから検証する。クリアしないとキャラ固有の補正で期待値がずれFAILする(ABLUP CALC で実証)。早期returnする経路(cap/存在チェック)は補正前なので誤って通り、補正後の経路だけ落ちるのが兆候。"
+    tags: [autotest, determinism, talent, character, calculation]
+    project: Project001
+    strength: 3
+    last_used: 442
+    state: active
+
+  - id: N-026
+    text: "Project002→Project001 のシステム移植で、index/label テーブルが乖離している場合(Project001は感覚0-3以外の能力表を再編済み: Project002#12=欲望/Project001#12=技巧, Project002#50=武闘/Project001#50=神位)、Project002 の index/label verbatim 移植は誤り。target(Project001)自身のデータ(例: 手動ABLUP{N}が gate する EXP:N)から駆動値を導出する。SLG/特殊/曖昧な対象は除外し設計判断として明示保留。閾値等のバランス値は統一curveの設計仮定とし文書化(後で調整可能に)。"
+    tags: [erb-port, mapping, divergence, ability, design-assumption]
+    project: Project001
+    strength: 1
+    last_used: 388
+    state: active
+
+  - id: N-027
+    text: "Python で `open(p,'wb').write(text.encode('cp932'))` は危険: open('wb') がファイルを先に0バイトへ切詰めてから write 引数(.encode())を評価するため、encode 例外(CP932に無い文字 例: em-dash —/U+2014)が起きるとファイルが空になり破壊される。対策: encode を先に実行して bytes を得てから open/write する(`out=text.encode(...); open(p,'wb').write(out)`)。CP932ドキュメント編集では em-dash/波ダッシュ等の非CP932文字も混入回避。破壊時は `git checkout HEAD -- <file>` で復旧。"
+    tags: [python, file-write, encoding, cp932, data-loss]
+    project: Project001
+    strength: 2
+    last_used: 391
+    state: active
+
+  - id: N-028
+    text: "Project002機能の移植/新規実装に着手する前に、Project001が既にその系を実装済でないか grep/read で確認する。Project001はProject002から多くを移植済で、TODO/設計docが [!]ブロックや未実装と書いていても実体は完成していることがある(実証: CLOTH第一スライス=実装済セッション限定、D-05 NG+基盤=START_NEWGAME/FLAG:7周回数で実装済・IP FLAGも周回保持)。真のギャップは細部の配線(hook未接続・効果未適用)に局在しがち。@関数名/主要変数/FLAG番号で先に現状把握し、再実装でなく差分のみ埋める。"
+    tags: [erb-port, existing-state, verification, scope, blocker-analysis]
+    project: Project001
+    strength: 1
+    last_used: 390
+    state: active
+
+  - id: N-029
+    text: "CSV⇔ERB cross-validation テストパターン: CSV で定義された全エントリに対し、ERB マッピング関数(SELECTCASE等)の戻り値を AUTOTEST で全件検証する。表示漏れ系バグの検知に有効。ABL表示で実証済み。"
+    tags: [autotest, csv-erb, cross-validation, display]
+    project: Project001
+    strength: 5
+    last_used: 426
+    state: active
+
+  - id: N-030
+    text: "関数移植のスコープ外判定時、「値を読む関数」と「値を書くシステム」を区別せよ。CSV ラベル追加だけで読み側関数が移植可能なら即実行。書き込み元システム(D-04等)の未移植は読み側のブロッカーではない。また、先行タスクで同種の問題を解決済み(hex置換等)なら、そのパターンを適用し安易にブロック扱いしない。"
+    tags: [erb-port, scope, dependency, blocker-analysis]
+    project: Project001
+    strength: 4
+    last_used: 347
+    state: active
+
+  - id: N-031
+    text: "Project003 0.2.6.0 の #FUNCTIONS + RETURNF: LOCALS=FUNC() 代入は文字列を返さない（numericとして評価される）。SELECTCASE FUNC() は正常動作する。テストでの文字列関数検証は SELECTCASE パターンで LOCAL:N に結果を格納してから数値アサーションする。"
+    tags: [Project003, functions, returnf, autotest, string]
+    project: Project001
+    strength: 1
+    last_used: 345
+    state: active
+
+  - id: N-032
+    text: "Project002(UTF-8)→Project001(CP932)移植で EXP/ABL ラベル名が異なる場合、PowerShell の .Replace() はUTF-8⇔CP932間のコードポイント不一致で失敗する。バイト直接置換で回避: [System.IO.File]::ReadAllBytes → 旧バイト列パターンを新バイト列に置換 → WriteAllBytes。EXP:自慰経験値(CP932末尾 92 6C = 値) → EXP:自慰経験への変換に実証済み。"
+    tags: [erb-port, encoding, cp932, bytes, exp]
+    project: Project001
+    strength: 1
+    last_used: 368
+    state: active
+
+  - id: N-033
+    text: "新規ERBファイルはUTF-8 BOM付き(EF BB BF)で作成する。Project003はBOMなしUTF-8をCP932として読むため日本語文字列が文字化けする。PowerShellでは New-Object System.Text.UTF8Encoding($true) + [System.IO.File]::WriteAllLines($path, $content, $encoding) でBOM付き出力。CALLFORMF対象関数には#FUNCTIONとRETURNFが必要(RETURNは不可)—使用前にgrep確認すること。"
+    tags: [erb, encoding, utf8-bom, callformf, function]
+    project: Project001
+    strength: 3
+    last_used: 513
+    state: active
+
+  - id: N-034
+    text: "Project001: Project003起動が必要な時は必ず autotest ハーネス(tools/Project003-autotest/Invoke-Project001Autotest.ps1 -Clean)経由。隔離.autotest/にData+Project003.exeをコピーしWindowStyle Hiddenで無人起動、[[AUTOTEST]] SUMMARY pass=N fail=M をログ解析する。手動Project003.exe起動+computer-useでのlive GUI駆動は禁止(サンドボックス迂回・無人不可・アプリ非認識)。autotestで検知できない表示内容の目視(能力表示崩れ等, test-plan.md §3B)はユーザーのプレイテスト(D-24)に委ね、AIはGUIを駆動しない。使い方は tools/Project003-autotest/README.md。"
+    tags: [Project001, Project003, autotest, launch, testing, workflow]
+    project: Project001
+    strength: 7
+    last_used: 1036
+    state: active
+
+  - id: N-036
+    text: "テスト用隔離サンドボックス準備で大物の全コピーを避ける。同一ボリュームなら巨大単一ファイル(exe等)はハードリンク(New-Item -ItemType HardLink、失敗時Copy-Itemフォールバック)、多数ファイルのツリーは robocopy /MIR 差分ミラー(初回全コピー・再実行は変更分のみ、終了コード<8が成功)。隔離・再現性・読み取り専用は維持される。注意: /MIRはdestの余剰を purge するため、テスト専用注入ファイル(AUTOTEST.ERB等)はミラー後に注入する。実測: Project001 autotest で 1ラン23.3MB中88%がexe→ハードリンク化で実コピー2.9MB、再実行4.0s。"
+    tags: [autotest, sandbox, performance, hardlink, robocopy, tooling]
+    project: Project001
+    strength: 4
+    last_used: 520
+    state: active
+
+  - id: N-037
+    text: "CP932 の ERB/CSV を UTF-8 として読み書きすると、非UTF-8バイトが U+FFFD(バイト EF BF BD)へ化けて原文字が永久消失し、Project003 は ERB を CP932 として読むため日本語リテラルが全画面化けする(変数展開は無傷なので『リテラルだけ化ける』のが特徴)。検知: Data配下を `EF BF BD` バイト走査(コード構造は無傷なので autotest 関数検証は素通り=test-plan §3B)。原因commit特定: 各ファイルの履歴blobをCP932妥当性とFFFD数で二分。復旧: U+FFFDは復元不能なので git親commitのクリーンCP932版から復元し、破損commitの機能差分のみ再適用(.gitattributes * -text でバイト保全)。実例: Project001 TASK-187で COM_ACT/INFO1/SHOW_CHARA の3ファイルが encoding『正規化』commitで破損。予防: コミット前のEF BF BD走査を回帰ガード化。"
+    tags: [erb, encoding, cp932, utf8, corruption, u-fffd, regression-guard]
+    project: Project001
+    strength: 4
+    last_used: 420
+    state: active
+
+  - id: N-040
+    text: "encoding鋭敏ファイル(UTF-8 BOMのAUTOTEST.ERB / CP932のERB・CSV)へPowerShellで行挿入する時は .NET String.Split([string[]]@(\"\\r\\n\"),None) で分割する。-split \"\\r\\n\", -1 は第2引数が配列束縛され分割失敗→全文が1行に潰れ破損する。UTF8Encoding.GetBytes() はBOMを出力しないのでEF BB BFを明示付与する。編集後は byte数・BOM・FFFD=0・git diff --stat の加算性を必ず確認。新規ERBは可能ならASCII限定にしてencoding問題を回避(旧台帳#308 併用 — 未移設・参照先不明)。"
+    tags: [powershell, encoding, cp932, utf8-bom, file-edit, autotest]
+    project: Project001
+    strength: 2
+    last_used: 512
+    state: active
+
+  - id: N-044
+    text: "Project003: CALL で呼ぶプロシージャに #FUNCTION/#FUNCTIONS を付けてはいけない。#FUNCTION(S) は式メソッド(関数呼び出し+RETURNF で値を返す)であり、`CALL 名前, 引数` で呼ぶと『#FUNCTION(S)として定義された関数に対し通常のCALLが行われました』でロード時エラー。CALL 方式で RESULT を返す補助は RETURN 値で返し #FUNCTION を付けない(既存 @DEBUG_ADD_CHARA/@DEBUG_ENDING_PLAY が手本)。引数は組込み ARG 経由、index 化代入は LOCAL を介す(VAR:TARGET:LOCAL)。N-012 の #FUNCTION/ARG 規約の姉妹則。"
+    tags: [Project003, erb, function, call, returnf, blocker-analysis]
+    project: Project001
+    strength: 3
+    last_used: 519
+    state: active
+
+  - id: N-045
+    text: "Project001でコマンド単位に @COM_ABLE<n> を autotest 隔離検証する際は、本体全文の inline SIF 状態ゲート(例: COM18 `SIF TEQUIP:58==0 RETURN 0`=お風呂場必須、COM43 `BASE:TARGET:潤滑<2000`/`GET_PENIS,PLAYER`=潤滑・主神penis必須)まで読む。CALL する再利用述語(COM_ABLE_*)の抽出だけでは前提状態を見落とし baseline が偽 fail する。状態前提の重いコマンドは isolated 検証に不適=述語テスト(P0)+全件 smoke(CREATE_COMABLE_LIST)で担保し、command-level spot-check は inline ゲート無しの代表に絞る。"
+    tags: [Project001, autotest, com-able, ground-truth, blocker-analysis]
+    project: Project001
+    strength: 2
+    last_used: 428
+    state: active
+
+  - id: N-046
+    text: "Project001の対話UI(INPUT/ONEINPUT/PRINTW)はautotest化できる: autotest-kitのPostMessage注入(`Run-Project001Autotest.ps1 -EnableInputInjection`)でERB側の`[[AUTOTEST]] WAITING_INPUT <値>`/`WAITING_ONEKEY <c|ENTER>`+OUTPUTLOGマーカーを検知し、RICHEDIT子窓へWM_CHAR/WM_KEYDOWNを送る。注入時はHidden不可でMinimized(AK-003)。注意: (1)kitの汎用ランナーはerrorLine正規表現が良性の起動時`警告Lv2`を誤fatal扱いし中断するため、Project001自前ランナー(errorLineは`エラーが発生しました|例外|未定義`のみ・SUMMARY待ち)を使う。(2)注入ERBはCP932 no-BOMで配置(UTF-8 BOMのままだとload失敗、Project003.log空)。実証: WAITING_INPUT 7/42→INPUT受領 pass=2/2。"
+    tags: [Project001, autotest, input-injection, postmessage, playtest, tooling]
+    project: Project001
+    strength: 4
+    last_used: 441
+    state: active
+
+  - id: N-047
+    text: "対話 autotest スイート ERB を隔離ツリーへ注入する際、PowerShell [System.IO.File]::ReadAllText は BOM 無し CP932 を UTF-8 と誤読し日本語を ???? 化する。marker と描画が両方化けると EXPECT_TEXT が偽 pass(????同士一致)、片方だけだと偽 fail になる。対策: CP932 no-BOM ソースは Copy-Item でバイト保全注入(Project003 は CP932 no-BOM を正しく読む=本番 ERB と同条件)、または UTF-8 BOM ソースなら ReadAllText(BOM検出)+WriteAllText cp932。Invoke-Project001Interactive.ps1 は Copy-Item 方式。実証: SELECT_ASSI marker 助手 が ???? 化し fail→Copy-Item で pass。"
+    tags: [Project001, autotest, encoding, cp932, injection, false-pass, tooling]
+    project: Project001
+    strength: 1
+    last_used: 45
+    state: archived
+
+  - id: N-048
+    text: "Project003 は Project003.log(OUTPUTLOG 出力)を UTF-8(BOMなし)で書く。autotest ランナーの text-assert(EXPECT_TEXT/EXPECT_NO_MOJIBAKE)は Project003.log を **UTF-8 で読む**こと。Default(CP932)で読むと日本語が化け、marker と描画が両方同じ化け方をして present-check が偶然一致する(=脆い偽 pass)。ASCII は不変。UTF-8 読みなら日本語照合が正しく、U+FFFD(EF BF BD)も検出可。加えて、最終 EXPECT marker が SUMMARY と同 flush で取りこぼされるため、ポーリングループ後に最終 text-scan を1回行う。実証: 508/対話スイートとも UTF-8 読みで TextPass 正常化(神位/助手/title)。"
+    tags: [Project001, autotest, encoding, utf8, Project003-log, text-assert, tooling]
+    project: Project001
+    strength: 4
+    last_used: 437
+    state: active
+
+  - id: N-049
+    text: "Project001 はキャラ番号が疎(実在 Chara CSV=0-32,100-104,148-151;33-99 等は欠番)。Project003 の CSVNAME(n,x) は未定義テンプレートで **エラー『定義していないキャラクタを参照しようとしました』**(空文字を返さない)→ STRLENS(CSVNAME(..)) ガード不可。CSVEXIST は本 Project003 で **未対応**(『解釈できない識別子』)、Project003.config が SPキャラ:NO のため CSVTALENT 第3引数(SPキャラ)も使用不可。さらにアイテム ID と『キャラ購入アイテム ID=100+キャラ番号』が一部重複(例: item264 ピアス=100+164)。よって ITEMPRICE:(100+n)>0 を『キャラ存在』の代理にした 0-199 走査は非キャラ(ピアス)を誤検出し CSVNAME で落ちる。対策: GETCHARA(n)>=0(在籍=テンプレート確実)でガード(SHOP_CHARABUY:120 既存イディオム)。相性(RELATION)は在籍キャラ間でのみ発生するため表示は保全。実証: 能力表示 PAGE_2→PRINT_RELATION→SET_CALLNAME のクラッシュを修正(TASK-233)。移植元 Project002 はキャラ連番密で顕在化しなかった前提崩れ。"
+    tags: [Project001, Project003, csvname, chara-template, crash, getchara, info-screen, port-assumption]
+    project: Project001
+    strength: 2
+    last_used: 459
+    state: active
+
+  - id: N-050
+    text: "Project001 の能力表示 ABL リスト(SHOW_INFO_ABL/INFO1)は全 ABL を走査せず、PRINT_ABL_COUNT(SHOW_CHARA)という『COUNT 0-N の算術写像ホワイトリスト』+ REPEAT 数で表示対象を決める。写像に無い ABL は値があっても恒久非表示(Project001 では既定で 15 性技/16 奉仕 が 10-14 で写像が止まり抜けていた、70-92 感度/性傾向/SLG も非表示)。ABL を表示追加する時は[PRINT_ABL_COUNT の写像/INFO1 の REPEAT 数/既存 autotest カバレッジテスト]を同時更新する——既存テスト(abl.display_covers_*)は旧仕様(写像/REPEAT)を符号化しており、写像変更で 50/60 が COUNT 22/23 へ動くと REPEAT 22 のテスト側ループが取りこぼし fail する(=テストがバグを符号化していた典型)。SHOW_CHARA の表示順コメントは Project002 由来で陳腐化(実 ABL 名と不一致)につき信用しない。実証: 15/16 を自然順写像に追加(TASK-234)。"
+    tags: [Project001, abl, info-screen, display-whitelist, test-encodes-bug, port-assumption]
+    project: Project001
+    strength: 1
+    last_used: 445
+    state: active
+
+  - id: N-051
+    text: "Project002→kami の ERB 移植で頻出する Project003 文法/環境の落とし穴: (1) CALL に文字列リテラル引数を渡す時は必ずクォートする(CALL F(\"基礎\",0); 無クォートだと『\"基礎\"は解釈できない識別子です』)。(2) PRINTFORM/PRINTFORML 内で整数式は {式}、文字列式は %式% (整数に %% を使うと『%%の中の式が文字列式ではありません』)。(3) #DIM I / #DIM N は Project003 予約変数名と衝突し警告Lv2(『変数名\"I\"はProject003の変数名として使われています』)→ ローカルは L_I 等にする。(4) autotest 回帰ブロックで ADDCHARA など CHARANUM/キャラ前提を変える処理を suite 途中に置くと後続テストの index 前提を撹乱し count 不一致(fail=0 のまま pass が1足りない)→ chara 変異を伴う回帰は suite 末尾に置く。(5) literal 丸写しは依存差で不能なことが多く『構造を忠実移植+kamiデータ流用(ABLNAME名前ベース反復)+未実装はプレースホルダ/仮値』が現実解。実証: 能力表示8タブUI移植(TASK-235)。"
+    tags: [Project001, Project003, erb-port, syntax-gotcha, printform, reserved-var, autotest, info-screen]
+    project: Project001
+    strength: 8
+    last_used: 458
+    state: active
+
+  - id: N-052
+    text: "『UI変更が反映されない』報告は、同一機能の入口経路を全 grep して真因を特定する。Project001 の能力表示は2経路: (A) ステータスメニュー SHOP→SHOW_CHARADATA_MENU→SHOW_CHARADATA_PAGE(+SHOP_SEARCHCHARA) は TASK-235 で新8タブUI に差替済、(B) 調教画面 PRINT_TRAIN→SHOW_INFO_PAGE_1→SHOW_INFO_ABL は旧共有レンダラのまま。最頻は (B)。新UIだけ作っても (B) には波及しないので『反映されない』。共有レンダラ(SHOW_INFO_ABL)を直すと両経路に効く=波及効率が高い。また SHOW_INFO_ABL は ABL>0 でレベル0能力を隠していた→全mapped能力を常時表示に(性技/奉仕が値0でも見える)。"
+    tags: [Project001, info-screen, entry-points, shared-renderer, abl, train-screen, not-reflected]
+    project: Project001
+    strength: 4
+    last_used: 899
+    state: active
+
+  - id: N-053
+    text: "Project003 のレイアウト/配色は HTML_GETPRINTEDSTR で autotest 自動検証できる(『ピクセルが見えない』を構造検証で代替)。HTML_GETPRINTEDSTR(0)=最新の論理行(末尾相対, LINECOUNT とは別系。0が最新)。色=<font color='#RRGGBB'>, 太字=<b>, 整列=<p align='..'>, ボタン=<button value='..'>。使い方: PRINTL で行を確定→ %HTML_GETPRINTEDSTR(0)% を RESULTS:n 等の組込文字列配列に form 代入(#DIMS ローカルへの form 代入は『式が異常』で不可)→ STRCOUNT(cap, needle)>=N で検査。重要: 同一行に複数 needle を当てる時は『一度キャプチャしてから複数 assert』にする(AUTOTEST_ASSERT が PASS/FAIL を PRINTL して line0 を次行へずらすため、2回目の HTML_GETPRINTEDSTR(0) は assert 行を読んでしまう)。版確認: HSV_TO_RGB/CSVEXIST 不在・EXISTCSV/CLIENTWIDTH/PRINTCLENGTH/STRCOUNT 在(Project003-builtins.json)。MaxLog 既定5000(Project001 は config 500→5000 に是正、E-5)。UTF-8 ERB 不可(CP932 固定)。kit 実装例: dev-support/erb-v2/tests/AUTOTEST_V2_DISPLAY.ERB。"
+    tags: [Project001, Project003, autotest, html-getprintedstr, display-verify, layout, builtins, spec]
+    project: Project001
+    strength: 3
+    last_used: 463
+    state: active
+
+  - id: N-054
+    text: "Project001 のキャラ項目(能力ABL/素質TALENT/経験EXP/基礎BASE)は定義CSV(CP932)に index 追記で増やせる。配列余裕: VariableSize ABL=1000(max92)/TALENT=1000(max400)/BASE=100(max11) は余裕、EXP=100(max99)は満杯=拡張要(EXP,100→200)。新ラベルは既存 index を変えないため**追加自体は回帰なし**(autotest緑のまま)。ただし能力表示は各ループが境界付きで、追加項目は**表示に出ない(inert)**: NEW_PRINT_ABL_FULL=FOR 0..92, 参考値 70..92 / SHOW_INFO_ABL は PRINT_ABL_COUNT の22枠ホワイトリスト / SHOW_INFO_TALENT=REPEAT 270 / SHOW_INFO_EXP=固定セット / SHOW_BODY_K=BASE 6-10。表示するには各ループ/ホワイトリストの範囲拡張が必要。CSTR(口上)はカテゴリごと kami 未実装で消費エンジン無=データ追加しても inert。実証: K-only 108項目を Chara201 へ全移植(TASK-255)、起動/551アサート緑・0警告だが新項目は能力表示に非表示。"
+    tags: [Project001, chara-csv, ablup, variablesize, display-loop, inert, erb-port, csv]
+    project: Project001
+    strength: 4
+    last_used: 468
+    state: active
+
+  - id: N-055
+    text: "Project003: 添字付き変数(LOCAL:81 等)を別のキャラ変数のキャラ/要素添字に使うときは**括弧必須** — TALENT:(LOCAL:81):238 / BASE:(LOCAL:81):6 / BASE:(LOCAL:81):8 > 0。括弧なし TALENT:LOCAL:81:238 はコロン過多でパース失敗し『NN行目でエラー』=suite全体がload不可(pass=0)になる。CALL の引数位置(CALL F, LOCAL:81)は括弧不要。単純な #DIM 変数(対象 等)を添字に使う場合は TALENT:対象:238 で可(括弧不要)。STUB差替(N-050系)で関数を実装へ移す時は元STUBを必ず削除(二重定義=システム関数上書き禁止でエラー)し、既存実装(例 GET_PENISSIZE は _COM_COMMON 既存)は再定義しない。"
+    tags: [Project003, erb, syntax, indexing, parens, stub, erb-port, autotest]
+    project: Project001
+    strength: 6
+    last_used: 519
+    state: active
+
+  - id: N-056
+    text: "客観ソースの無い per-entity データ(例: Project001 体型素質=既存キャラが体型ヒント素質を皆無)は『安定キー(NO/番号)由来の決定的割当 + 非破壊(値0=未設定のときだけ書込, CSV値優先) + 素数係数で隣接キーの分散確保』で自動差別化できる。注意: 単純な NO/divisor (例 (NO/5)%7) だと低番号がクラスタ(主要キャラが偏る)→ ((NO*3)%7) 等の乗算modで隣接を散らす。populate と派生計算は ENSURE_*(ガード付き冪等: 算出済なら即RETURN)に統合し、初期化(CHARA_INIT)と表示(SHOW_*)の両経路から呼ぶと取りこぼさない。実証: TASK-260 で 44キャラに体格/体型/バスト/ヒップサイズを番号割当しスリーサイズ差別化(569緑)。"
+    tags: [Project001, data-population, deterministic, idempotent, chara-init, erb, design]
+    project: Project001
+    strength: 1
+    last_used: 472
+    state: active
+
+  - id: N-057
+    text: "Project003: 単一英字ローカル名(h/v/s/N/I 等多数)は予約変数名と衝突し #DIM が無効化→そのグローバル変数を破壊する。ローカルは日本語名(算出値/種 等)か L_ 接頭辞で。**重大**: この種は autotest を偽通過する — (1)autotest config は @SYSTEM_TITLE 注入のため『システム関数の上書き:YES』で実 config(NO)と乖離、(2)autotest は ERB の load 警告(警告Lv2)を fail にしない、(3)autotest は CHARA_INIT 等の実起動経路を経由しない。結果、予約変数の global 破壊が起動経路(CHARA_INIT→ENSURE→SET_BODYSIZE 等)でのみ顕在化し『起動時エラー落ち』になるのに 569緑。対策: Run-Project001Autotest に reserved-name 警告ガード追加(『Project003の変数名として』を検出→classification=reserved-var, HH-028陽性テスト済)。load系/起動系の疑いは『実 config を逐語コピー(バイナリ型セーブ:YES 保持)+上書きだけYES+@SYSTEM_TITLEで LOAD_OK_MARKER 到達』を確認する実 config ブートで切り分ける。"
+    tags: [Project003, erb, reserved-variable, autotest-gap, config-divergence, startup-crash, harness, erb-port]
+    project: Project001
+    strength: 5
+    last_used: 520
+    state: active
+
+  - id: N-058
+    text: "kami Project003(0.2.6.0) HTML描画 spike(TASK-268): SETCOLOR+文字バー(■□)は <font color='#RRGGBB'> として通常行に出力されHTML_GETPRINTEDSTRで捕捉=検証可・推奨。HTML_RECT_BAR の <shape type='rect'> も行内で捕捉可。だが HTML_PRINT \"<div display='absolute-lefttop'>...\" は0エラーだがHTML_GETPRINTEDSTRで空=オーバーレイ層描画(視認はプレイテストのみ・autotest検証不可)。∴リッチUIは色付き文字バー+SETCOLORで作ると検証可、絶対配置カードは視認をユーザー playtest に委ねる。参照テンプレ doc/project-notes/SHOP.ERB は描画層のみ(C_SHOP_*_Y定数/列挙欠落・30プレースホルダ)で直接ロード不可=見た目仕様の参照に留め、移植先(現行SHOW_SHOP)が実データを持つなら見た目だけ再現が最効率。訂正(TASK-270): **SETBGCOLOR はこの Project003 で全画面(コンソール)背景色を変える=全画面点滅・バー不可視**(span背景ではない)→ バー・ボタン・任意の印字を含む**全コンテキストで使用不可**。TASK-286 でタブボタン背景色に誤用→再発(TASK-287 で再修正)。正解=前景色のみ: 充填/残を `█`(UNICODE(0x2588), 隙間なし全角ブロック)で SETCOLOR 描画し、値は**全角**にして(TOFULL_K: 半角→全角)バー中央セルへ重ねる(全角同士で桁が揃う)。■(U+25A0)は字間に隙間。全角混在の文字数えは STRLENS=表示幅(全角2)/STRLENSU=文字数(全角1)、SUBSTRING vs SUBSTRINGU も同様→全角セル処理は **STRLENSU+SUBSTRINGU で統一**(混在すると値が崩れる)。追記(TASK-295 S-1〜S-10調査): (1) HTML_PRINT第2引数デフォルト0→lineEnd=true→毎回改行。インラインは`, 1`必須。(2) div width属性は背景矩形幅のみ、レイアウト幅=テキスト幅(横並びカードは不可)。(3) **ALIGNMENT RIGHT + 複数PRINTFORM = merge bug**(ShiftPositionX累積でX座標が画面外へ飛ぶ)→1行1命令(HTML_PRINT+<font>タグ)が正解。(4) バー値テキスト背景色の正解: HTML_PRINT @\"<div background_color='%TOSTR_HTML(色)%'><font color='#FFF'>..字..</font></div>\", 1。TOSTR_HTML()は汎用関数v2(COLOR.ERB)のユーザー定義関数で整数→#RRGGBB変換。(5) padding='3'はpx無しだとFontSize/100の整数除算=0px。必ず'3px'を付ける。"
+    tags: [Project001, Project003, html, shop, ui, setcolor, setbgcolor, bgcolor, background-color, tab, highlight, prohibition, forbidden, spike, display-verify, alignment-right, html-print, tostr-html, inline, padding]
+    project: Project001
+    strength: 9
+    last_used: 550
+    state: active
+
+  - id: N-Project001-20260721a
+    text: "Project001の対話UI(INPUT/ONEINPUT/PRINTW)はautotest化できる: autotest-kitのPostMessage注入(`Run-Project001Autotest.ps1 -EnableInputInjection`)でERB側の`[[AUTOTEST]] WAITING_INPUT <値>`/`WAITING_ONEKEY <c|ENTER>`+OUTPUTLOGマーカーを検知し、RICHEDIT子窓へWM_CHAR/WM_KEYDOWNを送る。注入時はHidden不可でMinimized(AK-003)。注意: (1)kitの汎用ランナーはerrorLine正規表現が良性の起動時`警告Lv2`を誤fatal扱いし中断するため、Project001自前ランナー(errorLineは`エラーが発生しました|例外|未定義`のみ・SUMMARY待ち)を使う。(2)注入ERBはCP932 no-BOMで配置(UTF-8 BOMのままだとload失敗、Project003.log空)。実証: WAITING_INPUT 7/42→INPUT受領 pass=2/2。"
+    tags: [Project001, autotest, input-injection, postmessage, playtest, tooling]
+    project: Project001
+    strength: 4
+    last_used: 441
+    state: archived
+
+  - id: N-Project001-20260721b
+    text: "対話 autotest スイート ERB を隔離ツリーへ注入する際、PowerShell [System.IO.File]::ReadAllText は BOM 無し CP932 を UTF-8 と誤読し日本語を ???? 化する。marker と描画が両方化けると EXPECT_TEXT が偽 pass(????同士一致)、片方だけだと偽 fail になる。対策: CP932 no-BOM ソースは Copy-Item でバイト保全注入(Project003 は CP932 no-BOM を正しく読む=本番 ERB と同条件)、または UTF-8 BOM ソースなら ReadAllText(BOM検出)+WriteAllText cp932。Invoke-Project001Interactive.ps1 は Copy-Item 方式。実証: SELECT_ASSI marker 助手 が ???? 化し fail→Copy-Item で pass。"
+    tags: [Project001, autotest, encoding, cp932, injection, false-pass, tooling]
+    project: Project001
+    strength: 1
+    last_used: 45
+    state: archived
+
+  - id: N-Project001-20260721c
+    text: "Project003 は Project003.log(OUTPUTLOG 出力)を UTF-8(BOMなし)で書く。autotest ランナーの text-assert(EXPECT_TEXT/EXPECT_NO_MOJIBAKE)は Project003.log を **UTF-8 で読む**こと。Default(CP932)で読むと日本語が化け、marker と描画が両方同じ化け方をして present-check が偶然一致する(=脆い偽 pass)。ASCII は不変。UTF-8 読みなら日本語照合が正しく、U+FFFD(EF BF BD)も検出可。加えて、最終 EXPECT marker が SUMMARY と同 flush で取りこぼされるため、ポーリングループ後に最終 text-scan を1回行う。実証: 508/対話スイートとも UTF-8 読みで TextPass 正常化(神位/助手/title)。"
+    tags: [Project001, autotest, encoding, utf8, Project003-log, text-assert, tooling]
+    project: Project001
+    strength: 4
+    last_used: 437
+    state: archived
+
+  - id: N-Project001-20260721d
+    text: "Project001 はキャラ番号が疎(実在 Chara CSV=0-32,100-104,148-151;33-99 等は欠番)。Project003 の CSVNAME(n,x) は未定義テンプレートで **エラー『定義していないキャラクタを参照しようとしました』**(空文字を返さない)→ STRLENS(CSVNAME(..)) ガード不可。CSVEXIST は本 Project003 で **未対応**(『解釈できない識別子』)、Project003.config が SPキャラ:NO のため CSVTALENT 第3引数(SPキャラ)も使用不可。さらにアイテム ID と『キャラ購入アイテム ID=100+キャラ番号』が一部重複(例: item264 ピアス=100+164)。よって ITEMPRICE:(100+n)>0 を『キャラ存在』の代理にした 0-199 走査は非キャラ(ピアス)を誤検出し CSVNAME で落ちる。対策: GETCHARA(n)>=0(在籍=テンプレート確実)でガード(SHOP_CHARABUY:120 既存イディオム)。相性(RELATION)は在籍キャラ間でのみ発生するため表示は保全。実証: 能力表示 PAGE_2→PRINT_RELATION→SET_CALLNAME のクラッシュを修正(TASK-233)。移植元 Project002 はキャラ連番密で顕在化しなかった前提崩れ。"
+    tags: [Project001, Project003, csvname, chara-template, crash, getchara, info-screen, port-assumption]
+    project: Project001
+    strength: 2
+    last_used: 459
+    state: archived
+
+  - id: N-Project001-20260721e
+    text: "Project001 の能力表示 ABL リスト(SHOW_INFO_ABL/INFO1)は全 ABL を走査せず、PRINT_ABL_COUNT(SHOW_CHARA)という『COUNT 0-N の算術写像ホワイトリスト』+ REPEAT 数で表示対象を決める。写像に無い ABL は値があっても恒久非表示(Project001 では既定で 15 性技/16 奉仕 が 10-14 で写像が止まり抜けていた、70-92 感度/性傾向/SLG も非表示)。ABL を表示追加する時は[PRINT_ABL_COUNT の写像/INFO1 の REPEAT 数/既存 autotest カバレッジテスト]を同時更新する——既存テスト(abl.display_covers_*)は旧仕様(写像/REPEAT)を符号化しており、写像変更で 50/60 が COUNT 22/23 へ動くと REPEAT 22 のテスト側ループが取りこぼし fail する(=テストがバグを符号化していた典型)。SHOW_CHARA の表示順コメントは Project002 由来で陳腐化(実 ABL 名と不一致)につき信用しない。実証: 15/16 を自然順写像に追加(TASK-234)。"
+    tags: [Project001, abl, info-screen, display-whitelist, test-encodes-bug, port-assumption]
+    project: Project001
+    strength: 1
+    last_used: 445
+    state: archived
+
+  - id: N-Project001-20260721f
+    text: "Project002→kami の ERB 移植で頻出する Project003 文法/環境の落とし穴: (1) CALL に文字列リテラル引数を渡す時は必ずクォートする(CALL F(\"基礎\",0); 無クォートだと『\"基礎\"は解釈できない識別子です』)。(2) PRINTFORM/PRINTFORML 内で整数式は {式}、文字列式は %式% (整数に %% を使うと『%%の中の式が文字列式ではありません』)。(3) #DIM I / #DIM N は Project003 予約変数名と衝突し警告Lv2(『変数名\"I\"はProject003の変数名として使われています』)→ ローカルは L_I 等にする。(4) autotest 回帰ブロックで ADDCHARA など CHARANUM/キャラ前提を変える処理を suite 途中に置くと後続テストの index 前提を撹乱し count 不一致(fail=0 のまま pass が1足りない)→ chara 変異を伴う回帰は suite 末尾に置く。(5) literal 丸写しは依存差で不能なことが多く『構造を忠実移植+kamiデータ流用(ABLNAME名前ベース反復)+未実装はプレースホルダ/仮値』が現実解。実証: 能力表示8タブUI移植(TASK-235)。"
+    tags: [Project001, Project003, erb-port, syntax-gotcha, printform, reserved-var, autotest, info-screen]
+    project: Project001
+    kind: leaf
+    topic: N-105
+    strength: 8
+    last_used: 458
+    state: archived
+
+  - id: N-Project001-20260721g
+    text: "『UI変更が反映されない』報告は、同一機能の入口経路を全 grep して真因を特定する。Project001 の能力表示は2経路: (A) ステータスメニュー SHOP→SHOW_CHARADATA_MENU→SHOW_CHARADATA_PAGE(+SHOP_SEARCHCHARA) は TASK-235 で新8タブUI に差替済、(B) 調教画面 PRINT_TRAIN→SHOW_INFO_PAGE_1→SHOW_INFO_ABL は旧共有レンダラのまま。最頻は (B)。新UIだけ作っても (B) には波及しないので『反映されない』。共有レンダラ(SHOW_INFO_ABL)を直すと両経路に効く=波及効率が高い。また SHOW_INFO_ABL は ABL>0 でレベル0能力を隠していた→全mapped能力を常時表示に(性技/奉仕が値0でも見える)。（本ノートは N-052 と全文完全重複。2026-08-23 /cycle TASK-Project001-20260823-052 で archived — 生きているのは N-052）"
+    tags: [Project001, info-screen, entry-points, shared-renderer, abl, train-screen, not-reflected, archived-duplicate]
+    project: Project001
+    strength: 2
+    last_used: 455
+    state: archived
+
+  - id: N-Project001-20260721h
+    text: "Project003 のレイアウト/配色は HTML_GETPRINTEDSTR で autotest 自動検証できる(『ピクセルが見えない』を構造検証で代替)。HTML_GETPRINTEDSTR(0)=最新の論理行(末尾相対, LINECOUNT とは別系。0が最新)。色=<font color='#RRGGBB'>, 太字=<b>, 整列=<p align='..'>, ボタン=<button value='..'>。使い方: PRINTL で行を確定→ %HTML_GETPRINTEDSTR(0)% を RESULTS:n 等の組込文字列配列に form 代入(#DIMS ローカルへの form 代入は『式が異常』で不可)→ STRCOUNT(cap, needle)>=N で検査。重要: 同一行に複数 needle を当てる時は『一度キャプチャしてから複数 assert』にする(AUTOTEST_ASSERT が PASS/FAIL を PRINTL して line0 を次行へずらすため、2回目の HTML_GETPRINTEDSTR(0) は assert 行を読んでしまう)。版確認: HSV_TO_RGB/CSVEXIST 不在・EXISTCSV/CLIENTWIDTH/PRINTCLENGTH/STRCOUNT 在(Project003-builtins.json)。MaxLog 既定5000(Project001 は config 500→5000 に是正、E-5)。UTF-8 ERB 不可(CP932 固定)。kit 実装例: dev-support/erb-v2/tests/AUTOTEST_V2_DISPLAY.ERB。"
+    tags: [Project001, Project003, autotest, html-getprintedstr, display-verify, layout, builtins, spec]
+    project: Project001
+    strength: 3
+    last_used: 463
+    state: archived
+
+  - id: N-Project001-20260721i
+    text: "Project001 のキャラ項目(能力ABL/素質TALENT/経験EXP/基礎BASE)は定義CSV(CP932)に index 追記で増やせる。配列余裕: VariableSize ABL=1000(max92)/TALENT=1000(max400)/BASE=100(max11) は余裕、EXP=100(max99)は満杯=拡張要(EXP,100→200)。新ラベルは既存 index を変えないため**追加自体は回帰なし**(autotest緑のまま)。ただし能力表示は各ループが境界付きで、追加項目は**表示に出ない(inert)**: NEW_PRINT_ABL_FULL=FOR 0..92, 参考値 70..92 / SHOW_INFO_ABL は PRINT_ABL_COUNT の22枠ホワイトリスト / SHOW_INFO_TALENT=REPEAT 270 / SHOW_INFO_EXP=固定セット / SHOW_BODY_K=BASE 6-10。表示するには各ループ/ホワイトリストの範囲拡張が必要。CSTR(口上)はカテゴリごと kami 未実装で消費エンジン無=データ追加しても inert。実証: K-only 108項目を Chara201 へ全移植(TASK-255)、起動/551アサート緑・0警告だが新項目は能力表示に非表示。"
+    tags: [Project001, chara-csv, ablup, variablesize, display-loop, inert, erb-port, csv]
+    project: Project001
+    kind: leaf
+    topic: N-105
+    strength: 4
+    last_used: 468
+    state: archived
+
+  - id: N-Project001-20260721j
+    text: "Project003: 添字付き変数(LOCAL:81 等)を別のキャラ変数のキャラ/要素添字に使うときは**括弧必須** — TALENT:(LOCAL:81):238 / BASE:(LOCAL:81):6 / BASE:(LOCAL:81):8 > 0。括弧なし TALENT:LOCAL:81:238 はコロン過多でパース失敗し『NN行目でエラー』=suite全体がload不可(pass=0)になる。CALL の引数位置(CALL F, LOCAL:81)は括弧不要。単純な #DIM 変数(対象 等)を添字に使う場合は TALENT:対象:238 で可(括弧不要)。STUB差替([[N-050]]系)で関数を実装へ移す時は元STUBを必ず削除(二重定義=システム関数上書き禁止でエラー)し、既存実装(例 GET_PENISSIZE は _COM_COMMON 既存)は再定義しない。"
+    tags: [Project003, erb, syntax, indexing, parens, stub, erb-port, autotest]
+    project: Project001
+    kind: leaf
+    topic: N-105
+    strength: 4
+    last_used: 473
+    state: active
+
+  - id: N-Project001-20260721k
+    text: "客観ソースの無い per-entity データ(例: Project001 体型素質=既存キャラが体型ヒント素質を皆無)は『安定キー(NO/番号)由来の決定的割当 + 非破壊(値0=未設定のときだけ書込, CSV値優先) + 素数係数で隣接キーの分散確保』で自動差別化できる。注意: 単純な NO/divisor (例 (NO/5)%7) だと低番号がクラスタ(主要キャラが偏る)→ ((NO*3)%7) 等の乗算modで隣接を散らす。populate と派生計算は ENSURE_*(ガード付き冪等: 算出済なら即RETURN)に統合し、初期化(CHARA_INIT)と表示(SHOW_*)の両経路から呼ぶと取りこぼさない。実証: TASK-260 で 44キャラに体格/体型/バスト/ヒップサイズを番号割当しスリーサイズ差別化(569緑)。"
+    tags: [Project001, data-population, deterministic, idempotent, chara-init, erb, design]
+    project: Project001
+    strength: 1
+    last_used: 472
+    state: archived
+
+  - id: N-Project001-20260721l
+    text: "Project003: 単一英字ローカル名(h/v/s/N/I 等多数)は予約変数名と衝突し #DIM が無効化→そのグローバル変数を破壊する。ローカルは日本語名(算出値/種 等)か L_ 接頭辞で。**重大**: この種は autotest を偽通過する — (1)autotest config は @SYSTEM_TITLE 注入のため『システム関数の上書き:YES』で実 config(NO)と乖離、(2)autotest は ERB の load 警告(警告Lv2)を fail にしない、(3)autotest は CHARA_INIT 等の実起動経路を経由しない。結果、予約変数の global 破壊が起動経路(CHARA_INIT→ENSURE→SET_BODYSIZE 等)でのみ顕在化し『起動時エラー落ち』になるのに 569緑。対策: Run-Project001Autotest に reserved-name 警告ガード追加(『Project003の変数名として』を検出→classification=reserved-var, HH-028陽性テスト済)。load系/起動系の疑いは『実 config を逐語コピー(バイナリ型セーブ:YES 保持)+上書きだけYES+@SYSTEM_TITLEで LOAD_OK_MARKER 到達』を確認する実 config ブートで切り分ける。"
+    tags: [Project003, erb, reserved-variable, autotest-gap, config-divergence, startup-crash, harness, erb-port]
+    project: Project001
+    kind: leaf
+    topic: N-105
+    strength: 1
+    last_used: 473
+    state: archived
+
+  - id: N-Project001-20260721m
+    text: "kami Project003(0.2.6.0) HTML描画 spike(TASK-268): SETCOLOR+文字バー(■□)は <font color='#RRGGBB'> として通常行に出力されHTML_GETPRINTEDSTRで捕捉=検証可・推奨。HTML_RECT_BAR の <shape type='rect'> も行内で捕捉可。だが HTML_PRINT \"<div display='absolute-lefttop'>...\" は0エラーだがHTML_GETPRINTEDSTRで空=オーバーレイ層描画(視認はプレイテストのみ・autotest検証不可)。∴リッチUIは色付き文字バー+SETCOLORで作ると検証可、絶対配置カードは視認をユーザー playtest に委ねる。参照テンプレ doc/project-notes/SHOP.ERB は描画層のみ(C_SHOP_*_Y定数/列挙欠落・30プレースホルダ)で直接ロード不可=見た目仕様の参照に留め、移植先(現行SHOW_SHOP)が実データを持つなら見た目だけ再現が最効率。訂正(TASK-270): **SETBGCOLOR はこの Project003 で全画面(コンソール)背景色を変える=全画面点滅・バー不可視**(span背景ではない)→ バー・ボタン・任意の印字を含む**全コンテキストで使用不可**。TASK-286 でタブボタン背景色に誤用→再発(TASK-287 で再修正)。正解=前景色のみ: 充填/残を `█`(UNICODE(0x2588), 隙間なし全角ブロック)で SETCOLOR 描画し、値は**全角**にして(TOFULL_K: 半角→全角)バー中央セルへ重ねる(全角同士で桁が揃う)。■(U+25A0)は字間に隙間。全角混在の文字数えは STRLENS=表示幅(全角2)/STRLENSU=文字数(全角1)、SUBSTRING vs SUBSTRINGU も同様→全角セル処理は **STRLENSU+SUBSTRINGU で統一**(混在すると値が崩れる)。追記(TASK-295 S-1〜S-10調査): (1) HTML_PRINT第2引数デフォルト0→lineEnd=true→毎回改行。インラインは`, 1`必須。(2) div width属性は背景矩形幅のみ、レイアウト幅=テキスト幅(横並びカードは不可)。(3) **ALIGNMENT RIGHT + 複数PRINTFORM = merge bug**(ShiftPositionX累積でX座標が画面外へ飛ぶ)→1行1命令(HTML_PRINT+<font>タグ)が正解。(4) バー値テキスト背景色の正解: HTML_PRINT @\"<div background_color='%TOSTR_HTML(色)%'><font color='#FFF'>..字..</font></div>\", 1。TOSTR_HTML()は汎用関数v2(COLOR.ERB)のユーザー定義関数で整数→#RRGGBB変換。(5) padding='3'はpx無しだとFontSize/100の整数除算=0px。必ず'3px'を付ける。"
+    tags: [Project001, Project003, html, shop, ui, setcolor, setbgcolor, bgcolor, background-color, tab, highlight, prohibition, forbidden, spike, display-verify, alignment-right, html-print, tostr-html, inline, padding]
+    project: Project001
+    strength: 9
+    last_used: 550
+    state: archived
+
+  - id: N-Project001-20260721n
+    text: "Project003(0.2.6.0) ショップ等の右寄せ/列レイアウトの確証(TASK-298): (1) **HTML_PRINT は ALIGNMENT を無視する** — `ALIGNMENT RIGHT` 下でも `<p align='left'>` を出す(probe実証)。TASK-295でグリッドをHTML_PRINT化したのが右寄せ不成立の真因。[[N-058]]の『複数PRINTFORM=merge bug』は**この版では誤診**: 複数 SETCOLOR/PRINTFORM + ALIGNMENT RIGHT は単一の `<p align='right'>` を出しテキストも無破綻=正しく右寄せ。∴右寄せは **SETCOLOR/PRINTFORM(+ALIGNMENT RIGHT)**、単色なら **単一PRINTFORML**。HTML_PRINTは使わない。 (2) **検証手法**: HTML_GETPRINTEDSTR は `<p align>` 属性込みのマークアップを返す → `STRCOUNT(cap, \"align='right'\")` で右寄せを autotest 検証可(表示幅はSTRLENSで測れない=マークアップ長になる)。実描画の**表示幅は Project003.log のプレーン行を Python east_asian_width(W/F=2hw)で計測**して列ズレを定量化(注意: 長い行はlog内で折返す/HTML_PRINT divの値オーバーレイはlog不可視)。 (3) **【重大是正 TASK-308】`PRINTCLENGTH()*PRINTCPERLINE()`=78 は窓の行幅ではなく `PRINTC` のカラムグリッド幅(config `PRINTCの文字数:26`×PRINTCPERLINE3)**。実ゲーム窓の行幅は `CLIENTWIDTH`(px)/文字幅。**【2026-08-24 重大是正 TASK-Project001-20260824-001】『実機は Data/Project003.config の ウィンドウ幅:1200 → CLIENTWIDTH=1200』は誤りだった** — **Project003 が読む config は exe と同じ階層の `Project003.config` だけで、`Data/Project003.config` は読まれない**(決定的実験: サンドボックスのルート config へ `ウィンドウ幅:1200` を足すと CLIENTWIDTH が 800→1200 に変わり、`Data/` 側へ置いても 800 のまま)。ルートの `Project003.config` に幅指定が無かったため、**実機は既定の 800px(=86hw) で動いていた**のに HUD は 1200px(=131hw) 前提で設計されており、ヘッダ行の折り返しと右ブロックの詰まり(§1-U2① の『表示崩壊』)を生んでいた。同タスクでルート config へ `ウィンドウ幅:1200` を移し、autotest サンドボックスの config も同じ幅へ揃えた(揃える前は**テストが実機と違う幅を検証していた**)。∴ **描画幅を語るときは『どの config ファイルが実際に読まれるか』を先に実測する**。autotest はデフォルト窓 **800px** で走り log が実機より狭く折返す。**【再是正 TASK-309】autotest窓を実機configの1200pxへ揃えても実機の折返しは再現しない**(probe では 130半角でも非折返しなのに、実機ではバー+グリッド122hw が折返し破綻)。HTML_PRINT div バー(値オーバーレイ)の実描画幅・実機窓状態が未測で、**幅計測/算出で『収まる』と判断してレイアウトをコミットしてはならない**(TASK-298 幅誤認→308 横並びが実機破綻→309 差し戻し、の二度の失敗)。**視覚レイアウト変更(特にバー横並び・グリッド整列)は、autotestで no-crash を確認した上で、コミット前に必ずユーザープレイテストで折返し/整列を確認する**。横並びには物理的にバー短縮等が要る可能性が高い。なお `│`=1hw、`PRINTCLENGTH*PRINTCPERLINE`=PRINTC列グリッド(窓幅でない)は不変。表示幅統一は `%\"　\"*N%` 文字列反復 + `{,5}` 数値詰め + 表示幅pad関数(STRLENS<幅 で半角空白追加・全角末尾でも幅ちょうど)で実現。実証: 巫女カードを 3スロット×24hw=75hw に統一し崩れ(filled31/empty25・ボタン32hw折返し)解消、グリッドを最上段右寄せ化。 (4) **【視覚確認の決定打 TASK-311】実機 Project003 窓を PNG キャプチャして目視できる**: pwsh7 `Add-Type -AssemblyName System.Drawing.Common` + Win32 `PrintWindow(hwnd, hdc, 2)`(遮蔽に強い。`CopyFromScreen`は前面の別窓を撮るので不可)。サンドボックス `.autotest/Project001-boot/` の `Project003.config` に `ウィンドウ幅:1200/フォントサイズ:18` を足し、`ERB/AUTOTEST.ERB` の `@SYSTEM_TITLE` に[状態セット+描画+WAIT]プレビューを書いて Start-Process 起動→ MainWindowHandle を PrintWindow→ PNG を Read で目視。推測でなく実視できる(launchはサンドボックス経由=N-034尊重・UI駆動なし)。注意: `ERB/` 直下へ二重コピーすると『既に定義』警告(同名関数二重load)、サブdir構造を保つ。pwsh7は System.Drawing.Common 必須(無印 System.Drawing は不可)。 (5) **ショップのバー(`SHOP_BAR_INLINE`)は値オーバーレイ(HTML_PRINT div)が強制改行を起こしバーが2行に割れる**(label+cells / 値以降。298からの既存挙動)。∴バーと同一行に綺麗な右寄せグリッドは原理的に困難(横並びの度重なる失敗の真因)。横並びを綺麗に出すにはバーの%オーバーレイ(div)を除去し1行化が必要。グリッド(右寄せ=右半分)とバー(左半分)は水平に重ならないのでバーが1行なら横並び可。 (6) **【TASK-313 横並びでの実機フラッシュ右】** バーが1行化(上記5)できれば、グリッドを左幅に依らず画面右端へ揃える(フラッシュ右)には: pad関数に(左幅,右幅)を渡し `pad = CLIENTWIDTH()/9 - 2 - 左幅 - 右幅`(font18: 半角≈9px、-2はscrollbar余白)。各行 grid右端 = lineW で固定=右端揃い、左端ラグド(298 ALIGNMENT RIGHTと同じ見た目)。数値は `{,N}` 固定幅で grid幅を一定化。**重要: `█`(U+2588)は Project003描画で約1hw(半角)幅**(緑バー20セル≈190px=9.5px/セル実測)。バー表示幅を算出する RETURN は **`幅*2`でなく`幅`**(全角2hw想定は過大→右寄せがズレる)。east_asian_widthは █ を曖昧(A)扱いするので机上判定不可、実機PrintWindowキャプチャでのみ確定。"
+    tags: [Project001, Project003, html, shop, ui, alignment, alignment-right, html-print, p-align, right-align, layout, display-verify, html-getprintedstr, east-asian-width, printclength, console-width, window-width, clientwidth, printwindow, screenshot, bar-wrap, flush-right, block-char-width, u2588, merge-bug, display-width, miko-card, padding]
+    project: Project001
+    strength: 16
+    last_used: 1047
+    state: active
+
+  - id: N-Project001-20260721o
+    text: "CP932(Shift-JIS)の ERB を日本語/記号リテラルで内容検索するとき、Grep(ripgrep)ツールは**偽陰性**を返す — クエリの UTF-8 バイト列をファイルの CP932 バイト列に当てるため不一致になる(TASK-299: `◇` を grep して0件→『存在しない』と誤判断しかけたが、Python cp932 デコードで実在を確認)。対策: CP932 ファイルの内容照合は **Python で `open(path,'rb').read().decode('cp932')` してから Python 側で検索**する(編集も同様: read cp932→置換→write cp932)。ASCII(関数名 `@FOO`・変数 `CFLAG:4`・英数)の grep は CP932 でも ASCII 互換なので一致するため、grep が使えるのは ASCII パターンに限る。AUTOTEST.ERB だけは UTF-8 BOM(Prepare が CP932 変換)なので `utf-8-sig` で扱う。関連: 表示確認は Project003.log(UTF-8)を Python で読む(N-Project001-20260721n)。**追記(TASK-305): Data/ERB の ERB も CP932 一律でなく UTF-8(BOM) が混在する**(例 `システム/UTIL_AFTERTRA.ERB`=UTF-8 BOM、Project003 は BOM 検出で読む)。∴read/write 前に**先頭3バイト `EF BB BF` を判定**し、検出 enc で読み書きする(`raw[:3]==b'\\xef\\xbb\\xbf' → utf-8-sig else cp932`)。cp932 決め打ち read は BOM ファイルで `UnicodeDecodeError: 0xef`。encoding ガードの U+FFFD(`EF BF BD`)とは別(BOM は `EF BB BF`)。"
+    tags: [Project001, Project003, erb, cp932, shift-jis, utf-8, bom, encoding, grep, ripgrep, false-negative, search-miss, python, tooling, content-search]
+    project: Project001
+    strength: 3
+    last_used: 560
+    state: active
+
+  - id: N-Project001-20260721p
+    text: "Project003 で状態を持つ一覧/テーブル画面(ソート/ページ)を1関数で実装する型(K移植 TASK-301): @関数内の **LOCAL 配列は同一CALL内の GOTO 再描画ループをまたいで永続**するため、`LOCAL:(100+i)`=対象index配列 / `LOCAL:(500+i)`=ソート値 のように**関数スコープの動的配列**として使える(global TFLAG等を汚さない)。CALL する行レンダラ/色関数は別フレームなので LOCAL を破壊しない(ARRANGE_*/SHOP_PCTCOLOR_K と共存実証)。stateless 再描画= `$DRAW … INPUT … 分岐 … GOTO DRAW`。value 名前空間: 列ソート=小番号 / ナビ=1000系 / 行選択は **キャラindex + 大オフセット(10000+)** で衝突回避(K の NO+100→NO_TO_CHARA は不要、kami は RESULT=index 直接で `SHOW_INFO_WITH_UI(index,1)`)。挿入ソート= `FOR i,1,N / FOR j,i,0,-1 / 比較で SWAP(index配列とキー配列を並行) / 整列済で BREAK`、`NOW_SORT==PREV_SORT → DESC=!DESC` で昇降トグル(初回=昇順)。**ソート順の決定的検証**= 注入で多様データ列をソート→ Project003.log のプレーン行順を Python で読む(EXPECT_TEXT は順序を assert 不可だが log 実順は確認可、[[N-Project001-20260721n]]の発展)。表は表示幅で `|` を揃える(全行 ≤78hw、ヘッダ filler を行 pre-`|` 幅に合わせる)。実証: 能力一覧テーブルを体力降順 5000/5000/2000/300 で確認、列|が表示列[13,18,23,28,33]一致。"
+    tags: [Project001, Project003, ui, table, list-screen, sort, insertion-sort, local-array, function-scope, goto, stateful-screen, injection, display-verify, erb-port, value-namespace, charadata, shop]
+    project: Project001
+    strength: 1
+    last_used: 556
+    state: active
+
+  - id: N-Project001-20260721q
+    text: "Project003 で `@FUNC(引数A, 引数B)` の **paren(括弧)引数は `#DIM 引数A` / `#DIM 引数B` の明示宣言が必須**(#FUNCTION/#FUNCTIONS でも通常プロシージャでも)。宣言しないと引数が未定義変数になり、**呼び出し側の行で『N行目でエラー』(ロード/実行失敗・autotest Pass=0)** になる(TASK-302: `TBL_COL_CODE(分類,列)` 等で #DIM 欠落→AUTOTEST.ERB の CALL 行でエラー)。手本: `@SHOW_INFO_WITH_UI(対象, ページ移動)` は `#DIM 対象`/`#DIM ページ移動` を持つ。`@CALC_GRID_COLS(ITEM_W)` も `#FUNCTION`+`#DIM ITEM_W`。記述順= `@宣言(...)` → `#FUNCTION(S)` → `#DIM 各引数` → `#DIM ローカル`。日本語引数名/ローカルは可(N-Project001-20260721f)。Project003 のエラー報告は定義側でなく**最初の呼び出し行**を指すことがあるので、未定義変数エラーは呼び先関数の引数宣言を疑う。"
+    tags: [Project001, Project003, erb, syntax, function, paren-args, dim, argument, load-error, undefined-variable, erb-port, gotcha]
+    project: Project001
+    kind: leaf
+    topic: N-105
+    strength: 2
+    last_used: 558
+    state: active
+
+  - id: N-Project001-20260721r
+    text: "kami UI の色は **`Data/ERB/システム/UI_COLOR.ERH` の `#DIM CONST カラー_XXX` 定数を使う**(生 `0xRRGGBB` を直書きしない)。Project003 は**色用の組込CSVスロットを持たず**、任意CSVのランタイム読込も非標準のため、`#DIM CONST` ERH が idiomatic な色の中央集約手段(既存 `_CONSTANTS.ERH`/`VARIABLE.ERH` と同方式、ERHはサブディレクトリ含め自動ロード)。`#DIM CONST` は global int=`SETCOLOR カラー_状態良` や `CALL F,…,カラー_役割` にそのまま渡せる。**ランタイムで同hexに解決**するため `<font color='#78B783'>` は不変→色アサート(STRCOUNT(cap,'#78B783'))は破綻せず=値不変リファクタの安全網。パレット(TASK-304): 状態良/注意/危険=0x78B783/E0C060/E06666・役割=76ADC8・ラベル金=FFD479・バー背=404040・補助=9090A0・ランクS/A/B/C/D/無=CC66FF/FF99CC/FF6666/FFAA33/FFEE44/808080。注意: HTML文字列内 `'#RRGGBB'` は 0x形式でないので別管理(`%TOSTR_HTML(カラー_XXX)%` で揃えられる)。集約完了範囲: `システム/` 全UI画面(TASK-304/305/306, HTML色含む)。 **是正(TASK-307): `汎用関数v2/` は集約対象でない** — 既に `@COLOR(名前)→hex` の名前キー色API + 拡張点 `COLOR_EXT.ERB`(現状スタブ, ここに固有色登録) + `@BARCOLORSET` + `RAINBOW` 定数配列として**整理済**で、`COLOR.ERB` 冒頭が**本体編集禁止**を明記。さらに `汎用関数v2/ui/` の `0x100000` 等は**色でなく入力(クリック)ビットマスク**(誤検出注意)。∴kami の色は2系統が補完的に併存: (1) UI_COLOR.ERH `#DIM CONST`(コンパイル時・描画ループ高速・固定パレット) (2) ライブラリ `@COLOR/COLOR_EXT`(ランタイム名前引き・動的/拡張色)。値の重複は バー背=@COLOR\"暗灰色\"・銀=@COLOR\"白\" の2件のみ(他はkami固有)。関係は UI_COLOR.ERH ヘッダ + COLOR_EXT.ERB に明文化済(ユーザー裁可: 現状維持+明文化)。Project002 ports は別領域・別オーナーシップで非対象。"
+    tags: [Project001, Project003, ui, color, palette, constant, dim-const, erh, refactor, centralization, csv, setcolor, tostr-html, shop, charadata, color-ext, library, bitmask]
+    project: Project001
+    strength: 3
+    last_used: 562
+    state: active
+
+  - id: N-Project001-20260721s
+    text: "Project001 の設計文書(`doc/project-notes/GAME-DESIGN.md`)は**実装に追随しておらず、提案/レビューの一次情報にしてはならない**。実証(TASK-318): §8「拡張設計(採用予定)」と記された4システムのうち**3つが既に実装済み**だった — §8.1伝承=`LORE.ERB`(@LORE_ADD, FLAG:820-861 最大20件)、§8.2素質変容=`TALENT_HENYOU.ERB`(@TALENT_HENYOU_CHECK, 好感度CFLAG:2/ABL/EXP閾値で8種以上の変容, IP_ADD/LORE_ADD連動)、§8.3 IP/実績=`IP.ERB`(FLAG:810累計IP・IPショップ・FLAG:812アンロックbitmask)+`TROPHY.ERB`(約50実績)。未実装は§8.4神格共鳴のみ。同様に提案前提も誤: 巫女差別化は既にCSV(Chara*.csv の TALENT/ABL個体差)+`TRAIN_COMORDER.ERB`の素質分岐(好奇心+7/保守的-13)で実装済、勝敗も `MONEY<MONEY:100`→`BADEND_1` のcrisp gate+20エンド+目標常時表示(@SHOW_GOAL)で概ね実現済。神力(MONEY:2)だけは青天井(器キャップ未実装)、期日は`ENDING_TIMEUP`でFLAG:5==1→5年(難易度はエントリで通常/デバッグのみ=実質固定、旧FLAG:5=2/3/4分岐は死にコード)。∴**ゲーム改善/工数見積もりは必ずコードで現状を裏取りしてから断定する**([[feedback-verify-before-commit]]のドキュメント版)。手法: 並列Exploreで領域分担調査→意外/重要な主張(実装済み判定・勝敗条件)はオーケストレータが該当ERBを直読して確定。CP932はPython cp932で読む([[N-Project001-20260721o]])。"
+    tags: [Project001, game-design, design-doc, implementation-verify, talent-henyou, ip, lore, trophy, ending, ending-timeup, money2, shinryoku, chara-csv, talent, stale-doc, verify-before-assert]
+    project: Project001
+    strength: 8
+    last_used: 923
+    state: active
+
+  - id: N-Project001-20260721t
+    text: "Project001 の巫女生活コマンドの解禁(表示可否)は **Project002由来の `COM_ABLE` 基盤**で制御する(新規UI不要)。機構: (1) **Train番号≥300=巫女生活コマンド / <300=交神の儀**(`COMABLE_COMMON.ERB:16-24`、`FLAG:2`が交神中フラグ)。(2) `Data/CSV/Train.csv`(`番号,名称`)に登録すると `CREATE_COMABLE_LIST`(`USERCOM_DISPATCH.ERB`)が全TRAINNAMEを走査し各 `@COM_ABLE{N}` を評価→`COM_ABLE_FLAG:(N)=1` でメニュー自動表示。(3) **解禁条件は各 `@COM_ABLE{N}` に1行足すだけ**: `CALL COM_ABLE_COMMON,N` / `SIF !RESULT RETURN 0` の後に `SIF <条件> RETURN 0`。施設レベルでゲートするなら施設変数(鳥居`FLAG:79`/授与所`80`/社務所`81`/拝殿`82`/本殿`83`、各Lv0-5、`SHRINE_MANAGE.ERB`で神位+信仰点+資金を払い`FLAG:8x+=1`)を見る。空きTrain番号: 318-324,335+。この基盤自体がProject002移植済み(PORTING-Project002.md:67,95)なので、Project002の日常/デート系コマンド(../Project002 の 会話/食事/料理/買い物/縁日デート/子供と遊ぶ等)を番号≥300で移植すれば巫女生活に追加できる([[N-008]]の移植パターン+ラベル参照のまま)。交神開放=本殿`FLAG:83`≥1+神霊具現`TALENT:MASTER:201`+信仰心`ABL:40`≥2(`SHOP.ERB:305`)も同型のゲート。資料: `doc/project-notes/design-humanform-command-unlock.md`。"
+    tags: [Project001, Project003, command, com-able, comable, usercom, train-csv, trainname, miko-life, 巫女生活, unlock, facility, shrine, shrine-manage, flag82, Project002-port, command-gate, koushin]
+    project: Project001
+    strength: 1
+    last_used: 575
+    state: active
+
+  - id: N-Project001-20260721u
+    text: "Project001 の `Data/ERB/**/*.ERB` は **エンコード混在**: 大半は CP932(Shift-JIS)/BOMなし/CRLF だが **一部は UTF-8 BOM付き**(例 COMF357_食事.ERB, Project002_CLOTH 群)。**Project003 は BOM自動判別**(BOM有=UTF-8 / 無=CP932)で両方読める(autotest 654緑で実証)。∴編集は **per-file でBOM判別必須**: bytes 読込→先頭`EF BB BF`でBOM判定→BOM有は UTF-8、無は `GetEncoding(932)` で GetString/置換/書込。**BOM書込の罠: `UTF8Encoding($true).GetBytes()` は BOM(preamble)を付けない**(TASK-343 で BOM脱落→Project003がCP932誤認→parse error)。正: `WriteAllBytes($f, $enc.GetPreamble() + $enc.GetBytes($t))` か `WriteAllText`。Edit/Write ツールはこの判別をせず破壊しうる→PowerShell必須([[N-037]] U+FFFD経路, [[N-Project001-20260721o]])。多バイト/複雑内容はインラインが `EPERM uv_spawn` で落ちるため **.ps1 に書いて `& path` 実行**。検証: 書込後 BOM維持 + `Contains([char]0xFFFD)`==False + `Test-Project001Encoding.ps1`。`AUTOTEST.ERB` も UTF-8 BOM(委譲executorが行末をLF化する事あり→必要なら CRLF 正規化)。"
+    tags: [Project001, cp932, shift-jis, utf8, erb, encoding, edit, powershell, getencoding932, autotest-erb, bom, getpreamble, u-fffd, mixed-encoding]
+    project: Project001
+    strength: 2
+    last_used: 598
+    state: active
+
+  - id: N-Project001-20260721v
+    text: "Project003 の手続き(非#FUNCTION)で呼び出し元へ値を返すときは **`RETURN <式>`** を使う(RESULT に代入)。**bare `RETURN`(引数なし)は RESULT を 0 にリセットする** — `RESULT = x` の後に bare `RETURN` と書くと x が消える(TASK-337 で RESTOCK_GOODS/SELL_GOODS が actual=0 で4件fail→`RETURN <式>`化で解消)。複数値返しは `RESULT:1 = a` 等を先に設定し最後に `RETURN <主値>`(RETURN は RESULT:0 のみ更新、RESULT:1+ は残る)。**式中で `FUNC()` 呼びする関数は `@NAME` 直後に `#FUNCTION` 宣言が必須**(RETURNF を書いても #FUNCTION 無しは『#FUNCTIONが定義されていない関数を式中で呼び出そうとしました』runtime error。TASK-338 で SELLER_SKILL が #FUNCTION 欠落でfail→追加で解消)。引数付き #FUNCTION は `@NAME, 引数`→`#FUNCTION`→`#DIM 引数` の順。確証=DEBUG_ADD_CHARA も `RETURN 1`/`RETURN 0` 形。globalを変更するだけの手続きは bare RETURN で可。"
+    tags: [Project001, Project003, erb, return, returnf, result, procedure, function, gotcha, value-return, hash-function]
+    project: Project001
+    strength: 1
+    last_used: 593
+    state: active
+
+  - id: N-Project001-20260721w
+    text: "Project001 autotest(`Invoke-Project001Autotest.ps1`)の Prepare は Data/ 全体を隔離コピーする。**コピー中に他プロセス(並行 survey エージェント / 手動 PowerShell read)が Data/ を読むと不完全コピーになり、無関係ファイル(例 INFO1.ERB:37)で transient parse error(Classification=error, Pass=0)を起こす**(TASK-339 で再現→全エージェント停止後のクリーン再実行で 646緑)。対策: autotest 実行中は他の Data/ アクセスを避ける(委譲では実装executorは1体直列、read-only survey も autotest と時間帯を重ねない)。無関係ファイルで error/Pass=0 が出たら競合を疑い単独で再実行する(コード修正の前に)。"
+    tags: [Project001, autotest, Project003, concurrency, prepare, data-copy, transient, delegation, flaky, agent-roles]
+    project: Project001
+    strength: 1
+    last_used: 594
+    state: active
+
+  - id: N-Project001-20260721x
+    text: "Project001 の `@EVENTTURNEND_CORE`(EVENT.ERB) は既に待機/非寵愛巫女の **体力(BASE:体力)/気力(BASE:気力)/疲労を毎ターン回復**する(社務所Lv・手水舎・温泉・難易度・助手・疲労困憊で増減; おおよそ L23-207)。∴待機作業効果(`@STANDBY_WORK_EFFECTS`)に『自由休憩→回復』を足すと**二重計上**になる(TASK-344 で回避: 自由休憩は既存回復に委ね、自己鍛錬→MAXBASE capacity成長 / 洞窟探索→MONEY:1 のみ追加)。新しいターンエンド効果(回復/収入/成長)を足す前に、既存の同種処理が無いか必ず確認する。Project003 の SELECTCASE はインデント非依存(CASE 位置がずれても動作)。"
+    tags: [Project001, Project003, eventturnend, recovery, base, taiki, standby-work, double-count, balance, selectcase]
+    project: Project001
+    strength: 1
+    last_used: 599
+    state: active
+
+  - id: N-086
+    text: "Project001 の **スカラー CHARADATA 配列**(1キャラ1値だが内部は配列, 例 WOMB/ANUS/STOMACH_TOTAL_CREAMPIED_AMOUNT, VARIABLE.ERH宣言)は `VAR:(char):0` と**要素index `:0` を明示**してアクセスする。`VAR:(char)` だけだと Project003 が char を要素indexと解釈し既定キャラ(-1等)を char とみなして『第2引数…はキャラ登録番号の範囲外』runtime error になる(中出し量>0 等、実行時にのみ発火する潜在バグ; TASK-345 で @RECORD_CREAMPIE 3箇所を修正)。参照は既存の動作箇所のパターン(例 SEXUAL_PREFERENCE:(char):0)に合わせる。boot smoke では未発火(該当行が条件分岐内)なので、CHARADATA書込を足したら必ず非ゼロ経路の autotest を書く。"
+    tags: [Project001, Project003, charadata, scalar-array, element-index, runtime-error, pregnant, womb-sperm, gotcha, latent-bug]
+    project: Project001
+    strength: 1
+    last_used: 600
+    state: active
+
+  - id: N-087
+    text: "Windows(case-insensitive FS)で Project001 の autotest `-Clean` が突然『解釈できない識別子』(CSV由来の名前 性知識/オトコ 等)で line 54 付近 pass=0 halt する場合、**CSV の大小文字衝突**を疑う: git の追跡名は `Data/CSV/exp.csv`(小文字)だが、何かが `Exp.csv`(大文字)を作ると git が追跡ファイルを deleted 扱いにし、-Clean リビルドが Abl.csv/Talent.csv/exp.csv を欠いた Data ツリーをコピー→全CSV名が未定義化する。復旧: `git checkout -- Data/CSV/Abl.csv Data/CSV/Talent.csv Data/CSV/exp.csv`。委譲executorも踏みうるので autotest 失敗時の鑑別に含める(コード修正より先に git status でCSV deleted を確認)。"
+    tags: [Project001, autotest, csv, case-fold, windows, git, clean-rebuild, delegation, gotcha, troubleshooting]
+    project: Project001
+    strength: 1
+    last_used: 604
+    state: active
+
+  - id: N-088
+    text: "Project001 の `BEGIN SHOP`(EVENT.ERB:11 等)では PRINTBUTTON の値域で挙動が分岐: **0-99 は Project003 の購入レンジ**(その番号の Item.csv アイテムを購入処理→売り物未登録(ITEMSALES==0)なら内蔵メッセージ『(品名)は売っていません』、on-saleなら@EVENTBUY)、**≥100 は @USERSHOP 行き**(コマンドコード)。∴ショップのコマンド/カードボタン値は **必ず≥100、かつ既存コマンド(100-160/751-755/900/999)とも Item.csv定義IDとも非衝突**にする。実害例: 巫女カードのボタンが値10-32(=10ビデオカメラ/12搾乳器/30鞭等の実アイテムID)で『売っていません』だけ出て機能せず(TASK-280設計欠陥, playtest未実施で潜伏)→TASK-350で810-832へ退避し@USERSHOP+@MIKO_CARD_ACTIONで処理。クリック→経路はProject003内部=autotest不可、helper化して陽性test+playtest視認。"
+    tags: [Project001, Project003, shop, begin-shop, printbutton, eventbuy, usershop, item-id, button-value, uriltenai, miko-card, gotcha, design-flaw]
+    project: Project001
+    strength: 2
+    last_used: 811
+    state: active
+
+  - id: N-089
+    text: "Project001 のショップHUD(@SHOW_SHOP)グリッドは `@PRINT_GRID_PAD`(`CLIENTWIDTH()/9` ベースのフラッシュ右パディング=右端まで伸ばす)で**常時HUD専用**。これをタブのコマンドブロック等へ移設するとコマンドボタンと混在しレイアウトが崩れる(TASK-351 HUD3 で布教力+グリッドを752タブへ移動→崩れ→TASK-352でrevert)。**重要: HUD/UIレイアウト変更は autotest(boot smoke)では崩れを検知できない**(parseは通る=falseな緑)。∴ブラインドで大きくレイアウトを動かさない。UI変更は **playtest反復(小変更→ユーザー実視→調整)** で行い、**崩れたら即revert**。grid helper はHUD文脈の幅前提を持ち再配置に弱い。委譲executorのDISPLAY系WOも『boot緑≠視覚OK』を明記。"
+    tags: [Project001, shop, hud, layout, print-grid-pad, clientwidth, flush-right, playtest, blind-ui, revert, regression, false-green, delegation]
+    project: Project001
+    strength: 1
+    last_used: 607
+    state: active
+
+  - id: N-090
+    text: "Project001/Project003 で `PRINTBUTTON @\"[{値}]ラベル\"` のようにボタン値をラベルに埋め込むと、**値の桁数が増えるとボタン幅が変わり多列レイアウトが崩れる**。実害: 巫女カード3列(@SHOW_MIKO_CARDS)で TASK-350 が値を10-32→810-832に退避(2桁→3桁)した結果、各ボタンが8hw→9hwになり1列のボタン行が列幅24hwを超過→横3列がずれて崩れ、ユーザーには『コマンドが機能しない』に見えた(実際はディスパッチ正常)→TASK-356で `[{値}]` を除去し固定幅ラベル(筆頭/助手/変更+全角pad=各8hw)に。**ボタン値はクリック処理用で表示不要**(PRINTBUTTONの第2引数で保持されるので表示から外してもディスパッチ不変)。多列セルのボタンは値非表示の固定幅に。幅崩れはboot smokeで検知不可→playtest視認([[N-089]])。参照: buy-range/値域は [[shop-button-value-ranges]]相当のN-088。"
+    tags: [Project001, Project003, printbutton, button-label, button-value, layout, column, width, miko-card, playtest, dispatch, false-symptom]
+    project: Project001
+    strength: 1
+    last_used: 611
+    state: active
+
+  - id: N-091
+    text: "Project001/Project003 の SHOP は **クリック→buy/@USERSHOP のルーティングと対話メニューを autotest で再現できない**(boot smokeはコード経路のみ)。診断は **可視デバッグ(`PRINTFORML [DBG] ...{var}`)を仕込み→ユーザー playtest で実測**するのが確実(`PRINTFORMW`はautotestをキー待ちでハングさせるので`PRINTFORML`を使う)。実例(TASK-357): 『巫女カードのコマンドが機能しない』の表層報告→静的にはdispatch正常(`card.dispatch_usershop_820`を追加し RESULT=820→@USERSHOP→@MIKO_CARD_ACTION を682緑で確認)→buy-range実測(`VariableSize.CSV ITEMSALES=1000`, `@SHOW_SHOP`が`VARSET ITEMSALES,0`で全非売=全クリック@USERSHOP行き)→[DBG]+playtestで**真因=空スロットのno-op**(巫女セット済カードは正常動作)と判明。教訓: 表層症状(不動作)は鵜呑みにせずランタイム実測で切り分ける。Project003のSHOP buy判定は ITEMSALES≠0 のみ購入、他は@USERSHOP。関連[[N-088]](値域)[[N-089]](UI playtest)[[N-090]](ボタン幅)。"
+    tags: [Project001, Project003, shop, usershop, eventbuy, itemsales, buy-range, runtime-probe, printforml, playtest, false-symptom, autotest-limit, miko-card]
+    project: Project001
+    strength: 1
+    last_used: 612
+    state: active
+
+  - id: N-092
+    text: "既存関数を**流用・配線する前に、その関数の実際の役割とフィルタ/ガード条件を実装で確認**する(名前や見た目で判断しない)。2026-06-26 巫女カードで2度の手戻り: (a)『変更』を `SHOW_CHARADATA_MENU`(=能力表示ビューア・命令[102]の実体)に配線し、設定のつもりが能力閲覧画面に遷移(TASK-359)→setter(独自`SELECT_CARD_MIKO`+`CARD_SET_OR_SWAP`)に是正。(b)その一覧を `CHANGE_TARGET`(筆頭=MASTER以外を全表示)から流用した際、流用元に無い `SIF CFLAG:COUNT:1<1` を足し、CFLAG:1<1 の所持キャラを全除外→空一覧(TASK-361→362)。教訓: ①呼ぶ前に関数の役割(viewer/setter/selector)を実装で確認 ②流用時はフィルタ/ガード条件を流用元と1対1で突き合わせ、変えるのは意図的にのみ ③変数の意味を確認(`CFLAG:1`=カードミコ階層 0/1/2、≧1でカード表示・≧2で助手可、**所持判定ではない**; 所持=非MASTERの全CHARANUM)。対話UIの実挙動は [[N-091]] どおり playtest で確認。**(2026-06-27 再発 TASK-392)** 同じ `SIF CFLAG:COUNT:1<1` が `@SHOW_MIKO_CARDS` の**補充ループ**にも残存し、巫女生活(BEGIN TRAIN)の `VARSET TFLAG,0` でカード永続化(TFLAG:761-763)がクリアされた後、未成長巫女が補充されず空カード化。撤去+回帰 `mikocard.fill_nongrown` 追加で是正。**同種フィルタは複数のカード関数に複製され得る→全カード経路(表示/補充/選択一覧)を1対1で突合せよ**。S2でノート検索を怠り本ノートを見落とした(search-miss)。関連 [[N-090]][[feedback-realtime-rework-fix]]。"
+    tags: [Project001, Project003, code-reuse, function-wiring, viewer-vs-setter, filter-condition, cflag, miko-card, rework, semantic-mismatch, playtest]
+    project: Project001
+    strength: 2
+    last_used: 667
+    state: active
+
+  - id: N-093
+    text: "Project003 の `||`/`&&` は**短絡評価しない**(両辺を必ず評価)。範囲外indexを渡しうる関数で片側だけガードしても、もう片側の `TALENT:(ARG):x`/`CFLAG:(ARG):x` 等が index=-1 を評価して『キャラ登録番号の範囲外』でクラッシュする(例: `@HAS_PENIS` の `RETURNF IS_MALE(ARG) || TALENT:(ARG):ふたなり` は IS_MALE をガードしても TALENT:(-1) で落ちる)。対策: キャラindexを引数に取る #FUNCTION/helper は**関数先頭で `SIF ARG<0 || ARG>=CHARANUM RETURNF 0`** とガードする。背景: 巫女生活(BEGIN TRAIN, FLAG:2=0)は MTAR/MPLY を初期化せず(交神の KOUSHIN_SELECT のみ設定・AFTERTRA で CLEAR)、移植元 Project002_COMF の target系コマンド(COM_ABLE367等)が `HAS_PENIS(MTAR:0=-1)` を渡してクラッシュ(TASK-393)。既存の堅牢な COM_ABLE は `SIF MTAR_NUM<=0 RETURN 0` でガード済(移植時に踏襲漏れ)。crashは helper ガードで封止できるが、巫女生活で当該コマンドを使えるようにするには MTAR populate が別途必要。関連 [[N-092]]。"
+    tags: [Project003, short-circuit, logical-operator, talent, cflag, index-guard, crash, miko-life, mtar, erb-port, com-able]
+    project: Project001
+    kind: leaf
+    topic: N-105
+    strength: 4
+    last_used: 899
+    state: active
+
+  - id: N-094
+    text: "ツール出力にゲームファイル(ERB/CSV/Project003.log・特にCP932)の本文をダンプしない。2026-06-27 連続でターンがコミット前にサイレント中断(未コミットの変更が残存)。原因仮説=ダンプ内容中の文字列が injection/停止トークン的に作用し中断を誘発(ユーザー指摘『インジェクション回避のためコードを決してログに出力するな』)。規律: ①ファイル本文を echo しない(cat/awk/sed/head/tail/grep本文表示を避ける)。確認は件数(`wc -l`/`grep -c`)・ファイル名(`grep -l`)・真偽・行番号・パスのみ。②CP932編集は PowerShell `.Replace` で本文非表示のまま行い、検証は FFFD数/byte数/件数で。③`bash` から `powershell.exe -Command` を呼ぶと bash が `$var` を食って巨大パースエラーを吐く→ **PowerShell ツールを直接使う**。④各タスクは検証後すぐコミットし中断に備える(再開時はまず `git status` 件数のみ確認)。【強制化 TASK-402】この規律は advisory 単独では再発を防げず、PreToolUse フック `.claude/hooks/guard-cp932-dump.mjs`(matcher=Bash|PowerShell|Read|Grep)で機械強制(危険操作=exit 2 deny、安全な `.Replace`+件数検証は許可)。AP-010 参照。関連 [[N-040]][[N-034]]。"
+    tags: [tooling, output-discipline, injection, turn-interruption, cp932, file-dump, powershell, bash, commit-promptly, Project001]
+    project: Project001
+    strength: 2
+    last_used: 677
+    state: active
+
+  - id: N-096
+    text: "Project003: CALL で呼ぶプロシージャに #FUNCTION/#FUNCTIONS を付けてはいけない。#FUNCTION(S) は式メソッド(関数呼び出し+RETURNF で値を返す)であり、`CALL 名前, 引数` で呼ぶと『#FUNCTION(S)として定義された関数に対し通常のCALLが行われました』でロード時エラー。CALL 方式で RESULT を返す補助は RETURN 値で返し #FUNCTION を付けない(既存 @DEBUG_ADD_CHARA/@DEBUG_ENDING_PLAY が手本)。引数は組込み ARG 経由、index 化代入は LOCAL を介す(VAR:TARGET:LOCAL)。N-012 の #FUNCTION/ARG 規約の姉妹則。"
+    tags: [Project003, erb, function, call, returnf, blocker-analysis]
+    project: Project001
+    strength: 1
+    last_used: 418
+    state: archived
+
+  - id: N-097
+    text: "Project002 の喜怒哀楽感情システムは Palam.csv ×4件(喜/怒/哀/楽)を核とし、Talent.csv(2)/CFLAG.CSV(3)/SYSTEM/_FUNCTION.ERB(14件)/TURNEND.ERB(14件)/ABL/ABLUP0-5 等で構成。Project001 ターンエンド=SYSTEM_NEWTERM.ERB(212行)、汎用関数=UTIL_FUNC.ERB、ABL=FSCK0000.REN/ABLUP000-099(空き050-097)。設計確定=D-27(採用/ターンエンド自動更新/ABLフル移植/TENDENCY役割分離)。移植計画=TASK-20260628-682(EM-2〜6)。"
+    tags: [Project001, Project002, emotion, palam, survey, port-candidate, ablup, turnend, system-newterm]
+    project: Project001
+    strength: 1
+    last_used: 690
+    state: active
+
+  - id: N-098
+    text: "CP932 ゲームファイル(.erb/.csv)の Japanese 文字列を UTF-8 既定の grep(ripgrep/Grep tool/Select-String)で検索すると **false-negative=0件と誤認**(バイト不一致)。実在しても『未定義/未移植』と誤断定する。TASK-686 実例: §1-M が Project001 mood PALAM を『Palam.csv 0件・未移植』と誤断定し Project002 感情の重複移植計画(EM-2 スロット追加)に到った根本原因—実際 Project001 は 30反感/31不快/32抑鬱/33不信/34恐怖/35怒主/36怒外/37哀主/38哀外/39怖主/40怖外 を Project002(10-16)より豊富に保有。対策: CP932 の Japanese 検索は `tools/Project003-autotest/Get-SafeScreen.ps1 -Encoding cp932` で正復号→clean .txt 化してから検索。ASCII(関数名/`PALAM:35` 等)は直接 grep 可。実装前 S4 は実データを正エンコードで確認する(誤前提のまま Execute しない)。"
+    tags: [Project001, cp932, grep, false-negative, search-miss, encoding, survey, sanitizer, emotion, premise-check]
+    project: Project001
+    strength: 1
+    last_used: 694
+    state: active
+
+  - id: N-099
+    text: "Project001 機嫌(感情)表示は Project002 の『支配感情→1文字+色』方式を移植(TASK-689/690, `EMOTION_K.ERB`)。`@TOSTR_EMOTION_K(対象)`#FUNCTIONS=1文字 / `@GETCOLOR_EMOTION_K(対象)`#FUNCTION=色。支配=怒(PALAM:35+36)/哀(37+38)/怖(39+40)のMAX。**値が負ほど良い機嫌**(MAX<-5000幸/<-500悦/<-100良/else平)→喜/楽専用PALAM不要で全スペクトル(幸悦良平/憤怒恨/憂悲鬱/怯恐狂)を1文字表現。特殊=崩壊(TALENT:245)→壊/虚ろ(244)→虚。催眠はProject001非保有で省略。色は直値hex。情報画面=機嫌節を1文字化、巫女カード=専用機嫌行(24hwセル)。閾値はProject002仮置き→playtest。**正方向(幸/悦/良)は mood が負まで下がる駆動が要る**(好意系の mood減少。無いと平/負感情のみ表示=要確認)。"
+    tags: [Project001, emotion, mood, kigen, 1-char, palam, Project002-port, tostr-emotion, color, show-info, miko-card]
+    project: Project001
+    strength: 2
+    last_used: 700
+    state: active
+
+  - id: N-100
+    text: "Project001 起動時(load)警告は0件を維持する(コミット前ゲート)。ERB の追加/編集後、特に GOTO/JUMP・ラベル・新規@関数を触ったら起動時警告を必ず捕捉して確認・解消する。通常の autotest は Project003.log がプレイ末尾のみで起動警告を surface しないため見逃す。**捕捉は 1コマンド: `tools/Project003-autotest/Invoke-Project001BootWarnings.ps1`**(TASK-20260702-002 で手動手順を自動化: Prepare -SkipAutotest→最小スタブ @SYSTEM_TITLE/OUTPUTLOG/QUIT 注入→Hidden 起動→警告/エラー行を件数のみ報告・警告>0 で exit 1。行本文は .autotest/Project001-title/boot-warnings.txt へ=AP-010 安全。負性テスト=重複@関数で検出能力を実証済)。検出例(TASK-704): 『警告Lv2:...指定されたラベル名は現在の関数内に存在しません』=未解決 GOTO(ラベルとバイト一致でも Project003 が load 時に解決できない場合あり)→ `GOTO` を `RESTART` 等へ置換して除去。修正→再実行 0件でコミット。関連 [[N-034]] [[N-037]]。"
+    tags: [Project001, Project003, startup-warning, load-warning, qa-gate, commit-gate, goto-label, outputlog, system-title, title-screen, skipautotest, boot-warnings]
+    project: Project001
+    strength: 2
+    last_used: 779
+    state: active
+
+  - id: N-101
+    text: "Project001 の口上(調教中キャラ別セリフ)は engine 移植済+調教フローに配線済だが実データ皆無=現状無音。① dispatch engine=`Data/ERB/コマンド/TEXT_KOJO.ERB`(442行, ヘッダ『調教時キャラ別口上を一括管理』= Project002 口上 EVENT system 本体, 47 @関数: @EVENTSHOP/@KOJO_MESSAGE_COM_MASTER/COM_ASSI/PLAYERCHANGE/CHANGEASSI 等)が `TRYCALLFORM KOJO_MESSAGE_*_{NO:キャラ}`+`TRYCCALLFORM TRY_{NO}` でキャラ番号別へ dispatch、不在は CATCH→`_X` 既定へフォールバック(=キャラ個別ドロップイン設計)。② 呼出サイト=SOURCE.ERB/SOURCE_SYSTEM.ERB/USERCOM.ERB。ON/OFF=FLAG:11, キャラ別有効=CFLAG:キャラ:5000。③ 不足=キャラ別 @KOJO_MESSAGE_*_{N}/@TRY_{N} と _X 既定が現状ゼロ(TRYCALLFORM が安全に空振り=autotest緑)。別系統: 状況index型 @KOJO_EVENT(n)(合意/JUDGE_PUSHDOWN 用)は _STUBS.ERB の no-op スタブ。CSTR配列(K9咲夜/K10レミリアの高度状態分岐)のみ真に inert=[[N-054]]/[[N-Project001-20260721i]] の『口上未実装』は CSTR に限る補正。**キャラはオリジナル(kami Chara1=神塚みゆき, 東方でない)=Project002 口上コンテンツは流用不可・kami オリジナルを書き起こす**(TASK-710 是正; TASK-709 の『Project002 と整合』は誤り)。追加レシピ: 新ERB(UTF-8 BOM, `Data/ERB/コマンド/口上/`)に `@TRY_{N}`(存在マーカー RETURN)+`@KOJO_MESSAGE_COM_{N}`(PRINTL 口上) を定義するだけで engine が `{NO:TARGET}` で自動 dispatch、FLAG:11=1 で有効化。autotest=CALL+CAPTURE_HTML+ASSERT_HTMLCAP(+ADDCHARA で dispatch 検証)。パイロット `KOJO_1_神塚みゆき.ERB` 実装済(TASK-710, kojo.chara1.renders/dispatch, 700緑, 起動警告0)。実証: TASK-709 調査+TASK-710 パイロット。"
+    tags: [Project001, kojo, dialogue, text-kojo, trycallform, per-character, dispatch, Project002-port, stub, cstr, wired]
+    project: Project001
+    strength: 2
+    last_used: 718
+    state: active
+
+  - id: N-102
+    text: "Project001 非訓練フロー(巫女生活・交神以外=イベント/SLG/ED)のキャラ別口上化。**全詳細(手順/状況ID台帳/進捗/render検証)=`doc/project-notes/kojo-extraction-procedure.md`(§0.5 ModeA/B・§1 ModeA verbatim・§1B ModeB SELF_KOJO状況ID・§5 状況ID台帳・§6 worklist・§7 注入render検証)**。要点: engine=`Data/ERB/コマンド/TEXT_KOJO.ERB`(移植済/配線済)、`@SELF_KOJO`=状況ID dispatcher(TARGET=話者/TFLAG:250=ID→`@SELF_KOJO_X` SELECTCASE)。大半は ModeB(開発者既定 `;CALL SELF_KOJO,話者,ID` を有効化、台詞は `口上まとめ.ERB` へ verbatim/置換移設し SHA立証)。置換型=値渡し(ARG:2→TFLAG:99)・話者置換(ARG→TARGET)。@TRY_{NO}持ちキャラは _X に落ちない→`@SELF_KOJO_K{NO}=TFLAG:223=1` forwarder。検証=compile緑+verbatim SHA+起動警告0+**注入render(`WAITING_ONEKEY ENTER`×CASE内PRINTFORMW数+`EXPECT_TEXT`, Invoke-Project001Interactive)**=実表示も機械照合(playtest委譲を解消, 出典 Project003LabH TASK-213)。実装済=32 CASE(70-74/81-84/120-121/173/101/102/131/109/140/133/30/122/123/50/51)。**verbatim 抽出フェーズ完了(TASK-20260701-008/procedure §6-E): 残62 の大半は空プレースホルダ=要オリジナル台詞 authoring(創作/設計・ユーザー方針待ち)＋非抽出複雑(69)。engine/配線/render 基盤は完備=台詞を書けば即動く**。実証: TASK-709〜725 / 20260701-001〜008。関連 [[N-101]] [[N-046]]。"
+    tags: [Project001, kojo, dialogue, event, non-training, inline, extraction, ninshin, ending, sis-hitokoto, callname, refactor-map, printw, verbatim, verify, skipstart, procedure, self-kojo, mode-b, situation-id, try-marker, tflag223]
+    project: Project001
+    strength: 19
+    last_used: 740
+    state: active
+
+  - id: N-103
+    text: "大規模 worklist(コード埋め込みフック等)の機械棚卸しは第一次分類として扱い、精密判定は抽出時の per-function サーベイで確定する(手順 §6-C ルール1)。Project001 口上 `CALL SELF_KOJO` 走査(TASK-20260701-003, 手順書 §6-D)の教訓: (1)隣接±N行の PRINT 有無ヒューリスティックは台詞が関数内に散在する複雑関数(例 EVENT_NINSHIN 妊娠出産 170/171/172/174)を false-negative で『空』に誤分類する。(2)ID 抽出の単純正規表現 `,\\s*<数字>` は構文バリアント(`SELF_KOJO(話者,ID)` 括弧形式・変数ID・`SELF_KOJO_X` 既定ハンドラ)を取りこぼす。(3)空プレースホルダ(`;CALL` のみ・隣接台詞無=要原典台詞authoring, [[N-101]])と抽出可能を機械では確実に弁別できない。→機械走査は gross な内訳(総数94=済26/残68・SYS36/COMF32・カテゴリ別)とクリーン候補プール提示に使い、enshrine しない(限界を明記)。実証: TASK-20260701-003。関連 [[N-102]]。"
+    tags: [Project001, kojo, worklist, inventory, mechanical-scan, heuristic, first-pass, syntax-variant, self-kojo, spike, false-negative, empty-placeholder]
+    project: Project001
+    strength: 1
+    last_used: 737
+    state: active
+
+  - id: N-104
+    text: "CP932(ERB/CSV)/UTF-8(BOM)ゲームファイルの安全編集=破損回避の権威手順(索引)。原則: (1)本文をツール出力へダンプしない([[N-094]]/AP-013 の guard hook `guard-cp932-dump.mjs`)。(2)PowerShell `[System.IO.File]::ReadAllText/WriteAllText` を正しい Encoding で(CP932=`GetEncoding(932)`/UTF-8 BOM=`UTF8Encoding($true)`)。CP932<->UTF-8 のコードポイント不一致・切詰め破壊を避ける。(3)編集後は byte数・BOM・FFFD=0・git diff --stat の加算性を必ず検証し Project003 ロード(autotest)で関数定義崩れを検知。詳細は葉参照。"
+    tags: [encoding, cp932, utf8, powershell, file-edit, corruption, safe-edit, u-fffd, byte-replace, crlf, playbook]
+    project: Project001
+    kind: playbook
+    leaves: [N-024, N-027, N-032, N-037, N-040, N-107, N-108, N-109]
+    strength: 11
+    last_used: 952
+    state: active
+
+  - id: N-105
+    text: "Project002(UTF-8)->Project001(CP932) ERB 移植で頻出する Project003 文法・環境の落とし穴の権威索引。要点: CSV デフォルト配列は 100(index 0-99・空き番号は上限内か事前確認 N-022)／`@FUNC(引数)` の paren 引数は `#DIM 引数` 明示宣言必須 N-Project001-20260721q／添字付き変数を別変数の添字に使う時は括弧必須(`TALENT:(LOCAL:81)` N-055/071)／単一英字ローカル名(h/v/s 等)は予約変数と衝突->#DIM 無効化・起動クラッシュ N-057／`||`/`&&` は非短絡(両辺評価)ゆえ範囲外index の片側ガードは不足 N-093／CALL 文字列リテラル/PRINTFORM/予約変数の一般 gotcha N-051／キャラ項目は定義CSVに index 追記で増やせる・配列余裕確認 N-054。詳細は各葉。**重複注記**: N-051=N-Project001-20260721f / N-054=N-Project001-20260721i / N-057=N-Project001-20260721l は完全重複(/sync 由来)=/cycle prune 候補(process-backlog)。"
+    tags: [Project003, erb-port, syntax-gotcha, reserved-var, csv, array-bounds, parens, short-circuit, playbook]
+    project: Project001
+    kind: playbook
+    leaves: [N-022, N-051, N-054, N-055, N-057, N-Project001-20260721j, N-Project001-20260721q, N-093]
+    strength: 2
+    last_used: 825
+    state: active
+
+  - id: N-106
+    text: "Project002->Project001 ERB 移植の着手前確認・スコープ/依存/偽ブロッカー判定の権威索引(AP-006 と対)。要点: (1)移植前に Project001 側へ同名 @function が既存しないか grep(名前衝突=別意味関数の上書き回避 N-023)／(2)Project001 が既にその系を実装済でないか grep/read(重複実装回避 N-028)／(3)移植スコープは raw file 数でなく除外後カップリングで評価(東方キャラ固有/SLG国依存を除外 N-009)／(4)スコープ外判定は『値を読む関数』と『値を書くシステム』を区別=CSV ラベル追加だけで読み側は移植可・書き側システム依存のみ真のブロッカー(AP-006 N-030)。詳細は各葉。"
+    tags: [erb-port, scope, dependency, blocker-analysis, false-blocker, pre-port-check, name-collision, playbook]
+    project: Project001
+    kind: playbook
+    leaves: [N-009, N-023, N-028, N-030]
+    strength: 1
+    last_used: 754
+    state: active
+
+  - id: N-107
+    text: "cp932 ゲームファイルの表示用語 一括改称(例: 評判->知名度)を guard(Read/無制限grep 不可)下で安全に行う手順。(1)全文ダンプせず PowerShell cp932 で該当語の件数・行番号のみ取得。(2)文法/意味リスクを content 非出力で判定=各ヒット行を『トークン構造分類』(複合語で使われるか/形容用法か 例:`評判の…`->知名度だと不自然/コメント行か/対象変数(FLAG:84)紐付けか/PRINT・GRID・LABEL 表示か)。形容用法ゼロなら blanket 置換で文法崩れなし・複合語のみ別処理と判る。(3)置換は順序固定(複合語->単体)で一貫適用し ReadAllText/WriteAllText cp932 で書戻し。(4)検証=対象語 残0・置換語 増・FFFD=0・主 autotest 無回帰・起動警告0。最終見た目/HUD桁揃えは playtest 委譲。"
+    tags: [encoding, cp932, rename, terminology, guard, classification, safe-edit, no-dump, Project001]
+    project: Project001
+    kind: leaf
+    topic: N-104
+    strength: 3
+    last_used: 855
+    state: active
+
+  - id: N-108
+    text: "guard で既存本文を読めない CP932 ゲームファイルを大改修する時は、部分編集(anchor 依存)より『全面リライト』が安全＝表示テキストを全て新規作成し不可視の既存文への依存を断つ(MVP テキストは placeholder ゆえ再作成可)。安全策2点: (1)書込みは例外フォールバック エンコーダ `[Text.Encoding]::GetEncoding(932, [Text.EncoderExceptionFallback]::new(), [Text.DecoderExceptionFallback]::new())` を使い、CP932 非対応文字(波ダッシュ〜/em-dash 等 [[N-027]])を silent '?' 置換でなく throw で検知(FFFD 検査は '?' を見逃す)。(2)書込み後に cp932 read で FFFD=0・`^@\\w+` 関数数・byte数を確認し Project003 ロード(autotest)で #FUNCTION 署名/SELECTCASE 崩れを検知。%は全角％で PRINTFORM の %var% 誤解釈を回避。"
+    tags: [encoding, cp932, full-rewrite, guard, encoder-fallback, safe-edit, no-dump, Project001]
+    project: Project001
+    kind: leaf
+    topic: N-104
+    strength: 10
+    last_used: 851
+    state: active
+
+  - id: N-109
+    text: "UTF-8 BOM ゲームファイル(例: Project001 COMF357)を編集時、`[IO.File]::WriteAllBytes(p, enc.GetBytes(text))` は **BOM を失う**＝`Encoding.GetBytes()` はプリアンブル(BOM)を出力しない(BOM は StreamWriter/`File.WriteAllText` が別途 GetPreamble で付与)。BOM が消えると Project003 が encoding を CP932 と誤検出し、UTF-8 3byte 文字(例:食事)直後の `\"` が食われ『文字列が閉じられていない』等の parse エラー(見かけ上は無関係な行番号で報告)。対策: BOM ファイルは `[IO.File]::WriteAllText(p, text, [Text.UTF8Encoding]::new($true))` で書く(プリアンブル付与)か、`GetPreamble()+GetBytes()` を WriteAllBytes。検証: 書込み後に先頭3byte==EF BB BF を必ず確認(FFFD 検査だけでは BOM 欠落を見逃す)。CP932(BOMなし)ファイルは GetBytes/WriteAllBytes で可。"
+    tags: [encoding, utf8-bom, powershell, getbytes, preamble, corruption, safe-edit, Project003, Project001]
+    project: Project001
+    kind: leaf
+    topic: N-104
+    strength: 1
+    last_used: 762
+    state: active
+
+  - id: N-110
+    text: "Project001/Project003 の TRAIN コマンド表示ゲートは **@COM_ABLE{N}(Project003 予約関数)が駆動**。@SHOW_USERCOM はメタボタン(700-999)のみ描画し、訓練コマンド(COMFxxx)はエンジンが @COM_ABLE{N} を自動呼出して表示可否を決める。Project001 では @COM_ABLE{N}→`CALL COM_ABLE_COMMON,{N}`→`COM_ABLE_FLAG:N` を参照(==-1→RETURN0 / ==1→RETURN1 / ==0→ARG<300は非交神で0・ARG>=300は交神中で0、それ以外 fall-through=表示)。**@CREATE_COMABLE_LIST は COM_ABLE_FLAG を事前計算するだけで、それ単体では表示を止めない**(CONTINUE で未設定=0 のままだと COM_ABLE_COMMON が fall-through して表示される)。∴ コマンド可視性を変える改修は **COM_ABLE_COMMON(=@COM_ABLE が実際に読む関数)側**でゲートする。教訓(verify-layer): ゲームの表示/可否を autotest 検証する時は『エンジンが実際に読む関数の戻り値』層(ここでは COM_ABLE_COMMON の RESULT)で assert する。中間状態(COM_ABLE_FLAG 値)だけの検証は通っても実挙動と乖離する(TASK-029 で COM_ABLE_FLAG を検証し集約が効かず playtest で発覚→TASK-20260702-001 で COM_ABLE_COMMON 層に修正+検証)。永続 flag(COM_ABLE_FLAG)に -1 を残すと後続で恒久無効化=VARSET クリアない前提では live 関数ゲートが安全。"
+    tags: [Project003, com-able, command-display, train, autotest, verify-layer, gate, Project001]
+    project: Project001
+    strength: 2
+    last_used: 764
+    state: active
+
+  - id: N-111
+    text: "行 index 挿入(line-array Insert)で文/ボタンを『アンカー行の直後』に入れる時、そのアンカーが IF/ELSEIF の**本体**でまだ ENDIF が来ていないと、挿入物は意図せず**その制御ブロック内にネスト**する。実害例(Project001 TASK-029→20260702-003): SHOP `[116]人化逢瀬` を `PRINTBUTTON [101]` の直後に挿入したら [101](交神条件)IF の内側に入り、交神条件を満たさない限り非表示になっていた(playtest 送りだったため見逃し→autotest 化で検出)。対策: (1)挿入後は**囲む制御ブロックを必ず確認**(前方の IF と後方の ENDIF の対応)。(2)兄弟位置に置きたいなら、先行ブロックの ENDIF の**後**をアンカーにする。(3)可能なら挿入対象を一意な ENDIF や関数境界に取る。教訓の一般化: 表示/条件つき要素の autotest は『その要素が出る/出ない』を両条件(Lv3表示/Lv1非表示 等)で assert すると、この種の誤ネストを捕捉できる。"
+    tags: [Project001, Project003, editing, line-insert, control-block, nesting, if-endif, autotest, regression, shop]
+    project: Project001
+    strength: 4
+    last_used: 949
+    state: active
+
+  - id: N-112
+    text: "Project001でコマンド単位に @COM_ABLE<n> を autotest 隔離検証する際は、本体全文の inline SIF 状態ゲート(例: COM18 `SIF TEQUIP:58==0 RETURN 0`=お風呂場必須、COM43 `BASE:TARGET:潤滑<2000`/`GET_PENIS,PLAYER`=潤滑・主神penis必須)まで読む。CALL する再利用述語(COM_ABLE_*)の抽出だけでは前提状態を見落とし baseline が偽 fail する。状態前提の重いコマンドは isolated 検証に不適=述語テスト(P0)+全件 smoke(CREATE_COMABLE_LIST)で担保し、command-level spot-check は inline ゲート無しの代表に絞る。"
+    tags: [Project001, autotest, com-able, ground-truth, blocker-analysis]
+    project: Project001
+    strength: 2
+    last_used: 428
+    state: archived
+
+  - id: N-Project001-20260722a
+    text: "Project001 の guard-cp932-dump 下で ERB 実装を調査する安全レシピ: PowerShell で該当行±2行だけを UTF-8 の scratchpad ファイルへ抽出し、それを Read する(本文の直接ダンプをしない)。ただし CP932 の decode は必ず [System.Text.Encoding]::GetEncoding(932) を使う — pwsh7 の `Get-Content -Encoding Default` は UTF-8 の意味で、CP932 コメント/文字列が U+FFFD 化する(識別子・数値・FLAG参照は ASCII なので生存し、式の解析だけなら可能。実証: TASK-Project001-20260722-002 の FLAG:87 調査)。同じ理由で hook 提示の `-Encoding Default` 編集レシピを pwsh7 で ERB に使うと破損する(capture: TASK-Project001-20260722-003)。"
+    tags: [Project001, erb, cp932, encoding, encoding-default, get-content, dump-guard, extraction, pwsh7, investigation]
+    project: Project001
+    strength: 6
+    last_used: 846
+    state: active
+
+  - id: N-Project001-20260811b
+    text: "Project001 の『キャラカード』(Item.csv 100-299帯, itemID=NO+100)は 価格(ITEMPRICE)/名前(ITEMNAME)/所持マーカー(ITEM) の3役結合。ITEM/ITEMSALES は VariableSize=1000 の素の配列で Item.csv 行の有無に非依存 — csv 行を削除しても ITEM:x ストレージは有効で、ITEMNAME/ITEMPRICE が空/0 になるだけ(∴マーカー用途は csv 行なしで継続可=セーブ互換を壊さず価格・名前だけ CharaCSV/CSVNAME へ移せる)。カード帯は item264(ピアス) と衝突済みで、EXISTCSV ガード無しの購入リストに混入する潜在バグあり。全結合面と改修案=doc/project-notes/spike-charcard-removal.md(TASK-Project001-20260811-003)。"
+    tags: [Project001, item-csv, chara-card, itemprice, itemname, itemsales, variablesize, ownership-marker, csvcflag, csvname, existcsv, save-compat, id-collision]
+    project: Project001
+    strength: 3
+    last_used: 852
+    state: active
+
+  - id: N-Project001-20260811c
+    text: "外部AI(Grok/xAI)への性的コンテンツ生成委託は2026-08時点で非推奨: xAI公式に開発者(API)向けの露骨な性的表現許可を明文化した一次資料が見当たらず、実際に生成できたとする報告の多くはjailbreak/adversarial promptingに依拠(AUPで明示的に禁止された行為=規約違反リスク)。加えてSpicy Mode等のNSFWトグルもモデレーションを無効化しない(2026-07 xAI FAQ)ため、バッチ生成の自動化パイプラインとは相性が悪い(内容依存で都度拒否されうる)。採用検討時は(a)非露骨な下書きのみ委託し核心部は自作する折衷案、(b)他サービス調査、(c)現行(自作)維持、の3択+キャラクター年齢設定が実社会/各社ハードリミットに抵触しないことの独立確認が前提。詳細=doc/project-notes/grok-kojo-delegation-survey.md(TASK-Project001-20260811-009)。"
+    tags: [grok, xai, external-ai, content-policy, delegation, nsfw, sexual-content, kojo, erotica, jailbreak, acceptable-use-policy]
+    project: Project001
+    strength: 1
+    last_used: 817
+    state: active
+
+  - id: N-Project001-20260811d
+    text: "Codex等へのWO(SPEC)発行前に、scope各ファイルの先頭3バイト(BOM有無)を機械確認してからencoding指定を書く。実害: EMOTION_K.ERB(v2追加=UTF-8 BOM)をSPECでCP932と誤指定→executorが忠実にCP932化し全体差分化(TASK-Project001-20260811-010で復元)。『Data/ERB=CP932』の一般則はProject002原版のみで、v2期の追加ファイル(EMOTION_K/COMF357等)はUTF-8 BOMが混在する。executorがNotesで逸脱を正確に報告したためレビューで捕捉できた=REPORT Notes欄の読み込みは省略しない。"
+    tags: [Project001, encoding, bom, utf8-bom, cp932, work-order, spec, delegation, codex, premise-error, e4]
+    project: Project001
+    strength: 4
+    last_used: 825
+    state: active
+
+  - id: N-Project001-20260825b
+    text: "**Project001 同梱ビルド(0.2.6.0+7b7dd3bf)の部分背景色: ガイド docs/53 の前提が2点反転している(spike 実測 2026-08-25)。**① `<div background_color>` は **GRAPHICS でも塗られる**(ガイドは「無効」と断定するが、その根拠ソースは同梱 exe より古い別コミット — 同梱ビルドのハッシュはソースリポジトリの全履歴に存在しない)。行全体ハイライト+`<nonbutton title>` ツールチップ併用まで成立。ただし**行の一部だけ**塗ると div の幅計測ずれ(罠③)で後続テキストが重なる — 塗る区間は行末に置くか行全体を div 化するか island 絶対配置にする。② **`GSETBRUSH` は使用禁止**: 格納 brush を使う塗りは**塗り命令の種類を問わず** access violation(0xC0000005)でプロセスごと即死する(G_POLYGON_FILL も GFILLRECTANGLE も。ガイドの「G_POLYGON_FILL なら安全」は誤り)。brush 未設定の fallback 経路のみ安全。矩形パネルは brush 不要 — **`GCLEAR gid, ARGB` が全面塗り**なので `GCREATE -> GCLEAR(色) -> SPRITECREATE -> island <img>` で任意色(半透明 0x80… も可・GGETCOLOR 読み戻し一致)のsprite が作れる。**クラッシュ地点の特定手順**: 各ステップ後に `OUTPUTLOG` を挟んで起動 — プロセスが AV で死んでも直前までのログが残るので、最後のマーカーがクラッシュ命令の直前を指す(exit code -1073741819 = 0xC0000005)。正本 = doc/project-notes/spike-bg-partial-color.md。関連 [[N-Project001-20260824c]](HTML_PRINT の行分断規則は不変)。"
+    tags: [background-color, div, graphics, gsetbrush, gclear, sprite, island, crash, access-violation, setbgcolor, Project003, build-drift, docs53, html-print]
+    project: Project001
+    strength: 3
+    last_used: 1000
+    state: active
+  - id: N-Project001-20260825c
+    text: "**Project001 に画面クリア機構は無かった(全画面が DRAWLINE から印字を始めるだけ)。`CLEARLINE LINECOUNT` で導入できることを実機で確認(spike 2026-08-25)。** ① **本文層は種類を問わず全消し**(素テキスト/DRAWLINE/PRINTBUTTON/HTML_PRINT の div いずれも残らない。11->0・226->0)。**過大値はクランプ**され例外にならない(`requested=1002 -> after=0`)ので、呼び出し側が行数を管理する必要はない。② **island は本文層の外**: `LINECOUNT` 2->0 でも `SPRITECREATED` は 1 のまま。消すには `HTML_PRINT_ISLAND_CLEAR`(+資源を捨てるなら `SPRITEDISPOSE`/`GDISPOSE`)が要る。∴ **画面クリアの共通部品は2層を対で消す**。③ **【最重要の副作用】消した行は `Project003.log` からも消える** — log は印字履歴ではなく**最終表示バッファの写し**。∴ **クリアより前の画面を照合していた `EXPECT_TEXT` は落ちうる**。**【2026-08-28 重大是正】ここに書いていた『本作は 1600件超』は誤り** — 実数は **47件**で、すべて `tools/Project003-autotest/AUTOTEST_INTERACTIVE.ERB` にある(`AUTOTEST.ERB` の `EXPECT_TEXT` は **0件**)。この誤った数字を根拠に、私は `@EVENTSHOP` へ画面クリアを入れる案を2つの WO で**名指しで禁止**し、その結果ユーザーが同じ案を提案するまで2ラウンド遠回りした。実際に入れて測ったところ**影響は 0件**(本体 1890/0・interactive 40/0 TextPass 48/0)。∴ **禁止事項を書くときは、その根拠の数を必ず自分で数える。引き継いだ数字を繰り返し書くと、書くたびに硬化して疑いにくくなる**。関連 [[AP-030]]。クリアを入れる変更は**着手第1手が旧契約 grep**で、アサートは「クリア前に計測」か「1画面ぶんの狭い窓」([[N-Project001-20260824b]] の作法)へ寄せる。④ コストは **5.55ms/回**(全消し+41行再構築)で、軽量化ガイドが挙げる「毎ターン全 CLEARLINE」の警告水準に届かない。⑤ **spike の停止条件は『全部測れたか』ではなく『判断が決まったか』** — island が描画から消えたかは PNG 不成立で未確定のままだが、**残るなら ISLAND_CLEAR が必要・消えるなら無害**で安全形が同一なので、追加委託(推定300K tokens)を打ち切って設計を確定できた。正本 = doc/project-notes/spike-screen-clear.md。関連 [[N-Project001-20260825b]] [[N-034]]。"
+    tags: [Project001, Project003, clearline, linecount, screen-clear, screen-transition, residual-display, island, sprite, html_print_island_clear, spritedispose, gdispose, spritecreated, Project003-log, expect_text, autotest, assert-design, legacy-contract-grep, cost, redraw, spike, stop-condition, printwindow, capture-regression]
+    project: Project001
+    strength: 5
+    last_used: 1053
+    state: active
+  - id: N-Project001-20260825d
+    text: "**並行セッションの衝突には「ファイル単位」と「内容単位」の2種類があり、既存のゲートは前者しか見ていない。** concurrency.md / HH-058 が守るのは P6 target set の disjoint 性と hunk 単位コミット = **同じ行を同時に書かないこと**。しかし **ファイルが完全に disjoint でも、片方の設計判断が他方の前提を無効化する**ことがあり、この衝突はどのゲートも発火しない。実測(2026-08-25 /cycle ordinal 7・同一日に2件): ① §1-V⑯ の spike が **island** の挙動を測っている間に、並行セッションは §1-V⑮ の実装で **island->CBG へ設計転換**していた(island は OnPaint で常に最前面に描かれ本文を塗り潰したため)。∴ spike は**実装が既に捨てた機構**を測っていた。② 同じ spike が「PNG キャプチャは退行して使えない」と結論した一方、並行セッションは**同じリポジトリ・同じビルドで PNG 検証を3〜4周成立**させ、さらに自前スタブの欠陥まで是正していた。∴ spike は**実装が証明済みの事実を否定**していた。どちらも commit 後に /cycle で発見して事後是正した。**対策(安価・機械化不要)**: 並行セッションが既知なら **S2 で `git log --oneline tasks/records/` を見て自タスク開始以降の peer record を読む**。台帳ノートの tag 検索は「過去の教訓」しか返さず、**「いま隣で決まったこと」は原理的に入っていない** — S2 の retrieval には時間方向の穴がある。**関連する一般形**: 技法の spike は「最終的に使う層/構成の組み合わせ」まで再現して初めて導入可否の根拠になる(並行セッションも同型の D2 を記録している — spike ではテキストも island に載せたため層順の罠が見えなかった)。正本 = doc/project-notes/spike-screen-clear.md §9。関連 [[N-Project001-20260825c]] [[N-Project001-20260825b]]。"
+    tags: [Project001, concurrency, parallel-session, content-level-conflict, file-level-conflict, s2, retrieval-gap, search-miss, peer-record, task-record, spike, spike-fidelity, island, cbg, zdepth, draw-layer, printwindow, capture, rework, post-hoc-correction, scope:framework]
+    project: Project001
+    strength: 1
+    last_used: 1002
+    state: active
+
+  - id: N-Project001-20260826a
+    text: "**このリポジトリの ERB はファイル単位でエンコーディングと改行が別々であり、『Data/ERB は CP932+CRLF』という一般則はもはや目安ですらない(2026-08-26 に4種を確認 → **2026-08-29 に Data/ERB 全 807 ファイルを全数計測して 8 種と判明**)。** 全数の内訳(2026-08-29): UTF-8 BOM+CRLF **431** / CP932+CRLF **317** / CP932+LF **26** / UTF-8 BOM+LF **16** / CP932+CRLF に bare-LF 混在 **6** / UTF-8 BOM無+CRLF **4** / UTF-8 BOM無+LF **4** / UTF-8 BOM+CRLF に bare-LF 混在 **3**。∴ **最多の CP932+CRLF ですら全体の 39% しかない**。加えて ASCII のみでバイト列から CP932/UTF-8 を判別できないファイルが数件ある(どちらで読んでも同じなので実害は無いが、『判定した』と言えない)。初回計測(4種)は標本が小さく、種類数を過小に見せていた — **『実測した』は『全数を測った』ではない**。さらにハーネス側も不統一で `AUTOTEST.ERB` = UTF-8 BOM無 / `AUTOTEST_INTERACTIVE.ERB` = CP932。∴ **WO の環境ルールに一般則を断定として書いてはいけない** — 書くべきは『編集前に実バイトを測り、元形式を維持せよ』だけ。**書き込み側の罠(実害あり)**: BOM 付きファイルを read-modify-write すると **BOM が二重化する** — `UTF8Encoding($true).GetString()` は BOM を文字(U+FEFF)として残し、`WriteAllText` が同じ encoding でもう1つ付けるため。症状は PowerShell なら `ParserError`(先頭の見えない文字で構文が壊れる)。対処は読み側で `TrimStart(U+FEFF)` するか、先頭3バイトをバイト列として別扱いする。[[N-Project001-20260811d]](WO 発行前に BOM を機械確認せよ)の**書き込み側の対**にあたる。"
+    tags: [encoding, cp932, utf8-bom, bom, crlf, lf, mixed-encoding, erb, autotest, read-modify-write, powershell, parsererror, work-order, Project001]
+    project: Project001
+    strength: 19
+    last_used: 1098
+    state: active
+
+  - id: N-Project001-20260826c
+    text: "**テストが走る「環境」を変える変更は、テストを赤くせずに緑のまま無意味化する。結果ではなく『何を測っているか』を見ないと検知できない。** 実例(2026-08-26・裁可時に予見して先に潰した): `[117]流れ巫女を招く` のコストをデバッグ時だけ神力10にする要望に対し、判定フラグとして既存のテストモード規約 `FLAG:9000` を流用してよいと裁可された。しかし **autotest 自身が `FLAG:9000` を立てて走る**(`AUTOTEST.ERB` に **266箇所**・実測)ため、そのまま入れると **autotest 中は常にコスト10**になり、`§1-R①` が固定した**コスト境界テスト6件**(`randchara.summon*`)が通常式を一切検証しなくなる。**このときテストは Fail しない** — 期待値も実測値も10で一致するので緑のまま通る。∴ CI も人も気づかない。**一般形**: テストモード判定フラグ(`FLAG:9000` 等)を**プロダクトの機能分岐にも流用する**と、テスト環境とプロダクト挙動が結合し、テストは自分が偽の条件下にいることを検出できない。**対策の優先順**: ① **計算部を純関数へ切り出し、デバッグ分岐の外で直接テストする**(分岐とロジックが分離され以後この汚染が起きない・推奨) ② 当該テストだけフラグを落として通常式を測る。**検知の合図**: 『デバッグ/テスト時だけ挙動を変える』要望が来たら、そのフラグが autotest 側で立っているかを**必ず数える**。関連 [[N-Project001-20260825d]](ゲートが見ていない種類の衝突)。"
+    tags: [Project001, autotest, test-design, test-invalidation, silent-green, false-green, flag9000, debug-mode, test-mode, feature-flag, pure-function, randchara, summon-cost, assert-design, ratification, side-effect, scope:framework]
+    project: Project001
+    strength: 2
+    last_used: 1080
+    state: active
+
+  - id: N-Project001-20260826d
+    text: "**自分が「実装不可能」と結論したときは、禁止の *射程* を疑う。禁止だけを書いた資材は過剰適用される。** 実測(2026-08-26): 神域 HUD の右側項目に背景色を付ける要望に対し、`ui-style-guide.md` §5 の禁止事項「**行の一部を塗る div**」(幅計測ずれで後続テキストが重なる=`spike-bg-partial-color.md` 罠③)を根拠に「実装方式が未確定・既知の不具合を再現する」と判定し、**ユーザーへ裁可を求めた**。しかし正解は **禁止の射程を読み違えていた** — 禁止されていたのは「**本文行に**部分幅 div を混ぜること」であって塗りそのものではない。塗り div を本文行に入れず**直前の空行を `HTML_PRINT` へ置き換えてキャリア行にまとめ `ypos` で送れば**、本文行に1文字も足さないのでズレは構造的に発生しない(engine 根拠: div の `width` は flow 幅に反映されない・空 div は要素が生成されない・後続要素の出発点は `PointX + Width` — 資料 `Project003LabH/.../docs/57`)。**しかもこの回避策は同一リポジトリの `SHOP_TAB_DIVS` が既に実装していた** — 手元に実例がありながら気づかなかった。**教訓は2つ**: ① **『不可能』の結論は、禁止の *理由* まで遡って射程を確認してから出す**。特に裁可を求める前に一度疑う — **不要な裁可要求はユーザーの判断という最も高価なリソースを浪費する**。② **禁止事項を書くときは『何が禁止か / なぜか / 代わりに何をするか』の3点を揃える**。回避策への参照が無い禁止行は、既存の解決策を読み手から見えなくする。関連 [[N-Project001-20260825d]](ゲートが見ていない種類の衝突)。"
+    tags: [Project001, ui-style-guide, forbidden-pattern, over-application, scope-of-rule, material-defect, ratification-cost, unnecessary-approval, html-div, carrier-row, background-fill, shop-tab-divs, bg-partial-color, doc-writing, scope:framework]
+    project: Project001
+    strength: 2
+    last_used: 1058
+    state: active
+
+  - id: N-Project001-20260826e
+    text: "**TODO・設計文書の記述には「実測した事実」と「未実測の推測」が混在している。区別せずに引用すると、推測が事実として下流へ伝播する。** 実測(2026-08-26): 委託順の計画を立てた際、TODO §1-V㉚ の受入欄にあった『行の高さが増えて総行数が変わっていない(変わるなら §1-V㉘ と衝突するので要調整)』を根拠に、**Wave 2 の順序を『§1-V㉘ で総行数の基準を先に固定してから §1-V㉚』と決めた**。しかし直後に別レーンが実測したところ、**初回表示/タブ選択後とも総行数は 38/38 で不変**(項目増は既存の下限9行パディングが吸収する)であり、**この順序制約は最初から存在しなかった**。元の記述は起票者の推測(『変わるなら』という条件形)だったのに、私は**確定した制約として読んで計画の骨格に据えた**。∴ 誤った順序を根拠つきで文書化し、着手者を誤誘導する一歩手前だった。**対策**: ① 他人(過去の自分を含む)の文書を**計画の根拠**にするときは、その記述が実測か推測かを**書式で判別する**(『はず』『疑わしい』『可能性がある』『変わるなら』= 推測)。推測を根拠にするなら**まず測る**か、計画側に『未実測の前提』と明記する。② 自分が書く側では **実測には日付と根拠コミットを添え、推測には推測と書く**。本プロジェクトの TODO は両者が同じ書式で並ぶので、添えないと区別できない。関連 [[N-Project001-20260825d]](並行レーンの決定は S2 の retrieval に入らない)・[[N-Project001-20260826d]](禁止の射程を疑う)。"
+    tags: [Project001, todo, planning, dispatch-order, measured-vs-assumed, assumption-propagation, evidence-discipline, doc-writing, s4, survey, misleading-plan, scope:framework]
+    project: Project001
+    strength: 1
+    last_used: 1035
+    state: active
+  - id: N-Project001-20260826f
+    text: "**検証ゲートが『遅い』とき、待っている対象が成果物ではなく実行主体になっていないか疑う。そして『フレーキーだ』と言う前に、そのゲートが陽性を検出できることを先に証明する。** 実測(2026-08-26・§1-V㉗): 起動警告ゲートは `QUIT` を書いたスタブで Project003 を起動し、プロセス終了を待って起動ログを読んでいた。**時刻を分離して測ると、ログは 2.62 秒で最終サイズに達するのに、プロセスは 100 秒観測して一度も自力終了しなかった**(タイトル起動の Project003 は QUIT で終わらない)。∴ ゲートは毎回 TimeoutSeconds(既定90秒)を待ち切ってから強制終了しており、**有効な仕事は先頭 2.6 秒だけ**だった。待機条件を『成果物の出現かつサイズが2回連続不変』へ変えるだけで **93秒 → 4.7秒**。**副次的だがこちらが重い**: `Stop-Process -Force` の後に `WaitForExit` が無く、既定 RunName のサンドボックスを `-Clean` 無しで使い回していたため、**死にかけのプロセスがハンドルを掴んだまま次回準備段の `robocopy /MIR` に重なる窓**が毎回開いていた — 部分ミラーは『警告1件』という、真の不具合と見分けのつかない形を作る。**調査手順として効いたのは陽性対照を先に打ったこと**: サンドボックスへ既存ファイルの複製を注入して意図的に多重定義を起こし、`7行/警告0 → 19行/警告6` を確認した。これで『門が壊れている』と『門が何も見えていない』が分離でき、以後の測定が全て意味を持った。**一般形**: (1) 待つべきは成果物の確定であって実行主体の終了ではない。プロセス終了を完了シグナルに代用すると、成果物が確定済みでも待ち続ける。(2) 強制終了は `WaitForExit` まで見届ける。掴んだままのハンドルは次の実行の入力を壊す。(3) **緑のゲートは『問題が無い』の証拠ではない** — 陽性対照を通していない緑は、検出能力が生きている証拠を1つも持たない。関連 [[N-Project001-20260826c]](テスト環境を変える変更は緑のまま無意味化する)・[[N-034]](起動は必ずハーネス経由)。"
+    tags: [Project001, autotest, harness, boot-warnings, gate-design, flaky, false-green, positive-control, process-exit, waitforexit, artifact-completion, timeout, sandbox, robocopy, handle-leak, powershell, scope:framework]
+    project: Project001
+    strength: 2
+    last_used: 1081
+    state: active
+  - id: N-Project001-20260826g
+    text: "**共有名前空間のスロットは、編集中のファイルではなく名前空間の全体を検索してから確保する。** 実測(2026-08-26 TASK-Project001-20260826-072): メイン画面の行予算の基準行を置くため `TFLAG:756` を選び「参照 0 件」と報告したが、その検索が `SHOP.ERB` 内に閉じていた。実際には `EVENT.ERB` の `@EVENT_NEWDAY` が同じスロットを日跨ぎガード(`SIF TFLAG:756 == DAY / RETURN`)に使っており、ショップ描画が行番号を書くと**新日イベントが黙って飛ぶ**、逆に新日が `DAY` を書くと**行予算の基準が日番号で壊れる**、という双方向の破壊になる。**autotest 1886件は全緑のまま通った** — 両方の所有者を1回の実行で触るテストが無かったため。∴ (1) スロット確保の検索範囲は**編集範囲ではなく名前空間**で決める、(2) 確保したら定義箇所に**誰がどのスロットを持つか**を書き残して次の確保者に検索をやり直させない、(3) **番兵値**による回帰テストを置く(番兵を置いて所有者の入口を通し、生き残るかを見る)。Project001 の実際の割り当て: `TFLAG:750-755` = ショップのタブ状態 / `TFLAG:756` = `EVENT_NEWDAY` の日跨ぎガード / `TFLAG:757` = メイン画面の開始行。関連 [[AP-028]]。**併せて**: メイン画面の入口は2つあり `EVENTSHOP`(画面を消さない)と `SHOP_WAFU_EXIT_MAIN`(`SCREEN_CLEAR_ALL` で消す)で開始 `LINECOUNT` が違う ∴ 行予算を絶対 `LINECOUNT` で測ると入口ごとに画面が変わる。**この差はハーネス既定の窓高(461)では両下限側に入って再現せず、実機相当(1200x700 / CLIENTHEIGHT 681)で初めて 4 行差として現れた** ∴ レイアウトの回帰は実機相当の高さで測ること。"
+    tags: [Project001, Project003, tflag, shared-namespace, slot-allocation, collision, search-scope, sentinel-test, linecount, screen-entry, row-budget, clientheight, harness-config, layout-regression, measured]
+    project: Project001
+    strength: 1
+    last_used: 1042
+    state: active
+  - id: N-Project001-20260828a
+    text: "**Project001 メイン画面のクリア設計と、この build 固有の計測上の落とし穴(2026-08-28 実測)。** ① **クリアは「離脱時」ではなく「次の描画の直前」**: `@USERSHOP` はコマンドを分岐する**前**にクリアする ∴ 素朴に書くと「クリア -> コマンド実行(サブ画面が出力)-> メイン画面を描画」となり**サブ画面の出力の下にメイン画面が描かれる**。現行は遅延クリア — `@USERSHOP` 末尾で `TFLAG:908` を立て、`@SHOW_SHOP` 先頭で立っていれば `@SHOP_ENTER_SCREEN` を呼ぶ。**末尾で即クリアしない**のは「読まれる前に消してよい」まで含めないため。副次的に `CALL USERSHOP` 直後を捕捉するテスト4件がそのまま通る。② **縦のズレを行数で説明しようとして4回外した** — 実機の `[DIAG]` で総行数・上下パディング・実コンテンツ・列数・最大表示幅が**両経路で完全一致**。∴ **縦のズレを見たらまず「前の画面が残っていないか」を疑う**。③ **この build 固有**: `OUTPUTLOG \"名前\"` は**ファイルを生成しない**(`AUTOTEST.ERB` の2箇所がずっと無音だった)/ **自己参照の文字列連結 `TSTR:x '= TSTR:x + y` は機能しない**(素の代入と番兵は生き残るのでリセットではない)∴ 蓄積は**添字付きスロット** `TSTR:(80 + n)` で行う/ `TSTR`・`TFLAG` の既定配列は **index 0-99**([[N-105]])。④ **落ちたアサート名は `CLEARLINE` で log ごと消える** ∴ `AUTOTEST_ASSERT` の失敗時に添字スロットへ名前を残し `FAILNAMES` として SUMMARY 直後に出す(§1-V㉖(1) の実装)。**これが無いと赤の特定に実行を3回空費する**。⑤ **ハーネスの窓は実機と同じ 1200x700 に揃える** — 既定(高さ未指定 = `CLIENTHEIGHT` 461 = 可視24行)は**可視31行未満**で行予算の不変条件が原理的に成立せず、そこでの緑は無意味だった。⑥ 最大表示幅は **131 半角**、折り返し閾値は `DrawableWidth = ウィンドウ幅 - max(2, FontSize/6)` = **133** ∴ **余裕は 2 半角しかない**。関連 [[AP-031]] [[AP-028]] [[N-Project001-20260826g]]。"
+    tags: [Project001, Project003, shop, screen-clear, clearline, redraw, stale-content, tflag, outputlog, string-concat, autotest, failed-assert-name, harness-config, window-size, wrap-threshold, symptom-translation, measured]
+    project: Project001
+    strength: 2
+    last_used: 1081
+    state: active
+  - id: N-Project001-20260829a
+    text: "**常に赤いゲートは、その場の判断に置き換わって消える — そして規定の正しいゲートは一段下の節に居たまま届かない(2026-08-29 /cycle ordinal 13 実測)。** `evaluate.md` V1 は staged whitespace gate を `git diff --cached -U0 | grep '^+' | tr -d '\r' | grep -cE '[[:space:]]+$'` = 0 と規定し、**同じ節で「`git diff --cached --check` の出力長で判定するな(CRLF リポジトリでは毎回 nonzero)」とまで明記している**。にもかかわらず同一セッションの 14 コミットで規定ゲートの実行は **0/14** で、代わりに禁止された `--check` を回して常時赤に当たり、その既知事実をゼロから調べ直した(直前コミットで同じ警告が出ることを確認する、という遠回りまでした)。**実害**: host `bf2272a` の追加行に末尾空白が1件通過し、同じ編集が `履歴` ラベルの重複行も残していた — 遡及検査で初めて発見。**機序は2段**: (1) 先に走らせたゲートが常時赤なので「これは無視してよい既知の赤」と判断する必要が生じ、その判断で checklist 全体を「済んだ」ことにしてしまう (2) 正しいゲートは checklist の該当節を開かないと届かず、`finish` のような必ず通る入口には載っていない。**同ファイルは同じルールについて uptake 0/6 を既に記録しており、これが2度目の測定** ∴ 資材の再掲・強調では届かないことが確定した。**対策**: ①常時赤になりうるコマンドはゲートに使わない(赤の意味が消える) ②遵守を要求したい検査は checklist 行ではなく**必ず通る実行経路**(`finish` の fail-closed チェーン)へ移す ③行を差し替える編集では、**置換後の行が直後の行と意味的に重複していないか**を必ず見る(文を跨いで続く行の前半だけを置換すると、ラベルだけの宙ぶらりんな行と末尾空白が残る)。関連 [[N-Project001-20260826d]](禁止の射程)・AP-032(資材に答えがあるのに手順が届かない)。"
+    tags: [Project001, commit-gate, whitespace, crlf, always-red-gate, checklist-uptake, enforcement-gap, finish, evaluate, line-edit, dangling-label, measured-twice, scope:framework]
+    project: Project001
+    strength: 1
+    last_used: 1062
+    state: active
+  - id: N-Project001-20260829b
+    text: "**測定結果が予想と食い違ったら、対象を疑う前に測り方を疑う。本セッション(2026-08-29)で4度、原因は毎回こちら側だった。** ①**decoder**: UTF-8 の検索語を CP932 ファイルへ当てて『該当なし』(淫具創造の対象ファイルが見つからない / 『はい』が6ファイルと出たが正しくは23ファイル64件)。②**数えた対象の取り違え**: executor の『95件』を `FLAG:5 == 9` の件数と解して自分の26と比較したが、実際は `FLAG:5` の参照数95で相手が正しかった。③**走査範囲**: `MODC_PRINT_LIVE_PAGE` の呼出が1ファイル内で2件しか無く『3画面同型』と合わないと疑ったが、全 ERB へ広げると定義1+呼出3で整合した。④**複合語の語順**: 『総合神社レベル』を `神社総合レベル`/`総合レベル` で検索して0件と判定し、**駆動源が存在しないとユーザーへ報告した**(実際は21出現)。日本語の複合語は語順が違うと部分一致しない ∴ 構成要素の最短単位(『神社』『レベル』)でまず当たりを取る。**共通の型**: 『0件』『合わない』は**発見**ではなく**測定失敗の第一候補**である。とくに ④ のように**不在を根拠にユーザーへ報告する**場面は、報告前に別の語・別の範囲・別の decoder で再測定する。関連: 全数と標本の区別([[N-Project001-20260826a]] の『4種』は標本で実際は全807ファイルで8種)・AP-032(資材に答えがあるのに手順が届かない)。"
+    tags: [Project001, measurement, search-miss, decoder, cp932, utf8, compound-word, word-order, scan-scope, count-mismatch, zero-result, verification, self-error-first, report-before-measure, scope:framework]
+    project: Project001
+    strength: 1
+    last_used: 1071
+    state: active
+  - id: N-Project001-20260829c
+    text: "**自分の測定を疑う順序 — 数が合わないとき、第一の容疑者は相手ではなく自分の測り方である(2026-08-29 に実測4件)。** ①**『実測した』は『全数を測った』ではない**: `N-Project001-20260826a` は ERB の encoding を『実在4種』と記していたが、それは4例を見つけただけで母集団を数えていなかった。全 807 ファイルを分類すると **8 種**で、最多の UTF-8 BOM+CRLF ですら 431/807 = 53%。このノートは当時セッション中の全 WO の encoding 節の根拠に使われており、**誤りがそのまま下流へ伝播していた**。∴ ノートに件数・種類数を書くときは**標本か全数かを明記する**。②**他者の数値と食い違ったら、まず自分が何をどこで数えたかを確定させる**: (a) executor の『95件』を `FLAG:5 == 9` の件数と解して自分の 26 と比較し食い違いと判断したが、実際は `FLAG:5` の**参照数**が95で executor が正しかった(数えた**対象**の取り違え)。(b) `MODC_PRINT_LIVE_PAGE` を1ファイルだけ数えて『3画面が同型』と合わないと判断したが、全 ERB では定義1+呼出3で完全に整合した(**走査範囲**の不足)。(c) 別セッションも同型を踏んでいる — 実装の語が『総合**神社**レベル』なのに `総合レベル` で検索して『0出現』と誤測定した(**検索語**の不一致)。③**CP932 のファイルへ UTF-8 の検索語を当てると一致しない**ため件数が過少に出る(私自身が §1-V㊴ の規模を6ファイルと誤測定し、正しい decoder で数え直して 23ファイル/64件になった)。日本語語句の照合は**ファイルごとに実測した encoding で復号してから**行う。**一般形**: 検証で不一致が出たときの調査順序は『対象 → 範囲 → 検索語 → 復号』を自分側で先に潰し、そのうえで相手を疑う。関連 [[N-Project001-20260826a]] [[N-Project001-20260825a]]・AP-032。"
+    tags: [Project001, measurement, sample-vs-census, verification, spot-check, count-discrepancy, scan-scope, search-term, cp932, decoder-mismatch, executor-review, self-doubt-order, scope:framework]
+    project: Project001
+    strength: 1
+    last_used: 1074
+    state: active

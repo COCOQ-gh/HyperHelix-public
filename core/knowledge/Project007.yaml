@@ -1,0 +1,77 @@
+# HyperHelix Project007 project leaf ledger.
+# Note schema and authority live in core/knowledge.yaml header (HH-045).
+# Every note in this file has project: Project007.
+schema_version: 1
+
+notes:
+  - id: N-079
+    text: "Project006 の階層戦(防衛TD)は **ABL_POWER** で組む。**BATTLE_CALC(SLG_COMBAT.ERB:423)は不採用** — `@BATTLE_CALC(攻撃側勢力, 攻撃側部隊, 対象勢力, 対象部隊)` は勢力+部隊(軍団)単位で GET_COMMANDER_ALL / BATTLE_SOL(兵数) / CITY_OWNER / KOJO_BATTLE_DIALOGUE_MATCH を要求し、1体 vs 1体へ通すには偽の勢力/部隊の捏造が要る。**@ABL_POWER(Lv, キャラ番号 = -1)**(SLG_FUNCTION.ERB:1905)が per-chara 戦闘力の正しい原始関数: (1)`#FUNCTION`= **式メソッドなので CALL 不可**、`変数 = ABL_POWER(ABL:(キャラ):武闘, キャラ)` の形(定石 SLG_AI_FUNCTION.ERB:60)。(2)基礎値 = 500 + 400*Lv → Lv0=500 / Lv2=1300 / Lv5=2500。(3)**RAND 0箇所 = 決定的**なので autotest に載る。(4)**第2引数は省略可(-1 = 補正なし)** → 敵を**実キャラ無しで Lv だけ**で評価できる(Project006 は docs/04 が敵用に推奨する帯 288-399 に **Chara CSV が1枚も無く ADDCHARA 不可**、R_CHARA 生成は乱数で autotest の決定性を壊すため、この省略が逃げ道になる)。(5)第2引数にキャラを渡すと妊娠/崩壊/好感度/従属度/難易度(CONFIG:314)の補正が乗る → autotest は**素の新規キャラ**(好感度0・素質なし・MASTER と同一勢力)で補正100%にする。実証 TASK-20260715-008: 与ダメージ = BASE*守将戦闘力/侵入者戦闘力 で Lv5→961(撃退)/ Lv2→500 / Lv0→192(突破)、手計算と完全一致・2回実行で決定的。"
+    tags: [Project006, Project003, abl-power, battle-calc, slg, combat, dungeon, tower-defense, function-expression, determinism, autotest, addchara, r-chara, erb-port]
+    project: Project007
+    strength: 6
+    last_used: 544
+    state: active
+
+  - id: N-080
+    text: "Project007 の罠(ERB/07_ダンジョン/DUNGEON_TRAP.ERB・1561行)は **26種すべてキャラ結合**で、Project006 へ literal 移植できない(TASK-20260715-009 で全数計測)。作用先は BASE:A:0(体力)/ BASE:A:1(気力)/ CFLAG:A:503(状態)/ CFLAG:A:680-682(能力ダウン)/ TALENT:A:*(天使・痛みに弱い)/ SAVESTR:A(名前)で、加えて NET_TRAP 以外の全種が RAND(回避率・クリティカル・ダメージ幅)を持ち決定的 autotest とも衝突する。**侵入者に実キャラを持たない設計**([[N-079]])では適用先が無い → **状態異常・能力ダウン系の罠は『侵入者の実キャラ化』とセット**であり、実キャラ化(キャラ帯/生成方法。docs/04 推奨帯 288-399 は Chara CSV 不在で ADDCHARA 不可)が決まるまで着手できない。移植は**概念の移植**に留め、ダメージ罠1種(効果ハードコード)で受入『罠が敵にダメージ/状態異常を与える』を満たした。**配置上の罠**: 罠は `@DUNGEON_FLOOR_BATTLE` の**中に置いてはいけない** — 同関数は守将 < 0 で早期 RETURN するため、守将のいない階で罠が作動しなくなる。`@DUNGEON_DEFENSE_TURNEND` 側の階層戦呼出**より前**に置き、罠死なら戦闘を省く。教訓の一般形: **『Xの直前に挿入せよ』という計画は X の早期 return を確認してから従う**。また移植可否は数種でなく**母集団を全数計測**して判断する(数種だけ見ると『たまたま結合している』で済ませ、構造的不可を見落とす)。"
+    tags: [Project007, Project006, trap, dungeon, tower-defense, erb-port, chara-coupling, rand, determinism, early-return, scope, porting-feasibility]
+    project: Project007
+    strength: 1
+    last_used: 520
+    state: active
+
+  - id: N-083
+    text: "Project003 の SHOP 系 UI は autotest で画面駆動しない — UI 関数を**直接 CALL して状態遷移を表明**する(TASK-20260716-007 で pass=16 実証)。(1)入力経路の実測(Project006 SHOP_LIFE.ERB): 入力 < COLUMN_LEFT_MENU_START_VALUE(=11)→ `EVENTBUY_SUB{NN}(入力)` / 100+キャラNO → 変換されて `USERSHOP{NN}(キャラ)`。カスタムボタンは 0-9 帯に置けばキャラ変換と干渉しない。(2)**SKIPDISP 1 は WAIT だけでなく表示も殺す** — PRINTFORMW を含む UI 呼出だけを SKIPDISP 1/0 で挟み、probe の表明出力は挟まない(全体に掛けると SUMMARY ごとログから消えテストが無音化する)。(3)メニュー選択状態は MENUVAR が使える(メニュー移動時に EVENTBUY_LIFE が `VARSET MENUVAR, 0` するため新 FLAG 不要)。(4)新規コマンドは `SHOP_LIFE{NN}_{名前}.ERB` を置くだけで自動登録(TRYCALLFORM 走査)— 既存ファイル修正ゼロで UI が足せる。(5)probe 用キャラは ADDCHARA 1 の素の新規キャラ(CHARANUM-1)。タイトル時点は CHARANUM=0 なのでキャラ番号は 0 になる — 期待値は定数でなく変数(TESTC)で持つ。"
+    tags: [Project006, Project003, autotest, ui, shop-life, skipdisp, printformw, menuvar, eventbuy-sub, usershop, direct-call, erb-port]
+    project: Project007
+    strength: 3
+    last_used: 538
+    state: active
+
+  - id: N-082
+    text: "Project006/Project003.NET の実機検証2教訓(TASK-20260716-008)。(1)**Project003.NET は未定義関数への CALL 到達で致命停止する** — 旧 Project003 でロード時 警告Lv2『存在しません』止まりだった参照は全て実行時の地雷。Project006 K 0.5 は口上共通ディスパッチャ16関数(KOJO_EVENT/IS_KOJO 等)が配布物から欠落しており **vanilla では新規ゲームを開始できなかった**(NEWGAME→INIT_COMMON→CREATE_KOJO_DAILY_MAP、NEWLOOP→TALENT_CHECK→KOJO_EVENT で停止。出荷 Project003.log に同エラーの記録あり=出荷時から)。是正は TRYCALL 化(単発)+ SYSTEM/PATCH_口上スタブ.ERB(no-op スタブ・表示層のみでロジック非干渉・警告72種が解消)。autotest は @SYSTEM_TITLE を乗っ取るため**起動経路のこの種のバグを構造的に踏めない** — 通しプレイ(実発火)検証の存在価値。(2)**実機通しプレイの駆動定石**: 全ボタンは PRINTBUTTON の入力値で押せる(値はソース grep で確定 — 勢力[ランダム]=97/主人公一覧=99/開始=0/完了=100/特殊勢力完了=9999/次期へ=81/一回待機=82/キャラ=100+NO)。kit(automation-portable)推奨の PostMessage 注入は本 RichEdit では不発 → SetForegroundWindow+SendKeys が確実。**[ランダム]系ボタンは乱数で結果が変わるため固定入力列が脱調する** — 画面(ウィンドウキャプチャ)を確認してから次を送る段階駆動が正。おまけ: codex exec はプロンプト引数が空だと stdin を待ち続ける — WO はファイル→stdin パイプで渡し、出力は tail 経由でなく直接ファイルへ。"
+    tags: [Project006, Project003, Project003-net, undefined-function, trycall, stub, kojo, fatal-call, playthrough, sendkeys, postmessage, printbutton, input-value, codex-exec, stdin, erb-port]
+    project: Project007
+    strength: 2
+    last_used: 534
+    state: active
+
+  - id: N-085
+    text: "Project003 の配列変数の既定値は0であり、『-1=なし/未配置』契約の SAVEDATA を DELETE_CHARA/BASE 参照などの**生存操作**に使うと、契約が確立する前(新規ゲームの初回 INIT・キャラ未登録時)に **index 0(=マスター)を誤操作 or 範囲外エラー**になる(TASK-20260716-016 で実キャラ化した侵入者 handle がクラッシュ)。ガードは `>= 0` では不十分 — **『生存範囲内(< CHARANUM)かつ 種別判定(IS_SP_CHARA 等)』**で守り、削除処理は1関数へ集約する(RESET/INIT から共用)。この『既定値0を生存値と誤認』は Project006 防衛TD で **P6(守将 DUNGEON_FLOOR_DEFENDER)と P8(侵入者 DUNGEON_INVADER_CHARA)で2回**発生した横展開漏れ — 新たに『-1=なし』の handle を足すたびに『既定値0でこのコードは何をするか』を必ず問う。関連: 侵入者の実体は **@ADD_VOID_CHARA()**(CSV 不要・NO≥2000 の SP キャラ帯・IS_SP_CHARA で各リストから自動除外・DELETE_CHARA の ELSE 分岐で綺麗に消滅)が敵キャラの正しい生成法。ただし ADD_VOID_CHARA は #FUNCTION でなく CALL 用 — `変数 = ADD_VOID_CHARA()` は不可で `CALL ADD_VOID_CHARA` → `RESULT`([[N-079]] の #FUNCTION/CALL 区別を生成側にも適用)。HPは BASE:体力・戦闘Lvは ABL:武闘 に載せれば ABL_POWER 第2引数に実キャラを渡せ、状態異常/能力ダウン罠の土台になる。"
+    tags: [Project006, Project003, default-zero, sentinel, chara-handle, delete-chara, add-void-chara, is-sp-chara, function-vs-call, result, invader, dungeon, tower-defense, cross-application, erb-port]
+    project: Project007
+    strength: 5
+    last_used: 553
+    state: active
+
+  - id: N-Project007-20260717c
+    text: "Project003 ERB の実機で判明したカスタム変数/返却/局所値の三点セット(TASK-20260717-008 P14)。(1) `#DIM SAVEDATA CHARADATA X` の scalar も参照は `X:キャラ:0` と末尾要素添字が必要。`X:キャラ` はキャラ次元がずれて範囲外になる。(2) CALL用procedureの返値は終端で `RETURN n` を使う。`RESULT=n` だけ置いてfallthroughすると呼出側は0を受け得る。(3) `#DIM` の局所作業変数は再呼出時の0初期化を仮定せず、dispatcherの分岐キー/ID/価格は関数冒頭で明示初期化する。静的な括弧・block数検査では捕捉できず、値を表明するdirect-call probeで検出する。"
+    tags: [Project006, Project003, erb, charadata, procedure-return, result, local-variable, explicit-init, autotest, p14]
+    project: Project007
+    strength: 1
+    last_used: 541
+    state: active
+
+  - id: N-074
+    text: "Project003 ERB の静的解析ツール(重複検出・関数抽出)は3つの仕様を織り込む: ①イベント関数(EVENTTRAIN 等)は複数定義が正規仕様(#PRI/#LATER)なので重複警告から除外 ②[SKIPSTART]〜[SKIPEND] はパーサー不活性領域なのでスキャン除外 ③行頭 @\" は文字列補間の継続行であり関数定義ではない(Project006 で偽陽性21件)。新しいコーパスに掛けるたび新方言が出る前提で、検出リストは必ず現物サンプル照合してから使う(AP-009)。Project007 初回は①②漏れで偽陽性70件(実重複0件)、Project006 は③漏れ(実重複216件は新旧ファイル併存)。"
+    tags: [Project003, erb, static-analysis, detector, false-positive, skipstart, event-function, string-interpolation]
+    project: Project007
+    strength: 2
+    last_used: 508
+    state: active
+
+  - id: N-070
+    text: "プロジェクト基本方針(2026-07-05 ユーザー決定): Project006(Project006 K 0.5)をゲーム開発基盤とし、Project007 の防衛TD要素(ダンジョン防衛・罠・モンスター配置・勇者侵攻・迎撃 — Project007/ERB/07_ダンジョン/ + docs/04,06,07)を Project006 へ移植する。Project006=改修対象・Project007=読み取り専用の移植元。移植作法は portable-kit(名前衝突grep=N-023 の教訓を含む)。全タスクの S1 はこの方針との整合を確認する。"
+    tags: [Project007, Project006, policy, porting, tower-defense, dungeon, project-charter]
+    project: Project007
+    strength: 1
+    last_used: 507
+    state: active
+
+  - id: N-072
+    text: "Project006 の autotest ハーネス手順(TASK-20260715-001 で実証・pass=7 fail=0)。(1)**config 乖離なし**: Project006 の実 config は元から『システム関数の上書きを許可する:YES』なので autotest 用 config は**実 config の逐語コピー**でよい(N-057 が Project001 で警告する config 乖離が起きない)。バイナリセーブ:YES のため #DIM SAVEDATA も素直に使える(N-012 のブロッカーは非該当 — ノートは結論でなく条件を見る)。(2)**QUIT ではプロセスが終了しない**: WindowStyle Hidden 起動だと QUIT 後も 240秒生存する。WaitForExit を完了シグナルにするのは誤り。**Project003.log に `[[AUTOTEST]] SUMMARY` が出るまでポーリング(約10秒で出る)→ kill** が正解。(3)**probe は値を表明する**: Project003 は未宣言変数の参照をロード時エラーにするため、変数を名前で読み書きし値一致を assert すれば『AUTOTEST がロードでき pass する』こと自体が ERH/CSV ロード成功の機械的証拠になる(N-057 の load 系偽通過を構造的に塞ぐ)。(4)**警告の帰属はベースライン差分で**: Project006 出荷時の Project003.log(**UTF-16LE**・2023-08-26)がロードログとして同梱されており無料のベースラインになる。Project006 は**出荷時から** Lv2 約3500件(`IS_COM_FIRST` 未定義・`@KOJO_EVENT` 未定義など)+エラー1件を抱えるので、これを自分の変更のせいと誤認しない。判定は『ベースラインに無い警告種別が増えたか』。(5)**grep 前に `file` で encoding 確認**: UTF-16 のログへ UTF-8 前提の grep をかけると 0件=正常と読めて検証を偽通過させる(実際に発生)。(6)@SYSTEM_TITLE は ERB/SYSTEM/NEWGAME.ERB が唯一の定義元 — 隔離ツリー内でその1行だけ改名して無効化し AUTOTEST.ERB へ定義(ファイルごと落とすと同居関数が未定義化してノイズ化。上書き precedence にも依存しない)。"
+    tags: [Project006, Project003, autotest, harness, quit, process-exit, polling, baseline, Project003-log, utf16, encoding-grep, false-pass, load-verify, erh, savedata, config, erb-port]
+    project: Project007
+    strength: 8
+    last_used: 539
+    state: active

@@ -1,9 +1,7 @@
 # =============================================================================
 # HyperHelix — core/routing.yaml
 # Durable-information routing + validation policy. AI-facing artifact (English only).
-#
-# Synthesis (HH-000): routing from HelixPDCA routing-rules + MetaHelix D4 storage
-# map; validation policy condensed from HelixPDCA validation-rules.
+# Origin: HH-000.
 # =============================================================================
 schema_version: 1
 
@@ -15,45 +13,55 @@ principles:
 
 routing:
   - kind: "reusable heuristic / rule of thumb"
-    destination: "core/knowledge.yaml — add a note (id N-NNN from counters.next_note_id); free tags, no dictionary gate. Set `project` to the current project slug (or `shared` if cross-project); S2 retrieves only current-project + shared notes (HH-032, core/gates.yaml search.project_scope)."
+    destination: "core/knowledge.yaml — add a note using the permanent id returned by `hyperhelix.mjs next-id` (legacy N-NNN remains read-only compatible, HH-064); free tags, no dictionary gate. Set `project` to the current project slug (or `shared` if cross-project); S2 retrieves only current-project + shared notes (HH-032, core/gates.yaml search.project_scope)."
   - kind: "multi-step procedure"
     destination: "assets/checklists/ (per-phase) or assets/workflows/ (cross-phase)"
   - kind: "fill-in document shape"
-    destination: "assets/templates/"
+    destination: "inline in the owning workflow under assets/workflows/ (HH-081 retired the standalone templates directory; e.g. the hh-record shape lives in git-conventions.md)"
   - kind: "confirmed failure pattern"
     destination: "assets/ai/anti-patterns.md (+ knowledge material if it recurs across tasks)"
   - kind: "new vocabulary"
     destination: "inline as note tags (free words; core/dictionary.yaml is deprecated by HH-016)"
   - kind: "task working record"
-    destination: "tasks/TASK-YYYYMMDD-NNN.md (copy assets/templates/task-brief.md). Audit log, NOT a primary retrieval source: excluded from default search (tasks/.rgignore, HH-031 Phase 1); open by explicit task-id. Primary retrieval = knowledge.yaml notes. ARCHIVED briefs (HH-031 Phase 2): older briefs are pruned from the working tree (kept in git history); look them up in tasks/INDEX.md (task-id->hash) and restore with `git show <hash>:tasks/<task-id>.md`. Pruning is archival-mode only (`node tools/hyperhelix.mjs archive-briefs`), never ad-hoc `git rm`."
+    destination: "the commit-body record (HH-081): claim with `hyperhelix.mjs brief --date <today>` (or `--task GH-<n>` for a framework-repo Issue), then commit through `finish --message` carrying ONE fenced hh-record block (format and fields: assets/workflows/git-conventions.md Commit-body record) — every depth, micro included. No tasks/ file is written. Audit log, NOT a primary retrieval source: read it with `git log` by explicit task id. Pre-HH-081 records are frozen history: tasks/INDEX.md maps each id to a hash; restore with `git show <hash>:<path>`."
   - kind: "operational cleanup report / generated-log summary"
-    destination: "task brief only (Execute/Evaluate/Distill as appropriate). Raw logs and full cleanup summaries are NOT framework materials. During Distill, route only durable findings through existing destinations: reusable lesson -> core/knowledge.yaml, process gap -> docs/process-backlog.md, confirmed failure pattern -> assets/ai/anti-patterns.md, governance-level rule -> amendments.md."
+    destination: "task record phase_evidence only (Execute/Evaluate/Distill as appropriate). Raw logs and full cleanup summaries are NOT framework materials. During Distill, route only durable findings through existing destinations: reusable lesson -> core/knowledge.yaml, process gap -> docs/process-backlog.md, confirmed failure pattern -> assets/ai/anti-patterns.md, governance-level rule -> amendments.md."
   - kind: "constitution-level rule / theta change / note lift-to-rule / note hard-delete or mass-consolidation"
-    destination: "amendments.md proposal (HUMAN GATE — never apply directly)"
+    destination: "amendments proposal (HUMAN GATE — never apply directly). SC-04/HH-067: file it as a governance/amendments/registry.yaml entry (status: Pending) + bodies/HH-NNN.md, then regenerate the amendments.md view with `hyperhelix.mjs amendments-doc` — never hand-edit amendments.md"
   - kind: "significant discovery surfaced mid-chat (HH-030 trigger; see significant_discovery_parking)"
-    destination: "park ONE line immediately — candidate note in core/knowledge.yaml OR amendments.md Pending if governance-level; do not wait for Distill"
-  - kind: "capability addition (new tool subcommand / validate check / knowledge.yaml schema field / ratified HH)"
-    destination: "WIRE its consumers in the SAME P6 change-list (HH-039): the materials, procedures, and enumerations that reference it (e.g. subcommand -> README + invoking checklist; validate guard -> framework-review R1; note field -> D7 procedure). L1 validators (TOOL_DOC_CONSISTENCY / CHECK_DOC_CONSISTENCY / NOTE_FIELD_SCHEMA) enforce the mechanical subset; the rest is the plan.md P6 gate."
+    destination: "start a capture transaction immediately — candidate note/process backlog as a standard task, OR an amendments.md Pending entry (via a governance/amendments registry entry + body; SC-04) as a full task; do not wait for Distill and do not mix remediation into the capture commit"
+  - kind: "contract change (add / modify / remove / migrate: command, schema, anchor, lifecycle section, validator, generated-doc contract, ratified HH)"
+    destination: "Complete the hh-record contract_impact + framework_check rows and WIRE every producer/consumer/doc/template/compatibility/test in the SAME P6 change-list. The path classifier lives in tools/lib/framework-evidence.mjs, the record schema in tools/lib/commit-record.mjs; finish and verify enforce the mechanical subset."
 
 # --- significant-discovery parking (HH-030): capture is NOT bound to phase end ---
 # The best insights often surface mid-chat, from the human, or outside any task
 # (HH-024 indexing, HH-026 R7 both came from human chat). Durable capture must not
 # depend on reaching Distill or staying inside a task, nor evaporate in a review-only
 # session. Park = capture, NOT promotion (importance judgement / rule-lifting still go
-# through Distill and the human gate).
+# through Distill and the human gate). HH-068: capture is a transaction purpose,
+# not a depth mode; its standard/full depth never overrides micro prohibitions.
 significant_discovery_parking:
   triggers:                               # FIXED VOCABULARY (no subjective "important"); no match -> capture normally at Distill
     - rule-axiom-theta-touch              # an insight that could touch a rule / constitution / theta
     - material-contradiction-or-blindspot # a contradiction or blind spot found in existing materials
     - human-design-insight                # a design insight raised by the human
     - same-problem-twice                  # the same kind of problem recurring (2nd occurrence)
-  action: "Park ONE line into a durable repo file: a candidate note in core/knowledge.yaml, OR an amendments.md Pending entry if governance-level. One line = capture, not promotion."
-  task_index:                             # ratified 2026-06-20 (HH-030)
-    inside_a_task: "fold the park into the current task's D7 — no separate increment"
-    outside_a_task: "the park is a tracked-file change -> it is a micro task (task_index +1). No non-incrementing exception (keeps HH-023's anti-escape clause intact)"
-  review_only: "Even in a zero-artifact review-only session, a trigger-matching finding MUST be parked (one line) into a durable repo file; that park makes the session a micro task per task_index above (assets/workflows/review-only.md §2)."
+  action: "Capture the finding, evidence, recommended remediation, and source task in a durable artifact. Capture is not promotion or remediation; keep the capture and remediation in separate task IDs, depths, and commits."
+  transaction:
+    purpose: "Prevent a trigger-matching discovery from evaporating; select depth from the captured artifact and its governance impact, never from the number of changed lines."
+    depth_by_artifact:
+      non_governance: standard
+      pending_hh: full
+    micro_policy: "The fixed micro vocabulary and all micro forbidden_when conditions remain authoritative. A significant-discovery capture never creates a micro exception."
+    separation: "The capture commit records only the finding, evidence, recommended remediation, and source pointer. Consumer/target implementation belongs to a separate remediation task and commit."
+    capture_record: [capture_task_id, capture_depth, captured_artifact, remediation_task_id_or_pending]
+    pending_hh_consumer: "An amendments.md Pending capture may update the generated view but MUST NOT activate or modify its rule consumers. Activation requires Approved status plus a separate implementation task."
+  task_index:                             # HH-030, refined by HH-068
+    inside_a_task: "Fold only when the active task is standard/full, has sufficient depth, the capture artifact is inside its declared scope, and no concurrent write overlap exists; otherwise create a separate standard/full capture task."
+    outside_a_task: "Create a separate capture task: standard for a non-governance candidate note/process-backlog artifact, full for a Pending HH filing. Increment task_index at that task's D7."
+  review_only: "A trigger-matching finding ends pure review-only and starts the separate standard/full capture transaction above. The review itself is not retroactively counted; the capture task owns its paths and task_index increment (assets/workflows/review-only.md §2)."
 
-# --- validation policy (condensed from HelixPDCA validation-rules.yaml) ---
+# --- validation policy ---
 validation:
   plan_before_execute: true            # P5: decide how success will be confirmed BEFORE editing
   check_against_acceptance_criteria: true
@@ -63,8 +71,11 @@ validation:
       - "read changed sections end-to-end"
       - "search for old and new references (no dangling links)"
     framework_material:
-      - "node tools/hyperhelix.mjs validate"
+      - "finish --task <id> --message '<hh-record message>' (local preflight, verify --staged) or verify --base <ref> (pre-push / CI); validate is L1 only"
+      - "staged whitespace gate after staging: CR-stripped trailing-whitespace count of ADDED lines is 0 (assets/workflows/git-conventions.md commit gate); --check only locates hits, and an unstaged diff omits untracked files"
+      - "node tools/hyperhelix.mjs contract-doc --check"
       - "cross-file consistency per assets/checklists/framework-review.md R1-R3"
+      - "complete the hh-record contract_impact and framework_check rows; finish fails closed on classified framework paths"
     code_single_function:
       - "unit test"
     code_module_boundary:

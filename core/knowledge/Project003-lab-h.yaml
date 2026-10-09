@@ -1,0 +1,183 @@
+# HyperHelix Project003-lab-h project leaf ledger.
+# Note schema and authority live in core/knowledge.yaml header (HH-045).
+# Every note in this file has project: Project003-lab-h.
+schema_version: 1
+
+notes:
+  - id: N-Project003z2dlabz2dh-20260718a
+    text: "Project003 autotest で TRAIN フローを自動駆動するには: (1)BEGIN TRAINを使わず @EVENTTRAIN/@SHOW_STATUS/@COM_ABLExx/@COMxx 等を @SYSTEM_TITLE から CALL で直接呼ぶ。(2)NEXTCOM変数が>=0なら C# 側が入力待ちをスキップして自動コマンド選択する(Process.SystemProc.cs endCallEventTrain)。(3)INPUT/PRINTWが内部にある関数はI/O分離(純粋計算部を別関数化)か Win32 PostMessage注入(ランナーがMAINWINDOWHANDLE経由でWM_KEYDOWN VK_RETURN送信)で解消。PRINTFORM/PRINTLの全テキストはOUTPUTLOGでファイルキャプチャ済み。"
+    tags: [Project003, autotest, train, nextcom, input, io-separation, project:Project003-lab-h]
+    project: Project003-lab-h
+    strength: 2
+    last_used: 429
+    state: active
+
+  - id: N-Project003z2dlabz2dh-20260718b
+    text: "Project003 のレイアウト/表示確認は3層: (1)GID バッファ → GGETCOLOR(gid,x,y) でピクセル ARGB 検証(既存 graphics suite・TextDrawingMode=WINAPI 時は CodeEE で失敗するため TEXTRENDERER が必須); (2)コンソールテキスト → HTML_GETPRINTEDSTR(lineNo) でコンソール描画済み論理行の HTML 文字列を取得(色・スタイル・タグ構造を自動テスト可); (3)スクリーンキャプチャ → Win32 BitBlt/CopyFromScreen で PNG 保存(環境依存・Minimized ウィンドウ不可・高コスト)。ERB からテキスト折り返し幅(pixel)は直接取得不可。"
+    tags: [Project003, autotest, layout, pixel, ggetcolor, html-getprintedstr, graphics, project:Project003-lab-h]
+    project: Project003-lab-h
+    strength: 1
+    last_used: 430
+    state: active
+
+  - id: N-Project003z2dlabz2dh-20260718c
+    text: "HTML_GETPRINTEDSTR テストパターン: SETCOLOR/FONTBOLD/ALIGNMENT/HTML_PRINT 後に RESULTS:N = %HTML_GETPRINTEDSTR(0)% で HTML をキャプチャして STRCOUNT で検証する。AUTOTEST_ASSERT より先にキャプチャしないと AUTOTEST_ASSERT の PRINTFORML が最新行を汚染する。出力タグ仕様(needPandN=true): <p align='left|center|right'><nobr>...[<font color='#RRGGBB'>/<b>/<i>/<button value='...'>]...</nobr></p>。RESETCOLOR 後は ColorChanged=false で <font color> なし。"
+    tags: [Project003, autotest, html-getprintedstr, display, color, fontbold, alignment, button, project:Project003-lab-h]
+    project: Project003-lab-h
+    strength: 1
+    last_used: 432
+    state: active
+
+  - id: N-Project003z2dlabz2dh-20260718d
+    text: "Project003 テキスト背景色: HTML_PRINT \"<div background_color='#RRGGBB'>テキスト</div>\" でテキストに背景色矩形を描画できる(ConsoleDivElement: FillRectangle + TextRenderer.DrawText)。display='absolute-lefttop' + xpos/ypos/width/height で指定エリアへのオーバーレイも可能。SETBGCOLOR は全体背景のみ。shape type='rect' はテキスト背景にならない(テキストの右隣に配置)。TextDrawingMode=GRAPHICS では background_color が無効(FillRectangle スキップ)。デフォルト TEXTRENDERER では有効。"
+    tags: [Project003, display, background-color, html-print, div, layout, setbgcolor, project:Project003-lab-h]
+    project: Project003-lab-h
+    strength: 1
+    last_used: 433
+    state: active
+
+  - id: N-Project003z2dlabz2dh-20260718e
+    text: "Project003 HTML_PRINT 既知の罠: (1) HTML_PRINT 'str' はデフォルト lineEnd=true で行を終了する。(2) ConsoleDivElement.SetWidth は width 属性を無視してテキスト幅のみ使う→背景矩形が重複。横並び固定幅は display='absolute-lefttop'+xpos。(3) addDisplayLine は SetAlignment を merge 前に呼ぶ→ALIGNMENT RIGHT+複数 PRINT で値が画面外へ。ALIGNMENT RIGHT は PRINTFORML 1命令で完結。(4) SETBGCOLOR は全体背景のみ。文字単位背景は div background_color。(5) HtmlAnalzeState は Config.ForeColor で初期化→SETCOLOR は HTML_PRINT テキスト色に無効。"
+    tags: [Project003, html-print, div, alignment, background-color, setbgcolor, layout, project:Project003-lab-h]
+    project: Project003-lab-h
+    strength: 3
+    last_used: 963
+    state: active
+
+  - id: N-Project003z2dlabz2dh-20260718f
+    text: "Project003 PRINTW/PRINTFORMW/WAIT テストパターン: 全て ReadAnyKey(InputType.EnterKey) で待機するため WAITING_ONEKEY ENTER で解除可能。手順=(1) PRINTL [[AUTOTEST]] WAITING_ONEKEY ENTER を PRINTW より前に置く→(2) ランナーがログ検出→200ms sleep→WM_KEYDOWN 0x0D(Keys.Return)を PostMessage→richTextBox1_KeyDown→PressEnterKey→WaitInput 解除。WAITING_ONEKEY <char> / WAITING_INPUT <val> は不可(文字入力を受け付けない)。既存インフラへの変更不要。出力内容アサートは HTML_GETPRINTEDSTR または GETLINECOUNT で行う。"
+    tags: [Project003, test, autotest, printw, wait, injection, waitinput, project:Project003-lab-h]
+    project: Project003-lab-h
+    strength: 1
+    last_used: 490
+    state: active
+
+  - id: N-Project003z2dlabz2dh-20260718g
+    text: "Project003 画像カットインアニメは2機構で実現可。機構A=自律フレームアニメ: SPRITEANIMECREATE/SPRITEANIMEADDFRAME(各フレーム delay ms)→CBGSETSPRITE 配置→SETANIMETIMER ms で再描画タイマー ON→ONEINPUTS 等の入力待ち中にフレームが壁時計時間駆動で自律再生(CroppedImage.cs GetCurrentFrame、実例 BATTLE.ERB:566)。機構B=位置スライド: GCREATEFROMFILE→SPRITECREATE→CBGSETSPRITE→ループで SPRITESETPOS/SPRITEMOVE+REDRAW 1+待機(スクリプトがコマ送り、イージング無し・自作)。制約: TextDrawingMode=WINAPI では SPRITEANIME 系が CodeEE(TEXTRENDERER/GRAPHICS 必須)。フレーム時間は .Milliseconds 成分使用で totaltime>1000ms は秒境界で巻き戻る癖。動きの自動テストは困難(目視)、生成状態は SPRITECREATED、色は GGETCOLOR/SPRITEGETCOLOR で検証可。"
+    tags: [Project003, graphics, animation, sprite, cutin, cbgsetsprite, spriteanime, setanimetimer, redraw, project:Project003-lab-h]
+    project: Project003-lab-h
+    strength: 1
+    last_used: 491
+    state: active
+
+  - id: N-Project003z2dlabz2dh-20260718h
+    text: "カットイン再利用ヘルパは graphics/カットイン/カットイン.ERB(kit 還元済)。公開API: CUTIN_MAKE_PANEL(gid,name,w,h,style,base,accent)=意匠付き静的スプライト / CUTIN_MAKE_ANIME(baseGid,name,w,h,style)=自律フレーム / CUTIN_DRAW_ISLAND(name,x,y,w,h)=HTML_PRINT_ISLAND 1コマ / CUTIN_SLIDE_POS(progress0-1000,startX,goalX,ease)=純粋イージング位置(RESULT返し、0=linear/1=ease-out) / CUTIN_RUN_SLIDE(...)=スライド全ループ(TWAIT)。意匠 L_STYLE は 0=カード/1=バナー帯/2=ネームプレート、未知は0にフォールバック。GID基点 CUTIN_GID=3000000。**改行の罠**: dev-support/erb-v2/graphics 層と対応 autotest・ERH は実態 LF 統一(リングバー/波紋/GID管理 等)。Codex は新規/編集ファイルを CRLF 化しがち→レビューで層の LF へ戻す(CLAUDE.md 改行を変えない)。Project003 は LF/CRLF どちらでも動くため機能影響は無いが diff ノイズ+層不整合を招く。"
+    tags: [Project003, graphics, cutin, reusable, helper, api, style, line-ending, lf, codex-review, project:Project003-lab-h]
+    project: Project003-lab-h
+    strength: 1
+    last_used: 492
+    state: active
+
+  - id: N-Project003z2dlabz2dh-20260718i
+    text: "Project003 はウィンドウ非アクティブ(フォーカス喪失=OS 非フォアグラウンド)でも処理継続。スクリプト実行/アニメ再描画/時間待機はフォーカス非依存: redrawTimer は System.Windows.Forms.Timer(WM_TIMER メッセージループ駆動、Project003Console.cs:79)、TWAIT/時間制限INPUT のタイムアウトは System.Timers.Timer(スレッドプール、:568)。IsActive=Form.ActiveForm!=null(:240)。デアクティブ時 pause/suspend 無し。停止するのは入力系のみ: GETKEY/GETKEYTRIGGERED は非アクティブで 0(Creator.Method.cs:4070)、ISACTIVE も 0。ただし PostMessage(WM_KEYDOWN 直接投函)は非アクティブ/最小化でも届く(オートテスト注入の根拠)。**最小化は別**: タイマー/スクリプトは進むが OnPaint 実描画されず視覚的に描かれない(capture 不可)。含意: 機構A 自律アニメは Alt+Tab しても再生継続。詳細 kit docs/48。"
+    tags: [Project003, active, inactive, focus, isactive, timer, setanimetimer, twait, postmessage, minimized, project:Project003-lab-h]
+    project: Project003-lab-h
+    strength: 1
+    last_used: 493
+    state: active
+
+  - id: N-Project003z2dlabz2dh-20260718j
+    text: "数字カウントアニメ再利用ヘルパは ui/カウント/COUNT_ANIME.ERB(kit 還元済)。部分更新=HTML_PRINT_ISLAND html で島を置き、毎フレーム再描画でその領域だけ更新、HTML_PRINT_ISLAND_CLEAR でクリア(THREE_COUNT.ERB と同手法)。**訂正 2026-08-24(kit docs/50 のソース調査)**: 『レイヤー番号』引数は Project003.NET 0.2.6.0 に**存在しない**。HTML_PRINT_ISLAND の第2引数は SP_HTML_PRINT の LineEnd で PrintHTMLIsland は使わない(Project003Console.Print.cs:107-110)。HTML_PRINT_ISLAND_CLEAR は FunctionArgType.VOID で、引数を書くと warn『引数は不要です』のみで黙って捨てられ**常に全消し**になる(Instraction.Child.cs:373-385 / ArgumentBuilder.cs:331-341)。島は本文とは別のオーバーレイ層(_htmlElementList)で、部分クリアはできない。DEMO_V2_COUNT_ANIME.ERB がこの存在しない API に依存している。公開API: COUNT_VALUE_AT(from,to,progress0-1000,ease)=純粋補間(端点厳密・0=linear/1=ease-out) / COUNT_FRAMES_BY_DURATION(ms,frame_ms)=時間逆算=MAX(ms/frame_ms,1) / COUNT_FRAMES_BY_SPEED(from,to,値/秒,frame_ms)=速度→フレーム数 / COUNT_ANIME_HTML(#FUNCTIONS ビルダ) / COUNT_ANIME_RUN(島ループ・最終値残す) / COUNT_ANIME_TIMED(時間逆算FE) / COUNT_ANIME_SPEED(速度FE)。**層別改行**: ui 層は CRLF+BOM 統一(graphics は LF)。SPEC で層の改行を明示すると Codex が初回から正しく出力し E4 是正が不要になる(N-Project003z2dlabz2dh-20260718h の予防が有効化)。"
+    tags: [Project003, ui, count, animation, countup, html-print-island, partial-update, twait, line-ending, crlf, project:Project003-lab-h]
+    project: Project003-lab-h
+    strength: 1
+    last_used: 495
+    state: active
+  - id: N-Project003z2dlabz2dh-20260823a
+    text: "Project003 のセーブデータ跨ぎキャラ移送は専用命令で完結する: SAVECHARA \"名前\",\"メッセージ\",登録番号... → dat/chara_<名前>.dat(通常セーブと別ファイル、VariableEvaluator.cs:1768)/ LOADCHARA \"名前\" は CharacterList.AddRange で**追加**(置換でない)し RESULT=1/0、**失敗しても例外は出ない**。事前検査 CHKCHARADATA(0=OK/1=無/2=ゲーム違い/3=版違い/4=他、RESULTS に理由)、列挙 FIND_CHARADATA(件数を返し RESULTS:0.. にファイル名)。**CSV 依存の正確な範囲**: キャラ登録 CHARA*.CSV は不要(ADDCHARA と違い LOADCHARA は CSV を見ない)、変数は**変数名キー**で保存され #DIM ユーザー定義変数も名前で保存・未知名は読み飛ばす。ただし**配列の添字の意味は CSV が決める**(ABL/TALENT/EXP/MARK/PALAM/ITEM)ため CSV の並びが違うと無警告で意味がズレる。ゲート3関門=種別 CharVar / ScriptUniqueCode 一致 / CheckVersion。**抜け穴**: 作品コード 0 は UniqueCodeEqualTo が無条件 true(GameBase.cs:40)。移送時の手当て3点=RELATION の添字はキャラ番号 / NO も保存され移送先 CSV と衝突しうる / 調教中パラメータも保存対象。詳細と実装レシピは kit docs/49。"
+    tags: [Project003, savechara, loadchara, chkcharadata, find_charadata, savedata, chara, export, import, csv, gamebase, uniquecode, project:Project003-lab-h]
+    project: Project003-lab-h
+    strength: 1
+    last_used: 943
+    state: active
+  - id: N-Project003z2dlabz2dh-20260823b
+    text: "構造化 YAML(タスク記録・台帳)をスクリプトで編集するときの罠4件、同一セッションで実際に踏んだもの: ①**非一意アンカーでの一括置換** — Python str.replace は count 省略で全置換。`evaluate: []` はタスク記録の top-level と phase_evidence の2箇所にあり、両方に当たって記録が壊れた(同一セッションで2回発生)。置換は必ず count=1、かつ事前に `assert s.count(old)==1` で一意性を確認する。②**パッチの重ね掛け** — 壊れた構造化ファイルを部分置換で直そうとすると傷が深くなる。複数箇所を書き換えるなら決定的な**再構築**を選ぶ。③**コロンを含む値の未クォート** — `title: T-004/T-005: 説明` は BLOCK_AS_IMPLICIT_KEY で fail。値にコロンを含むなら必ずクォート。またバックスラッシュや正規表現を含む本文は二重引用符スカラーだと BAD_DQ_ESCAPE になるので**単一引用符スカラー**にする。④**宣言と実体の混同** — `d7.note_moves` は宣言であって実体ではない。`bump` はノートを追記しないので台帳へ実際に書かないと NOTE_MOVE_MATERIALIZED で fail(AP-016)。"
+    tags: [hyperhelix, task-record, yaml, edit, replace, anchor, uniqueness, quoting, note-moves, ap-016, tooling, project:Project003-lab-h]
+    project: Project003-lab-h
+    strength: 1
+    last_used: 945
+    state: active
+  - id: N-Project003z2dlabz2dh-20260823c
+    text: "dev-support -> kit の還元漏れは **ERB 層だけを見ると過小評価する**。実測: ERB 層の diff は TEXT_REVEAL.ERB 1件だけだったが、tools/ まで調べると AUTOTEST_V2_UI が pass=41(dev-support 72)、AUTOTEST_V2_GRAPHICS が pass=26(同 36)で、直近3サイクル分(カウントアニメ/カットイン/テキストリビール)の**テストが丸ごと取り残されていた**。ノートに『kit 還元済』と書いてあっても ERB のみを指している場合がある。**還元の確認は4層 ERB + tools/AUTOTEST_* + runner の expectedPass の3系統を必ず見る**。注意: kit の Invoke-GenericV2Smoke.ps1 は dev-support 版と**別実装**(kit 内パス解決)なので丸ごとコピー禁止 — expectedPass の数値だけを合わせる。display suite と DEMO_* は kit に対応物が無く還元対象外。恒久的な検出は `dev-support/tools/Test-KitSyncDrift.ps1`(引数なしで exit 0/1、-Quiet あり、SHA-256 バイト一致、改行差も検出)。同期済みで `kit sync: OK (139 files compared)`。"
+    tags: [Project003, kit, resync, drift, delegation, codex, autotest, expectedpass, test-kitsyncdrift, project:Project003-lab-h]
+    project: Project003-lab-h
+    strength: 1
+    last_used: 946
+    state: active
+  - id: N-Project003z2dlabz2dh-20260824a
+    text: "git フックを書くときの罠2件、Project003LabH の pre-commit 実装で実測: ①**非 ASCII パスのクォート** — git diff --cached --name-only は日本語等を含むパスをダブルクォートで囲み8進エスケープして出力するため、grep の前方一致(^プレフィクス)が外れ**ゲートが無言で不発になる**。必ず --name-only -z と tr で NUL 区切りにする(または core.quotepath=false)。②**PowerShell 出力の文字化け** — git-bash から powershell -File x.ps1 を呼ぶと出力が cp932 になり日本語が化ける。ブロック時のメッセージが読めないのは実用上致命的なので、-Command で [Console]::OutputEncoding を UTF8 にしてから呼び LASTEXITCODE を exit する形にする。**どちらも陽性テスト(意図的に違反状態を作りブロックされることの確認)が無ければ気づけない** — HH-028 の検出器陽性テストはフックにも適用すること。設計面: host リポジトリに remote が無ければ pre-push は永久に発火しないので pre-commit が唯一の強制点。ただし全コミットを止めないよう、ステージされたパスが監視対象に触れたときだけ検査する。core.hooksPath は clone に伝播しないため導入手順を README に書くこと。"
+    tags: [git, hook, pre-commit, quotepath, non-ascii, powershell, encoding, cp932, positive-test, hh-028, hookspath, project:Project003-lab-h]
+    project: Project003-lab-h
+    strength: 1
+    last_used: 947
+    state: active
+  - id: N-Project003z2dlabz2dh-20260824b
+    text: "Project003 の HTML_PRINT と文字色・ツールチップの関係、engine ソースで確定(kit docs/50 §11): ①**SETCOLOR は HTML_PRINT に効かない** — HtmlAnalzeState.GetSS() は Config.ForeColor から始まり FonttagList(初期値 空)に font タグが積まれたときだけ色を変える(HtmlManager.cs:112-132, :78)。HTML_PRINT の前後に SETCOLOR/RESETCOLOR を置いても中身は既定色のまま。色を付けるには HTML 内に font color タグを書く。②**非ボタンだから灰色になる、は誤り** — DrawTo に isButton は渡るが色の分岐に一度も使われない。色は StringStyle のもので、ホバー/選択時に ButtonColor、バックログかつ colorChanged=false のとき LogColor に変わるだけ(ConsoleStyledString.cs:97-121 / ConsoleButtonString.cs:222-226)。nonbutton は通常ボタンと同じ色で描かれる。③**ツールチップは非ボタンでも出る** — Title は IsButton の分岐の外で代入され(HtmlManager.cs:535-551)、ヒットテストでも canSelect だけが IsButton を要求し pointingString は無条件に代入される(Project003Console.cs:1792-1802)。④button と nonbutton は互いに入れ子不可だが font は別スタックなので nonbutton の内側に font を置ける。∴ ツールチップと文字色は両立する: nonbutton title 属性 + 内側の font color。ただし HTML_PRINT である以上 §1 の行分断は避けられず、同一行配置とは両立しない。⑤**フォントスタイル(太字等)も①と同じ非伝播**: 手段は `FONTBOLD`(現在の style に Bold を OR。Instraction.Child.cs:1236-1248)/ `FONTSTYLE n`(ビットマスク 1=Bold 2=Italic 4=Strikeout 8=Underline。Process.ScriptProc.cs:473-485)/ HTML の `<b>`(HtmlManager.cs:720-729)の3つで、解除は `FONTREGULAR`(Regular へ**全**解除、:1272)か `FONTSTYLE 0`、読み戻しは `GETSTYLE()`(Creator.Method.cs:599-621)。**FONTBOLD/FONTSTYLE は HTML_PRINT に効かない** — HtmlAnalzeState.FontStyle は Regular 初期化で(HtmlManager.cs:77)GetSS() はその state の値を使う(:112-133) ∴ HTML 内は `<b>` 一択。`<b>` の二重ネストと対応なしの `</b>` はいずれも CodeEE。Project003.config に太字の設定項目は無い。**幅への影響は描画モードで割れる**: フォントはスタイル別に生成され計測にも渡る(FontFactory.cs:16-32) ∴ TEXTRENDERER は太字ぶん幅が増えるが、GRAPHICS は半角セルへ量子化し量子の基準 fontDisplaySize は Config.DefaultFont(常に Regular)由来(StringMeasure.cs:20,63)なのでセル数が同じなら幅も同じ。WINAPI は GetDisplayLength が例外(:71-73)。`STRLENS` はスタイル非依存なので、桁揃え領域([[N-Project003z2dlabz2dh-20260828a]] / kit docs/57・58)で太字を使うなら対象ビルドで smoke すること。補助: `GETFONT()` フォント名 / `CHKFONT(名)` 存在確認。**組込関数の存否は Function/Creator.cs の登録辞書を正とする**(FunctionIdentifier.cs だけ見ると式関数を取り逃がす)。"
+    tags: [Project003, html-print, setcolor, font, tooltip, nonbutton, color, printplain, printlc, project:Project003-lab-h]
+    project: Project003-lab-h
+    strength: 3
+    last_used: 967
+    state: active
+  - id: N-Project003z2dlabz2dh-20260824c
+    text: "Project003 の PRINT/PRINTC/PRINTLC 経路は flush 時にテキスト中の [数字] を**クリック可能ボタンへ自動昇格**させる — fromCssToButton -> createButtons -> ButtonStringCreator.SplitButton が [数字] パターンを検出し入力値つき ConsoleButtonString(IsButton true)を作る(PrintStringBuffer.cs:273-284, :330 / ButtonStringCreator.cs:36-)。∴『PRINTLC は非ボタン』は [数字] を含むラベルでは**偽**で、[105] 形式の選択不可コマンドを PRINTLC で出すとクリックできてしまう。自動昇格を受けないのは PRINTPLAIN/PRINTPLAINFORM 経路のみ(AppendPlainText -> createPlainButton、SplitButton を通らない)。ただし PRINTPLAINFORM はパディングしないので列幅は手動(CP932 バイトで colwidth+1 まで空白)。**この事実はソース読解だけでは見落とし、実行時アサート(HTML_GETPRINTEDSTR で <button 数を数える)が捕まえた** — 表示系の断定は runtime テストで裏取りすること。UI 崩壊対策の生成ツールは dev-support/tools/Convert-HtmlLayoutToErb.ps1(HTML モックアップ -> docs/50 §7 形式の ERB。列幅超過/行超過は生成時エラー、検証は Invoke-HtmlLayoutSmoke.ps1)。正典は kit docs/50(§3 訂正済み)。"
+    tags: [Project003, printlc, printc, printplainform, auto-button, buttonstringcreator, ui, layout, converter, html-mockup, runtime-test, project:Project003-lab-h]
+    project: Project003-lab-h
+    strength: 1
+    last_used: 951
+    state: active
+  - id: N-Project003z2dlabz2dh-20260824d
+    text: "Project003 で点線にならない完全な枠線を描く方法(kit docs/51、engine ソース確定): DRAWLINE/CUSTOMDRAWLINE/手書き文字罫線は Config.DrawLineString(既定\"-\")の**文字を DrawableWidth いっぱいに繰り返しているだけ**(構造上、線ではなく文字列)で、点線に見えるのは仕様でありバグではない(Project003Console.Print.cs:592-608 getStBar)。**GDRAWRECTANGLE は存在しない** — C# 側に実装のみあり(GraphicsImage.cs:140)ERB へ未登録(Creator.cs にエントリなし・Project003-builtins.json でも False)。完全な線を描くには GDI+ の Pen を使う2経路: ①`<div border_width='N' border_color='#RRGGBB'>`(HTML_PRINT/HTML_PRINT_ISLAND)= ConsoleDivElement.DrawTo が TextDrawingMode 分岐の外で graph.DrawRectangle(Pen,...) を呼ぶため WINAPI でも動く。②`GSETPEN(ID,cARGB,width)` + `G_POLYGON_POINT_ADD` + `G_POLYGON_DRAW` = g.DrawPolygon(Pen,...)。【訂正 2026-08-25・docs/55】この経路は**使用不可扱い** — 『三角形描画実績』は失敗再現用 fixture(docs/35:417)の誤読で、検証記録は RING-DYN-005 **FAIL**(ログ無し終了・docs/35:408)、出荷 ERB に使用実績ゼロ。枠線は div border 一択。ただし TextDrawingMode=WINAPI では CodeEE 例外(非互換)。太い Pen は外周がキャンバス外にはみ出るので線幅の半分だけ内側にオフセットする。**落とし穴**: GraphicsImage.cs の GFILLRECTANGLE doc コメントは実装と不一致(cARGB引数は無い。実際は ID,x,y,w,h で色は GSETBRUSH 別指定)— C# の doc コメントを鵜呑みにしない。"
+    tags: [Project003, drawline, border, frame, gsetpen, g_polygon_draw, gdrawrectangle, div-border, gdi, solid-line, project:Project003-lab-h]
+    project: Project003-lab-h
+    strength: 0
+    last_used: 959
+    state: active
+  - id: N-Project003z2dlabz2dh-20260824e
+    text: "G系 sprite 方式の制約の要点(正典は kit docs/52): ①**GSETBRUSH 後の GFILLRECTANGLE は無音クラッシュ**(Phase 4a 実測・Project003.NET 0.2.6.0)。単独=既定ブラシ(Config.BackColor)なら動くが色付きには使えない。【訂正 2026-08-25・docs/55】**GSETBRUSH の格納ブラシを使う塗りは G_POLYGON_FILL も即死**(Project001 実機 bisect 0xC0000005。旧記述『smoke 済み』は失敗再現用 fixture の誤読 — 正しい記録は docs/35 RING-DYN-004 FAIL)。色付き矩形は **GCLEAR gid,ARGB の全面塗り**(半透明可・Project001 実測)か GSETCOLOR ピクセルループ(出荷済み graphics/枠/FRAME_CREATE.ERB)。②G系の色は **0xAARRGGBB**(ReadColor が最上位バイト=alpha)。0xRRGGBB 6桁だと alpha=0=完全透明で『エラー無しで何も描かれない』。HTML 側 #RRGGBB とは形式が別物。③WINAPI では G系全滅(CodeEE)、GRAPHICS/TEXTRENDERER は可 — GRAPHICS で div background_color が効かない環境の代替根拠。④ReadRectangle は w/h=0 を CodeEE 拒否(進捗0%バー等は事前ガード)。⑤資料執筆の教訓: docs/51 §2-3 で GFILLRECTANGLE 4辺を推奨してしまい、CODING_STANDARDS §5 の実測クラッシュ記録と矛盾した(翌日のまとめ直しで検出・訂正)。**engine ソースが平凡に見えても実測クラッシュ記録(CODING_STANDARDS §5 / AGENTS.md 落とし穴)との突き合わせを資料執筆チェックに含めること** — ソース読解は実測を上書きしない。"
+    tags: [Project003, graphics, sprite, gsetbrush, gfillrectangle, g_polygon_fill, gsetcolor, argb, crash, winapi, constraints, project:Project003-lab-h]
+    project: Project003-lab-h
+    strength: 2
+    last_used: 958
+    state: active
+  - id: N-Project003z2dlabz2dh-20260825a
+    text: "Project003 の ERB 汎用テキストファイル IO は SAVETEXT/LOADTEXT の2式中関数のみ(正典は kit docs/54): SAVETEXT(str,fileNo{,force_savdir,force_UTF8})→1/0、LOADTEXT(fileNo{,...})→全文。**ファイル名は txtNN.txt 固定**(自由名不可・番号スロット方式、Creator.Method.cs:4250)、既定の保存先は**ゲームルート直下**(UseSaveFolder 既定 false、Config.cs:172-176)、既定エンコーディングは **Shift-JIS**(Config.cs:17。config か引数で UTF-8)。**存在検査・列挙・削除の命令は無い** — LOADTEXT は不在も例外も空文字で区別不能なのでマジックヘッダ行を自作必須。読み込み時 \\r 全除去(改行は LF 前提で設計)。SPLIT は分割先配列超過を無警告切り捨て。両関数とも例外を握り潰すため失敗検知は戻り値のみ。Project001 2026-08 実測(動作・ルート直下 CP932)とソース読解一致。キャラ移送の名前=値形式設計案と SAVECHARA 比較は docs/54 §3-4。"
+    tags: [Project003, savetext, loadtext, file-io, text-export, import, encoding, shift-jis, utf8, chara-transfer, split, project:Project003-lab-h]
+    project: Project003-lab-h
+    strength: 1
+    last_used: 958
+    state: active
+  - id: N-Project003z2dlabz2dh-20260825b
+    text: "G系・div背景の最新の正は kit docs/55(2026-08-25、Project001 spike 起点の総括): ①**GSETBRUSH の格納ブラシを使う塗りは命令を問わず即死**(GFILLRECTANGLE も G_POLYGON_FILL も access violation。設定のみは無害)。単色パネルは **GCLEAR gid,0xAARRGGBB の全面塗り**(半透明可)、部分塗りは GSETCOLOR ループ。GSETPEN+G_POLYGON_DRAW も RING-DYN-005 FAIL 記録つきで使用不可扱い。②**GRAPHICS でも div background_color は描画される**(実行ビルド 7b7dd3bf 実測)— 『無効』はソース checkout(d380408)の実装で、**同梱 exe はソースより新しい**(7b7dd3bf は履歴に無い)。③再発防止3原則: **fixture の存在は合格の証拠ではない**(kit には失敗再現用 fixture がある — 検証主張は docs/35 の PASS/FAIL 表など結果記録まで遡る)/ 実測主張にはビルドハッシュを添える(バージョン文字列 0.2.6.0 ではビルドを特定できない)/ ソース読解の断定は checkout と実行ビルドの一致確認後のみ。本件は docs/51→52→53 に2日間伝播した自前資料の誤りを外部プロジェクトの実測が検出した事例。"
+    tags: [Project003, gsetbrush, g_polygon_fill, g_polygon_draw, gclear, crash, graphics, div, background-color, build-mismatch, fixture, verification, doc-writing, same-problem-twice, project:Project003-lab-h]
+    project: Project003-lab-h
+    strength: 3
+    last_used: 961
+    state: active
+  - id: N-Project003z2dlabz2dh-20260826a
+    text: "Project003 の描画は3レイヤーで、**スクロール量が入るのはログ行だけ**(正典は kit docs/56)。OnPaint(Project003Console.cs:1256-1318): ログ行は ScrollBar.Value 由来の pointY を受け取る / **CBG(CBGSETG)は MainPicBox 下端基準・island(HTML_PRINT_ISLAND)は y=0 上端基準で、式にスクロール項が無い**。当たり判定(:1697-1725)も同じ分裂で、見た目だけでなくクリック位置もズレる。**固定レイヤーを追随させる手段は無い**: ERB に SCROLL 系組込命令が0件、スクロールは vScrollBar_Scroll→RefreshStrings(MainWindow.cs:389-395)で完結し ERB へ非通知。∴ 解は『背景をログ行へ移す』か『スクロールさせない』の二択で、**恒久解は1行1背景の div**(div/img とも display 既定=Relative で描画点に pointY が入る。HtmlManager.cs:1070-1140 / ConsoleDivElement.cs:84-90 / ConsoleImagePart.cs:157-182)。複数行を1枚の高さNpx div で塗る手は、**アンカー行が可視上端を抜けた瞬間に背景ごと消える**。SPRITECREATE と <img src> は同一辞書(AppContents.cs:36-64)なので既存 GCLEAR スプライトは img 専用行で流用できる。CBG の z は -zdepth 降順(:110-116、z=0 が本文の番兵)= **大きいほど奥**。"
+    tags: [Project003, scroll, backlog, cbg, cbgsetg, html_print_island, div, background-color, layer, z-order, sprite, img, ui-layout, project:Project003-lab-h]
+    project: Project003-lab-h
+    strength: 2
+    last_used: 962
+    state: active
+  - id: N-Project003z2dlabz2dh-20260826b
+    text: "Project003 HTML の同一行・複数 div レイアウト(枠を左右に分けるなどの実務): ①**1行に置ける div の数に上限は無い**(state.IsDiv は『解析中』フラグで </div> で解除、HtmlManager.cs:1072/:691)。②ただし **ConsoleDivElement.SetWidth は width 属性を無視して内側テキストの幅しか flow に返さない** ので、2つ目以降の div は1つ目の消費幅ぶん右へずれる。③解決は **<nonbutton pos='N'> で包んで PointX を固定**すること — CalcPointX は PointXisLocked なら渡された pointX を捨てて locked 値を使う(ConsoleButtonString.cs:194-213)。pos の単位は rel_px*FontSize/100。④div の xpos/width/height は **px サフィックス付き=絶対px / 無し=値*FontSize/100**(ParseSizeValue, HtmlManager.cs:1186-1199)。**単位無しで書けばフォントサイズ非依存の桁指定**になる(半角1桁=50)。⑤**版ずれ注意**: ソース d380408 は pos 使用行に <nobr> と align=left を要求し無ければ CodeEE(HtmlManager.cs:397-407)だが、Project001 SHOP.ERB は <nobr> 無しで pos を実用している(SHOP_TAB_DIVS/SHOP_FRAME_DIV, SHOP.ERB:646-700)∴ 実行ビルド 7b7dd3bf では要求されていない。CodeEE が出たら行頭に <nobr> を足す。⑥relative div なのでスクロールに追随する([[N-Project003z2dlabz2dh-20260826a]] / kit docs/56)。⑦**空 div は要素そのものが生成されない**(ConsoleDivElement の生成は『div の内側にテキストがある』分岐の中だけ、HtmlManager.cs:313-341)— 必ず半角空白1つ等を入れる ∴ 塗り div は必ず半角1桁の flow 幅を発生させる。⑧∴ 塗り div は本文行に混ぜず**キャリア行**(直前の空行を HTML_PRINT へ置換)にまとめ ypos で送る — 本文行を1文字も変えないのでズレ0。本文側で打ち消す案は nonbutton の入れ子が CodeEE(:947-948)のため実質不可。⑨**文字の桁と塗りの px を噛み合わせる実務は kit docs/57 が正典**。吸収できるのはサブピクセル級(セル左に1桁余白)だけで、**パディング下限による1桁単位の押し出しは塗り幅では吸収できない**(値が右揃えかつ右ブロック右端が行幅と一致するため) — 左ブロック幅の不変条件で潰す。"
+    tags: [Project003, html-print, div, pos, nobr, layout, ui-layout, multi-div, fontsize, ParseSizeValue, build-mismatch, project:Project003-lab-h]
+    project: Project003-lab-h
+    strength: 2
+    last_used: 963
+    state: active
+  - id: N-Project003z2dlabz2dh-20260828a
+    text: "Project003 の縦レイアウトを行予算で組むときの落とし穴(正典は kit docs/58)。①**LINECOUNT は論理行、画面が消費するのは表示行で単位が違う** — logicalLineCount の加算条件は `line.IsLogicalLine && displayLineList[^1].IsLineEnd`(Project003Console.Print.cs:167-170)なので**折り返しの継続行は加算されない**。一方 OnPaint は displayLineList を行高ずつ描く ∴ **LINECOUNT で画面溢れは原理的に判定できない**。折り返し閾値は Config.DrawableWidth = WindowX - max(2,FontSize/6)(Config.cs:168-171)で、CLIENTWIDTH()=MainPicBox.Width(Project003Console.cs:226)とは別量。②**パディングで高さを揃える設計の target は下限であって上限ではない**(WHILE は PRINTL を足すだけで切り詰めない) ∴ 内容が可変な領域が target を超えると超過分がそのまま総行数になる。headroom = target - 実コンテンツ行数 が正の間は吸収されてテストが緑になり、上流が伸びて headroom が負になった瞬間に内容差が可視化される = **状態依存の条件付きバグ**。③**総行数だけのアサートは『配分だけ動く』と『折り返しで表示行だけ増える』を素通しする**。④自前折り返しグリッドの行数は 2*ceil(cells/cols)-1(行間に空行を入れる場合)で、cols は整数除算の knife-edge に乗るため窓幅数pxで階段状に跳ぶ。⑤計器には 予算/総数/内訳/**パディング前の実コンテンツ行数**/折り返し要因 の5種が要る — 『パディング量==0』は『ちょうど満たした』と『溢れた』の区別がつかない。"
+    tags: [Project003, linecount, layout, row-budget, padding, wrap, display-line, logical-line, clientheight, drawablewidth, assertion, instrumentation, ui-layout, project:Project003-lab-h]
+    project: Project003-lab-h
+    strength: 1
+    last_used: 965
+    state: active
+  - id: N-Project003z2dlabz2dh-20260831a
+    text: "codex exec をバックグラウンド Bash から dispatch する3点セット(欠くとハング/誤作業): ①**stdin を閉じる**(`< /dev/null`) — バックグラウンドの stdin はパイプで、codex が『Reading additional input from stdin...』のまま無限待ちする(2026-08-31 実測。wo-watch より先に気づけない)。②**-C <workdir> を明示** — cd 前置はシェルの cwd リセットで落としやすく、誤 cwd だと別リポジトリの AGENTS.md/SPEC.md を読んで作業する。③**出力をファイルへリダイレクト**し `wo-watch --stall --budget` を並走(HH-063 §9e)。委任品質側の教訓: **SPEC に挿入本文を丸ごと同梱**(索引行・手順文など)すると Codex の裁量が消え一発 green になる — 変更5点+3点の機械的指定で逸脱ゼロ(REPORT 実測、delegation/archive/2026-08-31-t007-t008)。"
+    tags: [codex, delegation, dispatch, stdin, hang, wo-watch, spec-writing, background-bash, project:Project003-lab-h]
+    project: Project003-lab-h
+    strength: 1
+    last_used: 969
+    state: active

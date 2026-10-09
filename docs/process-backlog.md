@@ -8,8 +8,18 @@ HyperHelix フレームワークの繰延作業(deferred prevention-work / 未�
 - 設計上の未決(旧 `docs/設計書.md` §4 U-backlog の生存分)もここで追跡する。
 
 形式: `- [優先度 high/med/low/ref] [class:<根本原因>] 内容 / なぜ / source(task or HH)`。着手したら行を消すかタスクIDを付す。
-`class:` は framework-review **R8d**(跨タスク創発)が集計する根本原因クラス(例 bloat / drift / vocab / tooling-gap / axiom-defer)。同一 class が K=3 回再発で統合タスクを起票。
+`class:` は framework-review **R8d**(跨タスク創発)が集計する根本原因クラス。同一 class が K=3 回再発で統合タスクを起票。
+**固定語彙(2026-08-21 TASK-Project001-20260821-015 で catch-all の `tooling-gap` を分割)**: `enforcement-gap`(資材はあるが遵守の機械的担保が無い)/ `measurement-gap`(指標・可視化が足りない)/ `retrieval-gap`(検索・参照がサイレントに失敗する)/ `plumbing`(ツール配管・外部化)/ `env-gap`(この環境固有の破れ)/ `bloat` / `drift` / `duplication` / `note-frag` / `migration` / `governance` / `consolidation` / `axiom-defer`。**`tooling-gap` は使用しない**(「ツールで直せる何か」の catch-all になり R8d が発火しても統合タスクが成立しなかったため)。
+**R8d 集計時の注意(2026-08-24 /cycle TASK-Project001-20260824-006 実測)**: `plumbing` は「配管という**作業領域**」であって根本原因ではない。実測でこのクラスに居た4件(reflux の還元漏れ検出 / helix-diagnose 移植 / micro-brief の ID 衝突 / PR 配管の外部化)は**互いに根本原因を共有しない**ため、K=3 で発火しても統合タスクに統合する対象が無い — `tooling-gap` を分割した理由がそのまま再現している。`bloat` も同型の入れ物クラスである。∴ **R8d がこの2クラスだけで発火したときは統合タスクを起票せず、R8d の exit condition (ii)「クラスが正当に大きい」として理由つきで記録する**。分割するなら「配管」ではなく原因(例: 最小実装で残りを繰延 / 外部ツールで代替可能)で切る。
+**再正当化の回数上限(R8c)**: 同一行を「期限付き再正当化」で通せるのは **2 回まで**。3 回目の /cycle では **処理するか棄却するか**のいずれかを選ぶ(先送りを選べない)。再正当化したら行末に `/ rejustified: YYYY-MM-DD x<N>` を付す。
 **ホストプロジェクトのタスク**の繰延は、そのプロジェクト自身の TODO へ(本ファイルは framework 専用)。
+
+> 完了・棄却済み項目は git 履歴と各 tasks/ ブリーフに残る(本ファイルは open のみ保持 — 2026-07-05 に完了行を剪定)。
+
+
+
+
+
 
 ## 標準プラクティス(standing)
 
@@ -27,83 +37,105 @@ HyperHelix フレームワークの繰延作業(deferred prevention-work / 未�
 ## 未決・繰延(open)
 
 > R8c: 各 open 項目は処理 or 期限付き再正当化(`node tools/hyperhelix.mjs consolidation-report` が件数を測定)。
+> テーマ別に整理(2026-07-05)。各行末尾の `/ source` が起源(task/HH)の追跡先。
+> 機械集計はこの見出しから closed 見出しまでの `high` / `med` / `low` 行だけを数える。`ref` は参照枠として集計外。
+> 打消し済み完了行を open に残すこと、および見出しの欠落・重複・逆転は集計エラーとする。
 
-### R8 初回パス work-list(2026-06-22 /cycle・consolidation-report 由来)
-- ~~[med] [class:drift] amendment lifecycle drift: HH-039/037/036/031/032 が「承認待ち」節下~~ → **是正済(承認済みログへ移動・ユーザー裁可)TASK-20260620-040。R8b lifecycle drift=解消**
-- [med] [class:drift] R6 supersession: **live チェックの R6/R7d branch-model 二重記述を「Branch context」共有ブロックへ集約済(TASK-20260620-041)**。残: amendments の R6 履歴クラスタ(11 HH)は index-read のため据置(collapse は別途・人間ゲート・低優先)/ R8b
-- [med] [class:duplication] AP-003/declare-consume が6箇所重複(anti-patterns/R1/N-041/plan P6/routing/HH-039、例と検出主張ごと)。**1権威+ポインタへ DRY**/ R8a
-- [low] [class:note-frag] Project001 ノート断片化(encoding cp932 群 N-024/027/032/037/040、erb-port/scope 群 N-009/028/030)。**project playbook+検索ノート1本へ統合**(Project001 project ブランチで)/ R8a
-- [low] [class:bloat] agent-roles.md 442行 / knowledge.yaml 401行(>300)。**live 契約+appendix へ tier 分割・索引**/ R8a・R7b
-- ~~[low] [class:mis-scope] N-015 が shared なのに project 語混入。~~ → **是正済(text の "Project001 real tasks" → 汎用語へ D5 修正)TASK-20260624-044**
-- ~~[low] theta-review.md DEPRECATED 後に live 手順残存~~ → **是正済(歴史的参照ブロックへ硬化)TASK-20260620-039**
+### 統廃合・bloat(R8a/R8b)
+- [low] [class:note-frag] Project001 ノート断片化(encoding cp932 群 N-024/027/032/037/040、erb-port/scope 群 N-009/028/030)。**project playbook+検索ノート1本へ統合**(project/Project001 ブランチで) / R8a。**SYNC-20260702 時点で project/Project001 ブランチ側は進行済み**: encoding 群→**N-104**(TASK-016)＋葉 N-024/027/032/037/040/107/108/109/110/111 ／ Project003 ERB移植 gotcha 群→**N-105**(TASK-018, merge候補-43対) ／ 移植スコープ/偽ブロッカー群(N-009/023/028/030)→**N-106**(TASK-020)。次段落の HH-045③「Project001 37件の playbook 統合」は本進捗の反映待ち(下記注記)。
+- [low] [class:bloat] agent-roles.md / knowledge.yaml が >300行。**live 契約+appendix へ tier 分割・索引** / R8a・R7b(**実数は `cost-report` が毎 /cycle 計測する** — ここに literal を書くと即陳腐化する。2026-07-15 実測で 554→565 / 609→666 と乖離していた) / **2026-08-25(/cycle ordinal 6・TASK-Project001-20260825-002)**: 本 /cycle が WO 記述規則 §3a を agent-roles.md へ net-add したため、この行の対象が一段悪化した(重複行を立てず本行へ集約)。**分割の境界を測定済み**: §1-§4(ロール・境界・WO 契約・結果)= live 契約 / §9-§10(watchdog・effort・token 台帳)= 参照 appendix。**常時必読 tier ではない**ので R7a のコスト面には乗らない — 優先度 low を維持する根拠はここ / dest:here
 
-### セキュリティ改善 work-list(2026-06-24 セキュリティ評価由来 / TASK-20260624-045)
+### 無人強制ギャップ work-list(2026-07-08 project/Project006 の /sync + /cycle 由来)
 
-- ~~[med] [class:governance] HH-042 裁可後の承認証跡 backfill: ratified_by/ratified_at フィールドを既存 HH-000〜041 に git log から推定して埋める + validate AMEND_RATIFIED_BY_EMPTY ルール実装~~ → **是正済(validate ルール追加 + 42件 backfill 完了)TASK-20260624-046**
-- [med] [class:tooling-gap] 深度モード監査証跡: brief の light/micro モード選択に depth_justification(1行)フィールドを追加 + validate check / 深度詐称の事後検出(D2b)を事前可視化に昇格 / TASK-20260624-045 security eval
-- [med] [class:tooling-gap] task WO 委任の内容整合チェック: orchestrator が委任前に WO content の SHA-256 を brief に記録し Codex 返却後に照合 / WO 改ざん検出(同一ブランチ並行セッション考慮) / TASK-20260624-045 security eval
+> 起点: project/Project006 の /sync TASK-20260708-013 と /cycle TASK-20260708-014。**下記5件は根が1つ**(無人強制の欠如)。
+> project ブランチ側の backlog は**当時** `docs/` が sync ヒューリスティック非包含だったため main へ渡らず(下記 (5))、
+> **ユーザー裁可のうえ main へ直接起票**した。(注: 現在は `docs/**` を sync/reflux の framework path に包含済み)
+
+- [low] [class:drift] **(5) 片側 backlog の「要 reflux」注記は陳腐化しても検出できない**: project ブランチの backlog にあった「brief NNN 採番 … **要 reflux to main**」注記は、実際には main 5e3ebd1 で還元済みだったのに**3週間残存**した。**当時** `docs/` が sync ヒューリスティック非包含=注記自体が main へ渡らなかったため(現在は包含済み — 伝播はする)、片側の reflux 状態は**実体照合でしか確認できない**点は不変。R8c の焼却時に「reflux 済みか」を実体で確認する運用にするか、(2) のツール改善で自動化する / source /sync TASK-20260708-013 / **dest:main**(この branch では焼却不能 — R8c の burn 義務外・main の /cycle が所有)
+
+### 構造化正本移行(SC-00〜08)の閉鎖記録と残件(2026-07-18)
+
+> SC-00〜08 は全 package 完了(docs/structured-canon-migration-plan.md の完了記録を参照。commit 系列: SC-01=41ca050 … SC-06=a353bb8, SC-07=8957f82, SC-08=TASK-main-20260718-003)。
+> **FI 依存表の現行化**: FI-07b は SC-05 が置換完了(remote 分割成果は保持)。**FI-07c(playbook 統合 3 task)は SC-05c 完了(b153065)により開始可能** — 対象は下記 Project001/HH-045③ の項目群。**FI-08(最終 adversarial /cycle と閉鎖)は SC-08 完了により開始可能**。FI-07a(agent-roles tier split)/ FI-07d(brief archival 運用)は SC 系に依存せず随時。
+
+- [low] [class:migration] **epoch の new-read-write 前進(legacy read adapter の撤去)は将来判断**: task/governance は semantic-parity-confirmed で停止(設計どおり)。legacy read(changedBriefTexts / next-hh-id fallback)は SC-07 gate の注釈下で隔離済みであり、完了条件1の「adapter 内 read-only 隔離 + gate 検査」を満たす。撤去(=前進)は epoch 前 brief の閲覧需要と origin 移行状況を見て別タスクで / source SC-08
+
+### 外部統治(GOV-01 — openなし、HH-070で完了)
+
+### ツール・自動化(tooling-gap)
+- [med] [class:enforcement-gap] **ノート本文の裸の旧番号が、再採番後に別ノートへ『解決してしまう』誤参照を検出できない**: `KNOWLEDGE_READER` / `LEDGER_ID_UNIQUE` は ID の存在・一意性しか見ないため、再採番で番号帯が他 project に再利用されると本文の `N-0XX` が無関係ノートへ黙って解決する(実測: PR #23 の topic: N-073、TASK-main-20261002-002 で Project001/Project005 の 9 か所)。remediation 案: 本文中の裸 `N-\d{3}` が**別 project のノート**へ解決したら WARN(`[[ ]]` 明示リンクと『旧台帳#NNN』表記は対象外) / source TASK-main-20261002-002 / **rejustified: 2026-10-02 x1(/cycle ordinal 19)** — 発生源(再採番)は HH-064 の恒久 ID で閉じており、既知の 9 か所は TASK-main-20261002-002 で是正済み。残るのは legacy 連番の裸参照が新たに書かれる場合のみで、検査の追加は実害が再度出た時点で行う。class:enforcement-gap
+- [low] [class:drift] **HH-081 後も資材に「brief」(作業記録ファイルの意味)が残る**: checklists / workflows / loop.yaml の EX 節などに計 51 か所。`brief` コマンドを指す箇所と、撤去済みの記録ファイルを指す箇所が混在している(例: review-only.md §3「Create/locate a task brief」・exception-handling.md EX-2/3/4「the brief」)。後者を「task record(コミット本文の hh-record)」へ置換する掃引が要る / source /cycle ordinal 19 TASK-main-20261002-024
+- [low] [class:plumbing] **sync/reflux の PR 配管は標準 git+gh CLI へ外部化できる余地あり(R7d-frame 所見, 2026-08-17 /cycle TASK-Project001-20260817-014, 別モデル opus 委任)**: `tools/hyperhelix.mjs` の PR 補助群(`gh` / `ensureGhReady` / `prBranchName` / `findOpenPullRequest` / `createPullRequest` / `waitPullRequestChecks` / `publishPullRequest` 等)は既存 `git fetch` / `merge --ff-only` / `cherry-pick` / `gh pr create` / `gh pr checks --watch` / `gh pr merge` の薄いラッパで、手順書(runbook)+ npm script 化により概算 350行 削減候補。**ただし完全代替ではない**: reflux の framework/project コミット分類ロジックと task_index/last_framework_review の high-water カウンタ解決は実ロジックであり素の git では代替不可(所見自身が明記)。裁定=即時 Pending HH 起票は見送り(HH-075 の採用基準「NUMBER 付きで既存機構2種以上を1機構に置換」とは性質が異なり、部分設計が先に要る)。次段=「PR配管のみ外部化・分類/カウンタ解決は残置」という切り分け設計を詰めてから HH 提案化を検討 / source: TASK-Project001-20260817-014 R7d-frame / **2026-08-30(/cycle ordinal 15・R7d-frame を Codex gpt-5.6-sol へ委任)— より深い切り口が出たので本行へ集約する(新規行を立てない)**。対抗フレーム = **Hermetic Dependency / GitOps**「作業規律は版固定された読み取り専用の依存物であるべき」。この立場からは、**フレームワーク自身を利用側ブランチがその場で書き換え、ノート・カウンタ・タスク記録と同じ履歴で運ぶ設計**が誤りに見える — 供給物と利用側の状態を混在させたからこそ `sync` / `reflux` / framework-only 判定 / counter high-water 衝突解決が要る。**現行設計に欠けている性質 = 単方向の所有境界**(利用側は版を選べるが、利用中のフレームワークをその場で変更できない、という supplier→consumer の一方向性)。簡素化候補 = **HyperHelix を独立 upstream の git submodule 化し、project 固有の記録は host repo に置き、汎用化する変更だけを通常の upstream PR にする**(project/variant 間の `/sync`・`reflux` を廃止)。**削減 = 最低 177行**(`sync` 70 + `resolveKnowledgeCounterConflict` 18 + `reflux` 89。共有 PR 補助関数・テスト・説明資材は未計上)。**orchestrator の裁定 = 現時点では採らない** — 理由は ROI ではなく設計コスト: (1) 同一操作者が host と framework を並走開発する現行ループを、upstream 往復に置き換えることになる (2) HH-070 の private/free 運用では公開リポジトリをもう1つ持つ必要がある。**ただし (c) の指摘は本サイクルの発見 F3 を説明している** — `dest:main` ラベルと R8c/R8d の除外ロジックは、**構造的に無い所有境界を散文で手作りしている**もので、だからこそ「宣言は両ゲージ・実装は片ゲージ」という配線漏れが起こりうる。境界が構造なら除外は不要になる。
+
+> **R8d サブクラスタ(α)「自作ツールが黙って誤動作する」= 3例**(2026-07-15 /cycle TASK-20260715-005 で特定): ①`bump` が `--use/--miss` を無音で捨てる(下記)②計測ツールが baseline を無音で上書き(**是正済** TASK-20260715-005: `--write-baseline` 配下へ)③ノートID連番衝突(下記)。共通根本= **エラーを出さずに間違った結果を返す**(AP-010 の射程)。class:tooling-gap は計10件で K=3 超過だが、統合対象はこの(α)3件であり、残る(β)honor-based の機械検査化4件・(γ)新規ツール3件は別根本(2026-07-15 再正当化)。**次に(α)が4例目を出したら採番方式・ガード設計をまとめて扱う統合タスクを起票する。**
+
 - [low] [class:governance] ノート起源追跡フィールド: knowledge.yaml notes に `source: human | ai` フィールド追加 / 高 strength ノートへの adversarial 誘導の可視化 / TASK-20260624-045 security eval
-
-### 低頻度ファイル drift 調査 work-list(2026-06-24 git commit 頻度分析由来)
-
-- ~~[low] [class:drift] exception-handling.md EX-4 テーブルと loop.yaml depth_mode の対応付け~~ → **是正済(列名 Normal→standard/full + depth_modes 権威への明示対応 + micro 注記)TASK-20260628-074**
-- ~~[low] [class:vocab-drift] task-list-schema.md P6 フィールド名の英日対応を明記~~ → **是正済(target/anchor/change の英日訳語対応を注記)TASK-20260628-074**
-
-### ノート台帳スマート化 work-list(2026-06-28 HH-045 裁可由来)
-
-- [high] [class:bloat] HH-045 実装 残(Stage1 完了 TASK-054/055=索引層スキーマ+last_used+実証 playbook N-059)。**残**: ②project 別ファイル分割(core/knowledge/<project>.yaml + concurrency.md §3) ③Project001 37件の playbook 統合(project/Project001 ブランチ・48対 merge 候補の焼却) / 535行 bloat の構造解消 / HH-045
-
-### ガバナンス・儀式改善 work-list(2026-06-28 フレームワークレビュー由来)
-
-- ~~[med] [class:governance] HH-046 実装~~ → **完了 TASK-20260628-061**(ratified_by=self-attested 再定義 / validate 役割=attestation completeness / constitution に honor-based 明記 / R1 更新)
-- ~~[med] [class:bloat] HH-047 実装~~ → **完了 TASK-20260628-060**(micro=commit 本文記録可・loop.yaml/git-conventions/phase-gate 配線・DISTILL_CAPTURE/archive-briefs 非適用明記)
-- ~~[med] [class:governance] HH-048 実装~~ → **完了 TASK-20260628-063**(gates external_value_gate + R7c 外部価値ゲート + constitution axiom-5 運用化)
-- ~~[med] [class:tooling-gap] HH-050 実装~~ → **完了 TASK-20260628-062**(gates convergence_ratchet + R8c/R7a ラチェット)
-- [med] [class:bloat] HH-049 実装 残(Stage1 完了 TASK-20260628-064=現行ルール digest 新設 + R6/ブランチ/R7d の高頻度 anchor)。**残**: 深度モード / R7 cadence 等の残 anchor を以後の /cycle で digest へ順次追加 / 2110行の collapse 負債を非破壊解消 / HH-049
-
-### 蒸留ループ改善 work-list(2026-06-28 strength 分布診断由来)
-
-- ~~[med] [class:tooling-gap] HH-053 実装 #1(検索→適用ループ)~~ → **完了 TASK-20260628-073**(validate NOTE_ATTRIBUTION + BRIEF_META task_index + distill.md D7 / evaluate ノート帰属必須化)
-- [low] [class:tooling-gap] HH-053 実装 #2(書き込み時 dedup 提示): 同 project・タグ overlap ≥2 を新規ノート追加時に提示。ただしノート追加は knowledge.yaml 直接編集(専用コマンド無し)のため機械提示が難しい → consolidation-report の add-time 版 or note-add 補助コマンド新設が要る。設計要 / HH-053 #2
-
-### テスト品質 work-list(2026-06-28 品質討議由来)
-
-- [med] [class:tooling-gap] テスト失敗時の場当たり修正検知: evaluate.md V2 に失敗分類フィールド「(a) テストロジック誤り / (b) ソース根本修正 / (c) 場当たり回避」の記入欄を追加 + anti-patterns.md AP-008 エントリ化(テストを通すだけのソース改変を明示禁止) / V2 "not patched ad hoc" チェックが honor-based のみで機械的強制なし / TASK-20260628-048 品質討議
-
-### 収束指標 work-list(2026-06-24 ループ評価・設計討議由来)
-- [low] [class:tooling-gap] AP-003 漏れ/サイクル収束指標化: validate error count を /cycle ごとに記録して trend 化。last_always_read_lines / last_backlog_open_count と同パターン / TASK-20260624-042/043 設計討議
-- [low] [class:tooling-gap] playbook 被覆率指標(レビュー#6): consolidation-report に「playbooks 数 / note-merge クラスタ数」を出力し収束指標化。HH-045 索引層の half-migration 状態を可視化しサイレント停止を防ぐ。last_always_read_lines と同パターン(HH 不要・tooling) / フレームワークレビュー 2026-06-28 #6
-
-- [med] [class:bloat] loop.yaml が 223行に増(P6/HH-036 の inline rationale 散文)。**>250行で専用 D5 pass**(rationale を amendments へ寄せ loop を terse に・常時必読コスト削減)/ R5・R7a 監視 / R8 consolidation-report が >300行 を別途 flag / TASK-20260620-023
-- ~~[gov] R7d 自己参照 cadence~~ → **解決(HH-038: main で R7d STOPPED・ROI は project ブランチで検証)** TASK-20260620-027
+- [low] [class:retrieval-gap] HH-053 実装 #2(書き込み時 dedup 提示): 同 project・タグ overlap ≥2 を新規ノート追加時に提示。ノート追加は knowledge.yaml 直接編集のため機械提示が難しい → consolidation-report の add-time 版 or note-add 補助コマンド新設が要る。設計要 / HH-053 #2
+- [med] [class:plumbing] helix-diagnose.mjs(遵守監査ツール)の移植 / セッション監査の需要が生じたとき / 設計書 U-01
+- [low] [class:measurement-gap] AP-003 漏れ/サイクル収束指標化: validate error count を /cycle ごとに記録して trend 化。last_always_read_lines / last_backlog_open_count と同パターン / TASK-20260624-042/043 設計討議
+- [low] [class:measurement-gap] playbook 被覆率指標: consolidation-report に「playbooks 数 / note-merge クラスタ数」を出力し収束指標化。HH-045 索引層の half-migration 状態を可視化 / フレームワークレビュー 2026-06-28 #6 / **2026-08-24 追記(/cycle TASK-Project001-20260824-006)**: note-merge クラスタ数はそのままでは収束指標にできない。閾値が「共有タグ >=2」なので、`Project001`+`autotest` のような**汎用タグ2枚だけで偽クラスタが量産される**(実測: 新規ノート 1 本が 25 本と対にされた)。指標化するなら**汎用タグを分母から外す**か、**タグの希少度で重み付け**する必要がある。この観測は R8a の判断ノイズにも直結する
+- [med] [class:retrieval-gap] **S2 のタグ検索を「タスクの主題」の語彙だけで組むと、これから行う"操作"の知見が丸ごと落ちる**: 実測(TASK-Project001-20260826-035)ではタグ検索を `autotest,test,harness,assertion` の**1回だけ**実行し6件を取得したが、当該タスクが実際に行った2つの操作 — **スクリプトファイルの書き戻し**と**プロセスの起動と停止** — の語彙では一度も引かなかった。結果、**strength 4 の的中ノート2件が両方とも落ちた**: `N-Project001-20260823a`(tags に `line-ending`/`crlf`/`lf`/`measure-before-write`。まさに『編集前に実測するのは encoding だけではない、行末もファイルごとに違う』)と `N-Project001-20260823b`(tags に `quit-does-not-exit`/`orphan-process`。本文は `Invoke-Project001BootWarnings.ps1` を**名指し**して『Project003 は QUIT を書いてもプロセスが残る』と記述)。**実害**: 前者を落として E4 手戻り1件(CRLF 変換でファイル全体を書き換え・`--check` で検知して是正)、後者を落として**既知の事実を再実測**(Project003 起動5回・約8分)。**重要な否定**: これは「ノートのタグが悪い」ケースでは**ない** — 両ノートとも当該知見のタグを正しく持っており、`line-ending` や `quit` で引けば1発で当たった。落ちたのは**検索語の作り方**であって台帳の構造ではない(初見の診断は『別主題ノートへの埋め込みが原因』としたが、裏取りで否定された。TASK-Project001-20260826-058 の D2b 記述はこの行が上書きする)。**remediation 案**: `search.md` S2 へ「主題の語彙に加えて、**このタスクが行う操作**の語彙でもう1回引く」を追加し、対応表を短く例示する(ファイル書き戻し → `encoding`/`line-ending`/`bom`、プロセス起動 → `process`/`quit`/`orphan`/`sandbox`、コミット → `staging`/`pathspec`/`concurrency`)。`notes` はタグ検索が安いので**2回引くコストは無視できる** / source TASK-Project001-20260826-070(発見元 -035/-058)
 
 
-- [ref] フェーズ仕様監査(2026-06-22, Codex + 自己精読)残り(A群=#1/#3/#7/#9 は TASK-20260620-019 で是正済)。バッチ化候補:
-  - ~~[high] #4/#5、[med/low] #2/#6/#8/#12/spike/micro(loop コア)~~ → **HH-036 裁可・適用済 TASK-20260620-021**
-  - ~~[med] #10/#11/#13/#14~~ → **是正済 TASK-20260620-020**
-  - → フェーズ監査16件すべて処理完了(A群 TASK-019 / detail TASK-020 / loop コア HH-036=TASK-021)
-- ~~[enh] R1 スイープに「新 artifact/step は phase_gate/depth/EX/schema も同時配線」例示~~ → **是正済(R1 (a3) 追加)TASK-20260620-028**
+> **昇格元(2026-08-26)**: 直下4行は session 固有の Distill Inbox(`compact-state/<session-id>.md`)から昇格した。作業が別セッションへ移るため、Inbox のままでは引き継がれないと判断したもの。**いずれも「AP 化 / note 化 / 破棄」の判断は未了**で、次の正規 D フェーズ(/cycle ordinal 9 以降)が所有する。Inbox 原本6件のうち「細い装飾を面の検証に使うな」は**ホストの `ui-style-guide.md` §2.1 手順4 へ資材化済み**につき昇格対象外、残り2件は下記2・4へ統合した / source TASK-Project001-20260826-004/-005/-007
 
-
-- [med] [class:tooling-gap] helix-diagnose.mjs(遵守監査ツール)の移植 / セッション監査の需要が生じたとき / 設計書 U-01
+### 語彙・整合・axiom 繰延
 <!-- HH:ACTIVE-SCAN-ALLOW reason="historical reference to a deferred Helix_Reflex item ID (U-03), not live use of removed material machinery" -->
 - [low] [class:axiom-defer] PRINCIPLE.IMPL.001 の axiom 鋳造 / HyperHelix 運用での確証後に再判断 / 設計書 U-03(Helix_Reflex AM-010 繰越)
 <!-- /HH:ACTIVE-SCAN-ALLOW -->
-- [low] [class:vocab-drift] HH-030 文言 ⇔ `core/loop.yaml` micro.use_when の不整合(park を「micro task」と記すが固定語彙に park 無し。拡張は amendment 級) / HH-030 文言整理 or micro 語彙拡張 / TASK-20260620-008
-- [low] /sync 改稿時に concurrency.md §3 のフィールド種別(accumulator vs high-water)を未参照だった / カウンタ照合の種別確認を習慣化 / TASK-20260620-009(是正済、再発防止メモ)
-- ~~[low] /sync ヒューリスティックが `docs/` を framework パスに含まず、docs 変更が cross-branch 還元から漏れる~~ → **是正済(sync.md ヒューリスティック + reflux FW に `docs/**` 追加)TASK-20260620-034**
-- [ref] Codex 網羅監査の残り穴(バッチB/C で順次) / TASK-20260620-009 監査:
-  - [med] ~~HH-013 bootstrap 到達性を validate が未強制~~ → 是正済(session-bootstrap に「手動チェック・validate 前提」明記)TASK-20260620-012
-  - [med] ~~human prune が /cycle 宣言のみで framework-review に行が無い~~ → 是正済(framework-review Completion に prune 行追加)TASK-20260620-011
-  - [med] ~~execution_mode ヘッダ欄が agent-roles 宣言のみ~~ → 是正済(条件付き欄=managed/mixed 使用時のみと明記)TASK-20260620-012
-  - [med] ~~R7c が機械検知を過大主張~~ → 是正済(改善アイデア R7c を「外部価値は人間判断」に訂正)TASK-20260620-012
-  - [med] ~~S2 検索が「active のみ」未明記、archived 高 strength が上位占有しうる~~ → 是正済(loop.yaml/search.md/knowledge.yaml に active-only 明記)TASK-20260620-011
-  - [low] ~~gates.notes.strength_start デッド設定~~ → HH-033 裁可・撤去済 TASK-20260620-013
+
+### 参照(ref・低優先の残穴)
+- [ref] フェーズ仕様監査(2026-06-22)残の追跡先。バッチA群/detail/loop コアは HH-036 等で処理済 — 新規発見時の起票先として節を残す。
+
+### /cycle 2026-07-01 由来(TASK-20260701-007)
+
+> **R8c 再正当化(2026-07-01)**: 前回 framework-review=TASK-726(2026-06-29)から1サイクル経過。open 17件・[前回比 ±0]。>3サイクル陳腐化した個別項目なし(各 source date は 06-20〜06-28、HH-045 は 06-29 再正当化済)。
+> **R8d 跨タスク創発(2026-07-01, knowledge.yaml 913行>300 でトリガ)**: 根本原因クラス集計 = **class:bloat ×3**(agent-roles/knowledge >300 / HH-045 / loop.yaml 223行)→ 構造統合タスク=**HH-045(裁可済・未実装・#1)**が受け皿。**class:tooling-gap ×5**(深度justification / WO SHA / テスト失敗検知 / 収束指標 / helix-diagnose)は**異種の gap ゆえ単一統合にならず個別追跡**(R8d の「same-problem-twice」に非該当)。
+> **2回目 /cycle(TASK-20260701-015, 同日)**: 前回 cycle 以降 tasks 008-014 の7実タスク介在。**R8c burn-down 1件=DISTILL_CAPTURE を TASK-009 で実処理(是正済)**。open 17[±0](007 で+1追加/009 で-1解消=net0)。**class:tooling-gap ×5→×4**(DISTILL_CAPTURE 解消)。bloat×3→HH-045 は #1 継続(再正当化 2026-07-01)。新規 park なし・framework 健全。
+> **3回目 /cycle(TASK-20260701-024, 同日)**: 前 cycle 以降 016-020(framework 整理)+021-023(実ゲームタスク=anti-self-purpose 復帰)介在。**burn-down: HH-045 全処分完了(017 クローズ)+完全重複5対 dedup(019)**。**merge 候補 582→466(-116対, playbook N-104/105/106 + dedup)**。open 17→16。knowledge 913→980(playbook 増・索引読み tier ゆえ許容=②descope 帰結)。残 playbook 化は 466 diffuse=逓減ゆえ据置。新規 park なし・framework 健全。R6 連続 framework-only cycle=1。
+> **4回目 /cycle(TASK-20260701-030, 同日)**: 前 cycle 以降 **025-029 の実ゲームタスク5件**(用語1改称/相談2機械/相談2テーブル5種/人化4調査/人化4集約ビルド)＝**R6 連続 framework-only cycle=0(理想・framework が実作業に従属)**。framework 材変更= encoding 葉 **N-107/108/109**(N-104 leaves)追加のみ。R7a 434±0・R7b なし・open 16[±0]・validate 0err。**merge 候補 466→507(+41)** は encoding 葉3件の tag ペアリング増だが N-104 playbook が retrieval 集約ゆえ raw 値は誤誘導的。knowledge 980→1007(索引読み tier)。**watch(R8d)**: encoding-footgun 葉が N-104 配下に集積中(8葉)＝更に増えたら sub-topic(CP932/UTF8-BOM/write機構)分割を将来検討・現状は distinct ゆえ据置。新規 park なし・framework 健全。
+> **5回目 /cycle(TASK-20260702-004, post-SYNC 初)**: 前 cycle 以降 game bugfix(20260702-001)+**/sync(HH-046〜051 取込)**+autotest tooling(002)+playtest→autotest化(003)。**R6 連続 framework-only cycle=0**。**post-SYNC 重点 R1: merged HH の宣言↔消費 spot-check 全通過**(external_value_gate/convergence_ratchet が gates↔framework-review 双方・HH-051 git-conventions 配線・amendments 索引26・AP 重複0)＝merge dangling なし・validate 0err。**R7a 434→451(+17)**=HH-048/050/049 の governance 材が always-read 加算(ratified 一回性コスト・ratchet baseline 451 整合)。amendments 2126→2375・merge 候補 507→576(N-107〜111+merged)。**R8c open 16→18=SYNC で main の governance work-list を継承**(HH-049 digest 残/depth_justification/WO SHA/source フィールド)=**inherited・次 /cycle で再正当化対象**。framework 健全。
+> **6回目 /cycle(TASK-20260704-003)**: 前 cycle 以降=**全てゲーム側 doc タスク**(005-010 設計相談チェーン/0704-001 受入/0704-002 micro)＋**第2次 /sync 67aa528(HH-052〜054・別セッション実施)**。**R6 連続 framework-only cycle=0**。**R1 spot-check(第2次 post-SYNC)全通過**(HH-052=gates+R7c/HH-053=distill+S2適用列/HH-054=agent-roles/索引9参照/マーカー0)。R7a **452[±0]**・open 17[-1]・validate 0err。**micro(HH-047)初使用の整合確認**=ブリーフ無しタスクが検査に抵触せず(0err)。**inherited 4項の再正当化**: HH-049 digest 残/depth_justification/WO SHA/source フィールド=**venue=main と宣言して据置**(本ブランチで実装すると次 sync の衝突源。次の curated /sync で main へ還元判断)。cost-report 前回比が**並行セッションの /sync 検出器**として機能(D1)。
 
 ## 完了・棄却(closed)
+- [closed] 2026-10-02 /cycle ordinal 18 — **3件**: (1) `class:duplication` AP-003/declare-consume の6箇所重複 = **棄却**(再正当化上限)。6箇所は役割が異なる — AP-003(失敗パターン)・HH-039(裁可本文=不変の履歴)・routing(契約変更の行き先)・plan.md Contract Change Gate(実行手順)・R1(レビュー観点)・N-041(知見)。権威は HH-039 + plan のゲートで他は適用面。DRY は裁可本文とノートの書換え(人間ゲート)を伴い効果が小さく、契約変更の証跡は HH-081 で hh-record の必須行として機械化済み。(2) `class:measurement-gap` R8a note-merge の汎用タグ偽陽性 = **処理**(project の 20% 以上が持つタグを判定から除外。full 出力 1,530 組 → 245 組)。(3) `class:measurement-gap` R8c の dest:main 選抜 = **処理**(main / hyperhelix/* では dest:main を焼却可能として数え、project ブランチでは焼却可能行を判断セットの先頭へ)。source TASK-main-20261002-015
+- [med] [class:plumbing] **micro/brief タスクID衝突**: micro(HH-047)はブリーフファイルを作らないため、brief ツールの自動採番が micro の消費済み ID を再利用する(実発生: TASK-20260704-002 が micro と /cycle ブリーフで衝突→-003 へ採番替えで即修正)。対処案=bump 済み ID の台帳(コミットログ or counters)参照 or 連番を task_index 由来へ / source TASK-20260704-003 / **processed: 2026-08-30(/cycle ordinal 15)— 前提が2つとも実測で崩れた**。①「micro はブリーフファイルを作らない」は**現在は偽** — `brief --mode micro` は `tasks/TASK-<id>.md` を実際に作る(本 /cycle の直前タスク TASK-Project001-20260829-027 で実測)∴ 自動採番から見えないという前提が無い。②採番の衝突自体は **claim token 側で機械的に塞がれた**(AP-016・2026-08-24: `brief` が sidecar へ token を書き `finish --sid` が fail-closed 照合、`--date` は nested 構成でホスト repo のコミットログも走査する)。∴ 本行が指す不具合は残っていない。**なお micro 経路には別の欠陥が実測された**(epoch ゲートが micro の Markdown を `legacy-live` として拒否し `finish` が止まる)が、それは採番ではなく成果物形式の問題なので**別行として起票した**(下記 `class:enforcement-gap` micro/epoch 行)。
+- [high] [class:enforcement-gap] **`brief --mode micro` が、自分の epoch ゲートが拒否する成果物を作る**: micro 深度は `tasks/TASK-<id>.md`(Markdown ブリーフ)を書くが、`task` domain の epoch は **`new-read-write`** で、SC-RT-12 / `migrate-canon` は NEW epoch のブリーフに structured record を要求する ∴ その Markdown は **`legacy-live`(rejected=1)** になり、`finish` の L3 が fail-closed で止まる。**実測 2026-08-30(TASK-Project001-20260829-027)**: `brief --date 20260829 --mode micro` → `Created tasks/TASK-Project001-20260829-027.md` → `finish` が `[L3 Behavior] FAIL — node --test exited 1` で中断(`tasks/TASK-Project001-20260829-027.md: NEW-epoch brief has no structured record — legacy-live`)。**しかも bump は先に走り終えているので `task_index` だけが進んだ状態で止まる**(冪等なので同一タスクの再実行で回復できるが、そのことは出力に現れない)。回復手順は `--mode` を付けずに `brief --task <id>` を打ち直して record-only を作ること(実測で回復)。**宣言側は3箇所とも micro の Markdown を有効としている** — `core/loop.yaml depth_modes.micro.record_in` / `core/routing.yaml routing[task working record]` / `assets/checklists/search.md` S1 前提 ∴ **資材は許可し、ゲートは拒否する**(AP-003 の declare↔consume が epoch 層で開いたまま)。remediation 案: (a) `brief --mode micro` にも record-only YAML を書かせる(`depth_mode: micro` のまま schema v2) (b) SC-06 の task epoch が micro Markdown を明示的に許容する (c) 最低限 `brief` が micro 選択時に「この epoch では finish が拒否する」と警告する / source /cycle ordinal 15 TASK-Project001-20260830-001 / **dest:main**(`tools/hyperhelix.mjs` は main 所有 — この branch では焼却不能・R8c の burn 義務外)
+- [low] [class:duplication] **マージが同一行を重複させても validate が検出しない**: `CONFLICT_MARKER` は `<<<<<<<`/`>>>>>>>` のみ、`LEDGER_ID_UNIQUE` は id のみを見るので、**本文の隣接重複行**はすり抜ける。実測(本 /cycle): `assets/workflows/concurrency.md` §8 L1 に SYNC-20260823 由来の完全重複行が 1 組残存していた(本 /cycle で削除)。**n=1 のためガードは作らない**(R8e: 反 bloat 機構が bloat しては本末転倒)。**2 件目が出たら** typed-edge registry(HH-075)の 1 行として追加する / source: /cycle TASK-Project001-20260823-052
+- [high] [class:enforcement-gap] **`evaluate.md` V1 の staged whitespace gate が、チェックリスト行のままでは実行されない**: 規定のゲートは `git diff --cached -U0 | grep '^+' | tr -d '\r' | grep -cE '[[:space:]]+$'` = 0 で、同節は「`git diff --cached --check` の出力長で判定するな(CRLF リポジトリでは毎回 nonzero)」まで明記している。**実測 2026-08-29 /cycle ordinal 13**: 同一セッションの 14 コミット(host 7 / framework 7)で規定ゲートの実行は **0/14**。代わりに禁止されている `--check` を回して常時赤に当たり、その既知事実をゼロから調べ直した。**しかも実欠陥が1件通過した** — host `bf2272a` の `TODO.md` 追加行に末尾空白(同じ編集が `履歴` ラベルの重複行も残していた。どちらも遡及検査で発見・是正)。**同ファイルは同じルールについて「追加直後のサイクルで uptake 0/6、該当節を開かないと届かないから」と既に記録しており、これが2度目の測定**。∴ 資材の再掲・強調では届かないことが2回の実測で確定した。remediation 案: (a) `finish` の fail-closed チェーン(verify → secret scan → bump → commit)へこのゲートを1段足す — `finish` は既に必ず通る唯一の入口であり、チェックリスト行と違って読まれる必要がない (b) 陽性テスト(末尾空白を含む staged diff で `finish` が落ちること)を添える / source TASK-Project001-20260829-008 (/cycle ordinal 13) / **dest:main**(`tools/` は main 所有。この branch で触ると reflux が要る)
+- [high] [class:migration] **HH-064 の恒久 ID 移行が旧 ID を残し、逐語重複ノートが 14 組 28 件ある**: 恒久 ID(`N-Project001-YYYYMMDDx`)で採番し直した際に legacy `N-NNN` を archive しなかったため、**text が完全一致するノートが同じ台帳に二重に存在する**(実測 2026-08-29 /cycle ordinal 13・`core/knowledge/Project001.yaml`)。例: `N-047`/`N-Project001-20260721b`、`N-058`/`N-Project001-20260721m` — text・tags・project・strength・last_used・state のすべてが同一。**両方 active のペアが複数ある**。**実害を本セッションで実測**: `notes --tags detector,false-positive,...` の S2 retrieval が `N-058` と `N-Project001-20260721m` を**両方返し、top_n=6 の枠を同一教訓で2つ消費した**。∴ 重複はストレージの問題ではなく **retrieval 帯域の問題**で、台帳が育つほど S2 の実効的な top_n が縮む。**R8a の note-merge 検出器はこれを surface しない** — タグ重複で候補を出すため、逐語重複が汎用メタタグ由来の 1437 対に埋もれる(決定セットが ordinal 11/12/13 と3回連続で同一の顔ぶれ・全行 accept になっている理由の一つ)。remediation 案: (a) `consolidation-report` に **text 完全一致クラスタ**を独立の分類として出させる(タグ重複とは別枠。件数が少なく必ず actionable) (b) 14 組の legacy 側を `state: archived` へ — ただし **prune は人間の action**(`core/gates.yaml human_actions`)かつ 28 件は mass-consolidation(routing の人間ゲート)なので、AI は候補提示までとする / source TASK-Project001-20260829-008 (/cycle ordinal 13) / **partially-processed: 2026-08-29 — (b) はユーザー裁可を得て実施済み**。14 組を精査したところ**手当てが要ったのは 8 組だけ**(5組は既に片側 archived・1組は両側処理済み)で、その8件を archive した。**legacy `N-NNN` 側を残す判断**をした組が3つある — 被リンク `[[N-NNN]]` が実在し、恒久 ID コピー側は被リンク0だったため(ID を消すと参照が切れる)。受入は「両方返していた S2 クエリを再実行して 6/16 → 5/5 になること」で証明した。**残件は (a) のみ**= `consolidation-report` に text 完全一致クラスタを出させる改修で、`tools/lib/consolidation-report.mjs` は main 所有 ∴ **dest:main**(この branch では焼却不能・R8c の burn 義務外)。**再正当化回数は 0 に戻す**(先送りではなく行の半分が実際に処理されたため)。
+- [med] [class:enforcement-gap] **backlog 行の「見出しより下」への誤配置がサイレントに集計外になる**: `countOpenBacklogItems` は open 見出しより**上**の priority 行を fail-closed でエラーにする(TASK-main-20260728-010 の実害を受けた是正)が、**closed 見出しより下**の行は「履歴ポインタ」として黙って無視する。∴ ファイル末尾へ追記すると R8c の焼却対象にも件数にも一切現れない。**実測 2026-08-29 /cycle ordinal 13**: 本 /cycle で起票した2行を EOF へ追記したところ、`open 25` のまま数が動かず、実装を読むまで気づけなかった(気づけたのは行数 33 と open 25 の差をたまたま突き合わせたため)。上側と下側で同じ損失なのに、**片側だけ fail-closed**という非対称。remediation 案: closed 見出しより下の `- [high|med|low]` 行も上側と同じくエラーにする(履歴ポインタは `- ~~[...]~~` 形式に限る、と形式で区別する) / source TASK-Project001-20260829-008 (/cycle ordinal 13) / **dest:main**(`tools/lib/consolidation-report.mjs` は main 所有)
+- [high] [class:retrieval-gap] **並行セッションの存在に気づく契機が資材に無い**: `assets/checklists/search.md` S2 は「**並行セッションが既知なら** peer task record を読め」と要求するが、**『既知』になる経路が定義されていない**。実測 2026-08-29 /cycle ordinal 14: 本セッションはユーザーから「このチャットを唯一の作業レーンとする」と明示されていたが、**別セッションが `TASK-Project001-20260829-019` を claim し、ユーザー裁可6件を得て両リポジトリへコミットしていた**(host `05b28d5` / framework `7329faf`・`task_index` 1074)。私が気づけたのは **`brief` が 019 を飛ばして 020 を採番したという偶然**だけで、peer が私より後に claim していれば気づかなかった。**実害**: 直前のユーザー報告で「§1-V㉝ はユーザー判断待ち」と述べたが、その時点で既に決着済みだった(誤った状態報告)。なお peer 側は私の committed 成果(`HUD_LEFT_WIDTH_MAX` 0件・TASK-…-009)を正しく引用しており、**committed-only の読み取り規律は片方向には機能している** — 欠けているのは『読むべき契機の検出』。remediation 案: (a) `brief`/`finish` が `origin` 不要のローカル検査として「自セッションの最終 bump 以降に他タスクの commit があるか」を1行報告する (b) search.md S2 の peer-record 項を『既知なら』から『**毎回 `git log --oneline -<n> -- tasks/records/` を見る**』へ変える(コストは1コマンド) / source TASK-Project001-20260829-020 (/cycle ordinal 14) / **dest:main**(`tools/` と `assets/checklists/` は main 所有)
+- [med] [class:measurement-gap] **実装 WO の第1手に『同等の死蔵部品が無いか』の確認が無い**: 実測 2026-08-29(S4 6本): **定義のみ・呼出0 の死蔵部品が4件**見つかり、**いずれもその単位がこれから作ろうとしていたもの**だった — `PRINT_NEW_SHOPITEM`(§1-V㊱ の単独アイテム出力)/ `@INPUT_YN_POPUP`(§1-V㊴ の共通二択ポップアップ)/ `@ASSI_LIST`・`@SALE_LIST`(§1-V㉜ の副産物)/ `@PRINT_MITAMA_SLIDER_INLINE`(§1-V㉞ の記号描画・現役 HUD と二重)。∴ このコードベースには『作ったが配線しなかった部品』が**系統的に**存在し、S4 を回さずに実装へ入れば4件とも作り直していた。remediation 案: `assets/workflows/agent-roles.md` §3a の WO 執筆規律へ1項追加 —『**新規に作る前に、同等の未使用関数が無いかを定義/呼出の件数で確かめる**』。検出は `@名前` の定義数と `CALL/TRYCALL/CALLF` の呼出数の比較で足りる(実測でこの形で4件とも判定できた) / source TASK-Project001-20260829-020 (/cycle ordinal 14) / **dest:main**(`assets/workflows/` は main 所有)
+- [med] [class:enforcement-gap] **`--path <親ディレクトリ>` を要求する資材と、並行実行で生まれる未追跡ファイルが構造的に噛み合わない**: `assets/checklists/distill.md` は削除を含むタスク(`archive-briefs`・rename)に `--path` へ**親ディレクトリ**を渡すよう要求する(`--path` は存在しないパスを拒否するため)。しかし `git add <dir>` は**同一ディレクトリ内の未追跡ファイルも stage する** ∴ 並行タスクの未完成 record を巻き込んでコミットする。`assets/workflows/concurrency.md` §4 は『削除を覆う**最も狭い**ディレクトリを選べ』としか言えず、**同一ディレクトリ内の未追跡には効かない**。実測 2026-08-29(TASK-Project001-20260829-016): 6本の WO が in-flight の間 `tasks/records/` に未完成 record が6件あったため、archive の実行を**着地まで意図的に待機**して回避した。**待てない状況では手段が無い**(手動コミットは distill.md が明示的に禁じる — 『それが L3 が走らなくなる経路そのもの』)。remediation 案: `finish` の `--path` が**削除された tracked パスを明示指定として受け付ける**(`git add` は削除済み tracked パスを受け付けるので、拒否しているのは finish 側の存在検査)/ source TASK-Project001-20260829-020 (/cycle ordinal 14) / **dest:main**(`tools/` は main 所有)
+
+- [closed] 2026-08-26 /cycle ordinal 10(heavy) — **4件を焼却**:
+  (1)(2)(3) `retrieval-gap` 隣の実装を先に探す / 見た目報告は量を聞く / `enforcement-gap` 字面と目的は別 = **いずれも ordinal 9 で既に資材化済みだった**
+  (順に note [[N-Project001-20260826b]] / AP-027 の prefer 欄 / `evaluate.md` V2)。**Distill Inbox から backlog へ昇格した行と、同じ知見を直接資材化した結果が二重化して残っていた**
+  — ordinal 9 の bounded decision set(5件)に入らず気づかれなかった。**教訓: Inbox を backlog へ昇格させたら、同じ /cycle 内で資材化した分は昇格行ごと閉じる。**
+  昇格と資材化は同じ知見の別経路であり、両方走らせると必ず重複が残る。
+  (4) `env-gap` コミットゲートの `--check` が AP-013 と衝突 = **処理**。`git-conventions.md` のコミットゲート表へ、CP932 ゲームファイルを含むステージでは**件数のみ取る**手順を明記
+  (本 /cycle で実際にホストのガードフックが当該コマンドを拒否した)。
+- [closed] 2026-08-26 /cycle ordinal 9 TASK-Project001-20260826-009 — **2件を焼却**:
+  (1) `class:retrieval-gap` 並行セッションの内容レベル衝突 = **処理**。`search.md` S2 へ「既知の並行セッションがあれば自タスク開始以降の peer record を読む」を、`concurrency.md` §5 へ「file-level と content-level の衝突は別問題で、既存ゲートは全て file-level しか見ない」を追記(提案されていた remediation (a)(b) の両方)。
+  (2) `class:enforcement-gap` 計測器の取り違え3例 = **処理**。AP-010 の射程拡張ではなく **AP-027 を新規登録**した — AP-010 は検査が *消滅* する形、AP-027 は検査が *動いていて緑なのに別のものを見ている* 形で、根本が異なる(前者は不在、後者は誤照準)。3例(PID でなくログ停滞で生死判定 / 検査が実装の現状を写して不具合を仕様化 / スキャナが別フィールドを読む)を worked example として同居させた。
+- [closed] 2026-08-24 /cycle TASK-Project001-20260824-006 — **4件**: `enforcement-gap` 深度モード監査証跡=**棄却**(規則は loop.yaml に既存で、micro は any-logic-change を禁じており残存リスクが小さい。自由記述の justification に validate を掛けても『在ること』しか検査できず、誤分類の是正経路は D2b→次タスクで standard へ昇格と既に定義済み＝ceremony になる)/ `enforcement-gap` WO 内容整合の SHA-256=**棄却**(脅威は同一リポジトリで commit 権を持つ主体の改竄であり、憲法 統治の公理2 が統治は honor-based と明言している以上、同じ主体が作る SHA では担保にならない。並行セッションの実害経路は AP-016 の claim 確認手順で被覆済み。実際の WO 改竄を観測したら再起票)/ `enforcement-gap` テスト失敗の場当たり分類=**実施**(evaluate.md V2 に (a)検査が誤り/(b)ソースが誤り/(c)回避 の記録欄を追加。(c) は AP-021 の形と明記)/ `consolidation` 外部レビュー採用 findings=**実施**(①agent-roles.md §10g を削除 602→499 行 ②open 節の `[closed]` 残置なしを確認 ③framework-review の cadence producer 不在は **HH-080 の `review_ordinal` で既に解消済み**＝指摘が陳腐化)
+
+> 完了項目の詳細は各 tasks/ ブリーフと git 履歴に残る。以下は設計判断の記録のみ保持。
+
+- **`N-052` と `N-Project001-20260721g` の全文完全重複**(class:consolidation) — **解決**。text/tags がバイト一致だったため、strength・last_used の低い `N-Project001-20260721g` を **archived** にし、`N-052` を単一権威として残した(ID は保持＝`NOTE_ID_CONTINUITY` 非該当・ハード削除ではない)。archived ノートに重複の証跡を1文追記 / /cycle TASK-Project001-20260823-052
+- **非ASCII ホストパスで encoding 境界が2箇所破れる**(class:env-gap) — **解決**。(a) RT-20 / `finish` L3 は TASK-Project001-20260821-017 の修正後グリーン(前 /cycle で確認済)。(b) ホスト側 guard `guard-cp932-dump.mjs` の安全経路レシピも **`[Text.Encoding]::GetEncoding(932)` + `WriteAllText` 明記へ是正済み**で、`pwsh7 の -Encoding Default は使用禁止` と N-Project001-20260722a への参照まで入っている(本 /cycle で実物を確認)。∴ 両方閉じた / /cycle TASK-Project001-20260823-052
+- **`class:enforcement-gap` 完了4件の集約**(2026-08-23 /cycle TASK-Project001-20260823-052 で open 節から剪定 — 本ファイルは open のみ保持という自己宣言の履行。全文は git 履歴と各 tasks/ ブリーフに残る): ①`finish` と `archive-briefs` の併用不能(→ `--path <親ディレクトリ>` で解決・distill.md D7 Exit に手順を記載) ②validate `DISTILL_CAPTURE` の残欠陥(a)(既存ノートの text 更新を資材化と認識しない) ③evidence gate の粒度不一致(local finish=コミット単位 vs CI `verify --base`=PR 累積 diff) ④`finish` の Distill 資材 自動ステージ化(警告のみ→実装済)。**この4件が open 節に残っていたため素朴な class 集計が実態(4件)の倍に見えていた** — 剪定で是正
+- **起動コマンドの資材乖離**(sync スキルが HH-057/HH-064 裁可後も旧規則を保持)— **解決**。根本原因は `.claude/commands/*` がホスト側で `install-commands` 未再実行のまま放置され、nested の `.claude/commands/skills/*.md` から乖離していたこと(sync.md 141→25行・cycle.md/helix.md も同様に乖離)。`node tools/hyperhelix.mjs install-commands --to <host> --nest doc/HyperHelix` を再実行し、ホスト側4ファイル(compact-prep/cycle/helix/sync)を全て薄いリダイレクタへ再生成して解消。source `TASK-Project001-20260818-005`(capture)→ `TASK-Project001-20260819-001`(是正)。
+- **`next-hh-id` が open PR branch の Pending HH を考慮しない** — **解決**。`origin/hyperhelix/*` の全 open branch を fetch 後に走査し、各 registry を read-only で突合(advisory・読めない/不正な registry は fail-closed にせず skip)。origin/main の fail-closed 権威は不変。陽性テスト(PR branch が origin/main より高い HH を持つケースで max に折り込まれることを確認)+陰性テスト(不正 registry の branch は skip されエラーにならないことを確認)を追加。source `TASK-main-20260719-009` → `TASK-Project001-20260819-001`(是正)。
+
+- 2026-07 完了行の open-only 整理: 無人強制は `TASK-main-20260717-004`、amendment lifecycle drift は `TASK-20260715-006`、report baseline の read-only 化は `TASK-20260715-005`、Ubuntu L1〜L4 証跡は `TASK-main-20260718-006`、archive record 随伴は `TASK-main-20260718-003`、Codex compact prompt path は `TASK-main-20260718-004`、恒久 note ID は `TASK-20260716-013` / `TASK-main-20260718-005`、bump 後追い帰属は `TASK-20260706-008`、validate `DISTILL_CAPTURE`(HH-043) rework 誤発火(E4見出しへの常時マッチ)は `TASK-20260701-009`(2nd occurrence `TASK-20260701-008`)を source pointer とする。
+- PostCompact 直後の context 誤警告 — **解決**。PostCompact は marker のみを書き、次の prompt で transcript 現サイズを baseline にして同一 event の warning を抑止する。実装 `tools/compaction-hooks.mjs`、回帰 `test/compaction-state.test.mjs`、source `TASK-20260716-010` → commit `04dda8b6c19cdf6d67d5df286cbff22147a574cb`。
 
 - U-02 genre→project scope 降格 — **棄却**(HH-016 が scope 機構を撤去し mooted)
 - U-04 辞書分割(dictionary/local/<project>.yaml) — **棄却**(HH-016 が dictionary を deprecated 化し mooted)
-- #4 amendments 提案フォーマットの撤去済み種別(universal昇格/canon降格) — 是正済 TASK-20260620-010
-- #9 README R6 の main STOPPED 欠落 — 是正済 TASK-20260620-010
-- #2 /helix 読込順陳腐化 / #1 /sync task_index=max — 是正済 TASK-20260620-009
+- R7d 自己参照 cadence — **解決**(HH-038: main で R7d STOPPED)TASK-20260620-027 → **HH-056 で supersede**(2026-07-08): R7d を frame/ROI に分割し、**R7d-frame(敵対的類推=鐙検出)は main で ACTIVE へ再活性化**(自己参照的作業中の main こそフレーム固着が最も危険なため・別モデル委託を推奨)。main で STOPPED なのは **R7d-ROI のみ**で、ROI 検証は外部価値ゲート(R7c)へ委譲。単一権威は framework-review R7d-frame / R7d-ROI
+- HH-046/047/048/050/053#1 実装、セキュリティ backfill、フェーズ仕様監査16件、Codex 網羅監査バッチ、amendment lifecycle drift 是正 等 — 完了(2026-06 各タスク・git 履歴参照)
+- HH-060/069/070 のmain PR統治 — **解決**。`sync`/`reflux` の direct-main pushを専用branch+PRへ置換し、同一publisher、CI checks後の統治path人間待ち/通常path mergeを実装。private/freeではbranch protectionを必須にせず、direct-main/force-push等のserver enforcement喪失をhonor-basedリスクとして受容した。403とPro/public選択待ちは当時事実としてcapture=`TASK-main-20260718-020`、publisher remediation=`TASK-main-20260718-022`、HH-070裁可=`TASK-main-20260718-023`、consumer実装=`TASK-main-20260718-024` / GOV-01
+- HH-069 consumer scanが`git-conventions.md`の旧CODEOWNERS-required表現を見落とした件 — **解決**。HH-070 implementationで全live guidanceを再分類し、superseded server-enforcement語彙の恒久negative regressionを`test/pr-flow.test.mjs`へ追加。source `TASK-main-20260718-024`。
+- HH-030 capture depth と micro 固定語彙の不整合、および HH-023 review-only と共有worktree clean判定の衝突 — **解決**。HH-068 を `TASK-main-20260718-018` で裁可し、captureを非統治standard/Pending HH fullへ分離、review-onlyをbaseline + ownership journalへ変更。実装・回帰 source `TASK-main-20260718-019`。

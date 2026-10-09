@@ -1,27 +1,42 @@
-name: Validate
-
+# HH-060/069/070: L1-L4 runs on both supported runner families for PR/push proof.
+# The e2e suite (test-e2e/: finish, PR transport and report flows in fixture
+# repositories) runs here and ONLY here — verify's L3 and the pre-push hook run the
+# unit suite, so this step is what keeps e2e from rotting unnoticed.
+# Branch protection is optional hardening in private/free operation. If enabled,
+# these two job names may be selected as required checks; the workflow itself does
+# not assume or require server-side protection.
+name: verify
 on:
   pull_request:
   push:
-    branches:
-      - main
-      - codex/public-release-prep
-      - public/**
-
-permissions:
-  contents: read
-
+    branches: [main, "public/**"]
 jobs:
-  hyperhelix-validate:
-    runs-on: ubuntu-latest
+  verify:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Set up Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: "20"
-
-      - name: Validate HyperHelix materials
-        run: node tools/hyperhelix.mjs validate
+      - uses: actions/checkout@v4
+        with: { fetch-depth: 0 }
+      - uses: actions/setup-node@v4
+        with: { node-version: 20 }
+      - run: npm ci
+      - run: node --check tools/hyperhelix.mjs
+      - run: node tools/hyperhelix.mjs contract-doc --check
+      - name: Unix hook syntax
+        if: runner.os == 'Linux'
+        shell: bash
+        run: bash -n .claude/commands/hooks/*.sh
+      - run: git diff --check
+      - name: L1-L4 verify (Unix)
+        if: runner.os == 'Linux'
+        shell: bash
+        run: node tools/hyperhelix.mjs verify --base "${{ github.event.pull_request.base.sha || github.event.before }}"
+      - name: L1-L4 verify (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: node tools/hyperhelix.mjs verify --base "${{ github.event.pull_request.base.sha || github.event.before }}"
+      - name: e2e suite
+        run: npm run test:e2e

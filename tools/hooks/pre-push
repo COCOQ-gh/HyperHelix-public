@@ -1,0 +1,33 @@
+#!/bin/sh
+# HyperHelix pre-push hook — unattended enforcement (process-backlog "無人強制の欠如" minimal move).
+# Install: git config core.hooksPath tools/hooks   (wired by bootstrap / session-bootstrap §3c)
+# 1) `validate` must pass on every push (hard block).
+# 2) `verify --base <merge-base>` must pass — the SAME L1-L4 chain CI runs, before the
+#    push instead of after it (TASK-main-20260728-010; same-problem-twice: the L4 evidence
+#    gate caught empty evidence rows only at CI/reflux time — Project001 TASK-Project001-20260818-004
+#    and main PR #5). No path list here: verify decides what is framework-relevant, so this
+#    hook cannot drift from isFrameworkEvidencePath (AP-003).
+# 3) On non-main branches, warn (never block) when framework content is not on origin/main.
+# Dependencies: git + node only (N-062: no jq or other external tools).
+cd "$(git rev-parse --show-toplevel)" || exit 1
+if ! node tools/hyperhelix.mjs validate; then
+  echo "pre-push: validate failed — push blocked (fix errors, then retry)" >&2
+  exit 1
+fi
+branch=$(git rev-parse --abbrev-ref HEAD)
+if git rev-parse --verify -q origin/main >/dev/null 2>&1; then
+  base=$(git merge-base origin/main HEAD 2>/dev/null)
+  # merge-base (not origin/main itself) keeps the range at exactly the unmerged commits
+  # even when the local origin/main ref is stale.
+  if [ -n "$base" ] && ! git diff --quiet "$base" HEAD; then
+    if ! node tools/hyperhelix.mjs verify --base "$base"; then
+      echo "pre-push: verify --base $base failed — push blocked (this is the check CI runs; fix it here instead of after a failed PR)" >&2
+      exit 1
+    fi
+  fi
+  if [ "$branch" != "main" ] && ! git diff --quiet origin/main HEAD -- core assets tools docs; then
+    echo "pre-push: WARNING — framework changes not on origin/main (consider: node tools/hyperhelix.mjs reflux):" >&2
+    git diff --stat origin/main HEAD -- core assets tools docs >&2
+  fi
+fi
+exit 0

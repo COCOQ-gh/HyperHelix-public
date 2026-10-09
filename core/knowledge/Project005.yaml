@@ -1,0 +1,140 @@
+# HyperHelix Project005 project leaf ledger.
+# Note schema and authority live in core/knowledge.yaml header (HH-045).
+# Every note in this file has project: Project005.
+# Migrated 2026-09-01 (SYNC): notes originally numbered N-062..N-093 on the
+# pre-rewrite project/Project005 ledger were re-issued permanent ids (HH-064) because
+# main history was rewritten and the numeric id band was reused by other projects.
+# last_used values below are branch-local task_index coordinates (<=577), not
+# comparable to main task_index; treated as older-than-current for recency sort.
+schema_version: 1
+
+notes:
+  - id: N-Project005-20260901a
+    text: "Project005 連携拡張の定石: 公式の第三者向け API は非公開 → サイト内部 ajax(/ajax/... の JSON)をログイン済みセッション Cookie の文脈で呼ぶ。画像本体(i.pximg.net)は Referer 必須(無いと 403)→ MV3 では declarativeNetRequest でリクエストヘッダに Referer を付与する。認証はユーザーの既存セッションを利用し拡張に資格情報を保持しない。非公式エンドポイント依存は1箇所へ集約し差し替え可能に。ToS・レート制御(スロットリング/バックオフ)を最優先。"
+    tags: [Project005, browser-extension, mv3, ajax, referer, declarativenetrequest, download, session, tos]
+    project: Project005
+    kind: playbook
+    leaves: [N-Project005-20260901b, N-Project005-20260901c, N-Project005-20260901d, N-Project005-20260901e, N-Project005-20260901f, N-Project005-20260901g, N-Project005-20260901h, N-Project005-20260901i, N-Project005-20260901j, N-Project005-20260901k, N-Project005-20260901l]
+    strength: 6
+    last_used: 576
+    state: active
+  - id: N-Project005-20260901b
+    text: "Project005 は SPA — content script は初回注入後、ページ内遷移で再実行されない。WXT では ctx.addEventListener(window, 'wxt:locationchange', ...) で履歴遷移を検知してページ種別判定を再実行する(自前 history フック不要)。Brave 実機で初回ロード・SPA 遷移とも検知動作を確認済(TASK-20260705-005)。"
+    tags: [Project005, spa, content-script, wxt, locationchange, navigation, browser-extension]
+    project: Project005
+    kind: leaf
+    topic: N-Project005-20260901a
+    strength: 3
+    last_used: 515
+    state: active
+  - id: N-Project005-20260901c
+    text: "Project005 i.pximg.net 等ホットリンク防止の画像を MV3 拡張で保存する定石: (1) URL を chrome.downloads へ直渡しすると Referer が付かず 403(brave://downloads『アクセスできません』)。(2) 取得は **background SW の fetch** で行う — MV3 では content script の cross-origin fetch は CORS に阻まれ『failed to fetch』(host 権限バイパスは廃止)。cross-origin を CORS 回避できるのは host_permissions を持つ SW のみ。(3) Referer は DNR modifyHeaders(resourceTypes に xmlhttprequest を含め i.pximg.net を対象)が SW fetch に付与。(4) SW は FileReader/URL.createObjectURL 不可 → ArrayBuffer を btoa で base64 data URL 化(チャンク処理)→ chrome.downloads で保存(data URL は通信を伴わず 403 にならない)。関連: [[N-Project005-20260901a]] Referer/DNR。"
+    tags: [Project005, i-pximg, referer, "403", cors, chrome-downloads, declarativenetrequest, data-url, mv3, hotlink, service-worker]
+    project: Project005
+    kind: leaf
+    topic: N-Project005-20260901a
+    strength: 4
+    last_used: 576
+    state: active
+  - id: N-Project005-20260901d
+    text: "MV3 で isolated world の content script から見えないページ側グローバル(Project005 の window.dataLayer 等)を取るには、world:'MAIN' の content script(WXT defineContentScript world:'MAIN')で読み、window.postMessage で isolated 側へ渡す(MAIN world は拡張API不可なので通信は postMessage のみ)。受け渡しは **共有 DOM 属性が堅牢**(MAIN が document.documentElement.setAttribute、isolated が getAttribute をポーリング)— postMessage は content script の起動順が不定で「見つけ次第1回 post」だと isolated リスナー登録前に取りこぼす(TASK-022 実バグ)。DOM は両 world で共有されるため起動順に依存しない。isolated は読めた値を chrome.storage へ保存し background/popup が読む。dataLayer/属性は未投入のことがあるので双方リトライ/ポーリング。関連: [[N-Project005-20260901b]] SPA/isolated world。"
+    tags: [mv3, content-script, main-world, isolated-world, postmessage, datalayer, Project005, browser-extension, page-global]
+    project: Project005
+    kind: leaf
+    topic: N-Project005-20260901a
+    strength: 2
+    last_used: 522
+    state: active
+  - id: N-Project005-20260901e
+    text: "Project005 ajax には『空でも必須』のクエリパラメータがある(例: /ajax/user/{id}/illusts/bookmarks は tag= を空でも要求。欠落すると HTTP 400)。URL ビルダは空文字を一律省かず、実証で動いた URL の全パラメータを忠実に再現すること(undefined のみ省く)。実証時に確認した動作 URL をそのまま生成できるかをテストで固定する。関連: [[N-Project005-20260901a]] 非公式ajax定石。"
+    tags: [Project005, ajax, url-builder, query-param, empty-param, http-400, bookmarks, endpoint]
+    project: Project005
+    kind: leaf
+    topic: N-Project005-20260901a
+    strength: 3
+    last_used: 544
+    state: active
+  - id: N-Project005-20260901f
+    text: "Project005 bookmarks 一覧応答の body.bookmarkTags は『そのページの各ブックマークのタグ』= {bookmarkId: tags[]} のマップ(タグが1つも無いページでは空配列 [] で返る)。ユーザーの集約タグ名配列ではない。ある作品の現在のブックマークタグは bookmarkTags[work.bookmarkData.id] で直接引ける(per-tag 絞り込み列挙は不要)。教訓: 応答フィールドの形は空データ([])だけで推測せず、非空データで確認する(空配列を『名前の配列』と誤解し検出が全件破綻した TASK-032)。未分類の絞り込みは ?tag=未分類。関連: [[N-Project005-20260901e]] Project005 ajax。"
+    tags: [Project005, bookmarks, bookmark-tags, ajax, response-shape, empty-data, per-work, browser-extension]
+    project: Project005
+    kind: leaf
+    topic: N-Project005-20260901a
+    strength: 4
+    last_used: 576
+    state: active
+  - id: N-Project005-20260901g
+    text: "WXT の HTML エントリ(options/popup 等)は manifest フィールドをエントリから自動生成し、一部を wxt.config の manifest 指定より優先して上書きする(実測: options_ui.open_in_tab を config で true にしても出力は false のまま)。config のノブが効かない場合は出力 manifest.json を grep で確認し、効かないノブは残さず、代替(options なら runtime.openOptionsPage + レスポンシブ CSS)へ委譲する。設定した=効いたと仮定しない。"
+    tags: [wxt, manifest, options-ui, browser-extension, config-override, verify-output]
+    project: Project005
+    kind: leaf
+    topic: N-Project005-20260901a
+    strength: 1
+    last_used: 536
+    state: active
+  - id: N-Project005-20260901h
+    text: "スコアリングの入力シグナルはデータソースごとに揃う項目が違う。Project005 検索(/ajax/search/artworks)・ブックマーク一覧の list アイテムは tags/userId/aiType/xRestrict/bookmarkData(自分のブクマ有無)を持つが **いいね/ブクマ数(人気度)は持たない**。人気度・ランキング順位は ランキング(/ajax/ranking.php: rating_count/rank)か detail 取得でしか埋まらない。純関数スコアラは全シグナルを optional にして『無い項目は加点しない』設計にし、ソース追加で徐々に埋める。新ソース(follow_latest/ranking)は応答形を非空データで実証してから parse を書く(旧Project005台帳#075(未移設) list-API prefilter, [[N-Project005-20260901f]] verify-shape)。"
+    tags: [Project005, scoring, candidates, list-api, ranking, data-source, browser-extension, verify-shape]
+    project: Project005
+    kind: leaf
+    topic: N-Project005-20260901a
+    strength: 6
+    last_used: 575
+    state: active
+  - id: N-Project005-20260901i
+    text: "Project005 ランキングは他 ajax と作りが違う。URL は `/ranking.php`(/ajax 無し)で `format=json`、応答は **{error,message,body} エンベロープを持たない直 JSON**({contents:[...]})。`/ajax/ranking.php` は error true で不可。よってエンベロープを剥がす共通 getJson では取れず、直 JSON を返す getJsonRaw を別に用意した。さらに contents 要素は検索/ブクマの IllustSummary と **キー名も型も別系統**(illust_id/user_id は数値、rating_count=いいね数、rank=順位、aiType は無い、xRestrict は illust_content_type.sexual から推定)。複数ソースを混ぜる時は共通中間型へ正規化アダプタを噛ませ、ソース固有のキー・型・欠落フィールドをそこで吸収する。実証スニペットで firstItem を丸ごと dump してから書くと一発で確定([[N-Project005-20260901f]] verify-shape, [[N-Project005-20260901h]] ソース別シグナル)。"
+    tags: [Project005, ranking, ajax, envelope, normalization, adapter, browser-extension, verify-shape]
+    project: Project005
+    kind: leaf
+    topic: N-Project005-20260901a
+    strength: 2
+    last_used: 567
+    state: active
+  - id: N-Project005-20260901j
+    text: "推薦/検索の手動チューニングノブは『除外(消す)』と別軸で『優先度を上下する(残す)』を用意する。ユーザーは『好きな絵師なので残すが食傷気味のタグは順位を下げたい』(苦手タグ)や『今の波を優先したい』(マイブームタグ)を求める — これは exclude では表現できない(exclude は候補からもブクマ対象からも消す)。実装は純関数スコアラの加減点で局所化: 既存の可変倍率(ScoreWeights)に boost/demote を足し、正規化済み Set(normalizeTag 再利用 旧Project005台帳#066(未移設))で一致判定、rankCandidates が Set を1回だけ構築して候補ごとの再正規化を避ける。『優先』は2面: 候補スコア加点 + 検索ソースのタグにマイブームを加える(能動的に探す)。苦手は除外フィルタには一切足さず順位だけ落とす(候補・ブクマには残る)。設定は storage schema の単一権威にネスト object で置き migration で浅くマージ。関連: [[N-Project005-20260901h]] ソース別シグナル・optional 設計。"
+    tags: [Project005, scoring, candidates, recommendation, tuning, boost, demote, tag-preference, browser-extension]
+    project: Project005
+    kind: leaf
+    topic: N-Project005-20260901a
+    strength: 3
+    last_used: 559
+    state: active
+  - id: N-Project005-20260901k
+    text: "推薦/候補リストの2つの定番改善。(1)『見送り』の永続除外: ユーザーが不要と判断した候補が毎回再提示される不満は、明示的な dismiss アクション(✕ボタン)+ 永続集合(storage の Record<id,ts>)で解消。除外は候補生成の**単一入口ループ**に1行足すだけ(既取得/ブクマ済/除外と同列。list-API prefilter 旧Project005台帳#075(未移設))。無制限増加に備え options にリセットを必ず用意(一方向ラチェットの袋小路を防ぐ)。自動判定(閲覧=見送り)は誤検知するので明示アクションが堅牢。(2)検索優先タグ(マイブーム)の**結果保証**: 検索ソースに入れても(→ [[N-Project005-20260901j]])スコア順 topN で人気作に押し出され結果に0件になりうる。ランキング後『topN 内に該当が無ければ最上位の該当作を最後尾スロットへ差し替え』で最低1件を保証。スコアラ本体は汚さずランキング後の注入に局所化。関連: [[N-Project005-20260901j]] boost/demote 二軸, 旧Project005台帳#075 一覧prefilter, 旧Project005台帳#067(未移設) ハンドラは可変状態を固定しない。"
+    tags: [Project005, candidates, recommendation, dismiss, persistence, guarantee, boost, browser-extension, ux]
+    project: Project005
+    kind: leaf
+    topic: N-Project005-20260901a
+    strength: 4
+    last_used: 559
+    state: active
+  - id: N-Project005-20260901l
+    text: "Project005 で『全期間の人気作』を Premium 無しで絞る定石: 人気順ソート order=popular_d は Premium 限定だが、Project005 は作品のブックマークが閾値を超えると公式タグ `{N}users入り`(100/500/1000/5000/10000/30000/50000...)を自動付与する。これを検索語に AND で足す(word=`${tag} ${N}users入り`)と、そのタグ AND 人気閾値超の作品=全期間の人気作が非Premiumで引ける。高ブクマ作は下位閾値タグも保持するため N は floor(N=1000 は 1000users 以上を全部拾う)。検索一覧は閲覧/いいね数を持たない([[N-Project005-20260901h]])ので閾値タグが人気フィルタの実体になる。実装は検索 word 組み立てだけの局所変更で下流(フィルタ/スコア/統合)は不変。閾値は既知の代表値のみ select 提供(存在しない N は0件)。追記(TASK-20260813-006 実証): users入り は**実タグとして作品 tags 配列に含まれる**(ジャンル接頭辞変種 `Fate/GO5000users入り` 等あり → 抽出は末尾 `/(\\d+)users入り$/`)。`/ajax/user/{id}/profile/illusts?ids[]=...&work_category=illust|manga&is_first_page=0` の一括サマリ(48件/バッチ)で全作品の tags を軽量取得でき、ユーザー単位の人気度集計(N 累計)が ~8req で可能。関連: [[N-Project005-20260901a]] 非公式ajax, [[N-Project005-20260901e]] 検索 word の忠実な組み立て。"
+    tags: [Project005, search, popularity, users-iri, all-time, premium-free, ajax, browser-extension, candidates]
+    project: Project005
+    kind: leaf
+    topic: N-Project005-20260901a
+    strength: 5
+    last_used: 567
+    state: active
+  - id: N-Project005-20260901m
+    text: "**MV3 Service Worker では 30 秒を超える setTimeout は成立しない** — SW は約 30 秒のアイドルで停止し、タイマーも pending Promise も消滅する(fetch 等のイベントは延命するが sleep は延命しない)。したがってレートバックオフ・クールダウン待ち・ポーリング間隔を SW 内に置くなら**全て 30 秒未満**にし、それ以上の待機が必要な場面は『待つ』のではなく**即エラーを返してユーザー再実行(冪等)か chrome.alarms に倒す**。TASK-20260821-001 の実障害: 429/403 バックオフ 30s→2m→10m とクールダウン明け待ち(最長 10 分)の sleep 中に SW が停止し、runtime.sendMessage の応答が永遠に返らず UI が『処理中…』で固まった。**仮想時計の単体テストではこの制約を検出できない**(sleep をモックするため)— タイマーを導入する S 段階で『この環境でこのタイマーは発火まで生存するか』を確認すること。関連: [[N-Project005-20260901n]] rate-limit 監査(の『停止』軸の実装が本制約と衝突した)。"
+    tags: [mv3, service-worker, timer, lifecycle, backoff, browser-extension, Project005, incident, testing-gap]
+    project: Project005
+    strength: 1
+    last_used: 577
+    state: active
+  - id: N-Project005-20260901n
+    text: "外部 API から『アクセス頻度』の注意を受けたときの監査は**間隔・並列・総量・停止**の 4 軸で行い、間隔だけを見ない。TASK-20260818-001(Project005)で判明した典型: (1) 1 req/s のゲートは守られていたが**コンテキストごとに別インスタンス**(background とダッシュボード)で合算 2 req/s、(2) 設定の間隔値が UI で保存されるだけで**クライアント生成時に読まれていない**(配線漏れ)、(3) 画像 fetch だけゲート外で連射、(4) **429/403 を各ループが個別に catch して次へ進む**ため『止まる』分岐がどこにも無い、(5) 操作のたびに『自分の全ブックマーク/全フォロー』を再列挙する固定費(5000 件で 200 req)、(6) 1 作品 1 リクエストのループ(1000 作品=1000 req)にバッチ API があるのに未使用。対策の要点: ゲートを 1 本に統一(他コンテキストはメッセージ委譲)・ジッター・**429/403 で全体クールダウン**(以降の新規リクエストは待たずに即エラーにして各ループを中断・入口でも拒否・永続化)・列挙結果の TTL キャッシュ+書込後の局所更新・バッチ API 化+標本推定。『間隔を守っている』と『総量が人間並み』は別物。"
+    tags: [rate-limit, api-etiquette, audit, cooldown, cache, batching, browser-extension, Project005, incident]
+    project: Project005
+    strength: 2
+    last_used: 577
+    state: active
+  - id: N-Project005-20260901o
+    text: "『発見が頭打ち/鈍化する』の一般解は**発見ソースの多重化** — 固定母集団に対する探索(タグ×閾値検索など)は再実行しても同じ上位しか返さないので、**時間で入れ替わる母集団**(ランキング・新着)を並置する。Project005 実装知見(TASK-20260813-014 実証): /ranking.php の `original`/`male`/`female` は `content=illust` を付けると `{error:'ランキングが見つかりませんでした'}`(content を送らない=all のみ有効)。R-18 系(daily_r18/weekly_r18/male_r18/female_r18/r18g)は未ログインだと HTML が返るため JSON 形の実行時検証+**モード単位の失敗許容**が必須。ranking の contents 要素は tags を持つので users入り の N をその場で抽出でき、追加コストなしで Tier 証拠になる。関連: [[N-Project005-20260901i]] ranking の別系統仕様, [[N-Project005-20260901s]] 探索パラメータが暗黙の天井。"
+    tags: [discovery, ranking, source-diversity, Project005, saturation, r18, content-param, verify-shape, browser-extension]
+    project: Project005
+    strength: 1
+    last_used: 567
+    state: active

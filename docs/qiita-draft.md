@@ -130,7 +130,7 @@ node tools/hyperhelix.mjs consolidation-report # 冗長クラスタ・lifecycle 
 さらに、**収束指標**として前回 `/cycle` 比のトレンド差分を自動記録します。
 
 ```
-R7a: 常時必読 454行  [直近ベースライン]     ← cost-report が knowledge.yaml に自動記録
+R7a: 常時必読 452行  [直近ベースライン]     ← cost-report が knowledge.yaml に自動記録
 R8c: process-backlog 18件 [直近ベースライン] ← consolidation-report が記録
 ```
 
@@ -192,7 +192,7 @@ AI エージェントが自分のプロンプト最適化に閉じることへ�
   text: "宣言↔消費の整合は機械チェック(L1)＋P6ゲート(L2)＋敵対監査(L3)の3層で守る。..."
 ```
 
-ポイントは **自動昇格・降格を廃止**（HH-016）したこと。現在は `last_used` を検索順の主な事実値、`strength` を副次ヒントとして扱い、ルールへの昇華は人間が手動で判断します。「AI が自分でルールを書き換える」というリスクを意図的に排除しています。
+ポイントは **自動昇格・降格を廃止**（HH-016）したこと。`strength` は検索順位のヒントに過ぎず、ルールへの昇華は人間が手動で判断します。「AI が自分でルールを書き換える」というリスクを意図的に排除しています。
 
 ---
 
@@ -310,7 +310,7 @@ HyperHelix は「AI が賢くなれば解決する」方向ではなく、「プ
 - [x] ratified_by 導入の動機を補う。
 - [x] 「自分のプロジェクトでどう使うか」セクションを追加。
 - [x] 図解を追加: 三重螺旋、宣言↔消費の3層防御、最小導入ループ。
-- [x] 数値を公開直前に再確認: task_index / HH 件数 / process-backlog / 常時必読コスト / validate 結果。
+- [ ] 数値を公開直前に再確認: task_index / HH 件数 / process-backlog / 常時必読コスト / validate 結果。
 - [x] 古い内部語や固有セッション依存表現を削る。
 - [x] タグ・タイトル・サムネイル案を決める。
 
@@ -327,9 +327,9 @@ HyperHelix は「AI が賢くなれば解決する」方向ではなく、「プ
 - 「honor-based のガバナンスを自認しつつ機械化を積み上げる」という誠実さが差別化ポイント
 
 ## 最新の状態（2026-07-05 時点）
-- task_index: 507 / HH 総数: 057 件(HH-000〜HH-056、HH-056 は Pending)
+- task_index: 503 / HH 総数: 057 件(HH-000〜HH-056、HH-056 は Pending)
 - process-backlog open: 18 件
-- 常時必読コスト: 454 行
+- 常時必読コスト: 452 行
 - validate: 0 error / 0 warning
-- 直近の主要追加: MIT license、公開向けメタデータ、GitHub Actions validate workflow、HH-055 compaction-recovery hooks、HH-056 R7d 分割 Pending
+- 直近の主要追加: HH-055 compaction-recovery hooks、HH-056 R7d 分割 Pending、brief 採番の git log 走査、Codex Skill 更新チェック
 -->

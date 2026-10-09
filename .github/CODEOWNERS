@@ -1,0 +1,8 @@
+# HH-060: 人間ゲート面 + ゲート自身の制御面を owner 指定 — branch protection の
+# "Require review from Code Owners" と組み合わせると、これらのファイルに触れる
+# PR だけ人間 Approve が技術的に必須になる(統治の職務分離)。
+/.github/ @COCOQ-gh
+/constitution.md @COCOQ-gh
+/amendments.md @COCOQ-gh
+/governance/ @COCOQ-gh
+/core/gates.yaml @COCOQ-gh

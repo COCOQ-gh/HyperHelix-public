@@ -1,21 +1,22 @@
+# セッション runtime state(compact state file・警告/圧縮 marker — TASK-20260716-008)。
+# コミット対象外。フック(.claude/commands/hooks/)とツール(compact-prep)が書き込む。
+.claude/tmp/
+
+# 外部 dependency(HH-067: yaml + Ajv の2件限定。lockfile はコミット、実体は各環境で npm ci)
+node_modules/
+
+# Claim sidecars (concurrency.md §2) — session-local mutex/ownership tokens, never committed
+tasks/records/.claims/
+
 # Local environment and secrets
 .env
 .env.*
 !.env.example
 
-# Dependency and build output
-node_modules/
-dist/
-build/
-coverage/
-
 # Generated logs and temporary files
 *.log
 *.trace
 *.out
-logs/
-log/
-.logs/
 tmp/
 .tmp/
 
@@ -24,4 +25,3 @@ tmp/
 Thumbs.db
 *.swp
 *.swo
-

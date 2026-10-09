@@ -1,0 +1,671 @@
+schema_version: 1
+entries:
+  - id: HH-000
+    title: HyperHelix 創設裁可
+    type: 憲法(創設)
+    status: Approved
+    ratified_by: COCOQ-gh
+    ratified_at: 2026-06-11
+    supersedes: []
+    body: bodies/HH-000.md
+  - id: HH-001
+    title: tier 降格セマンティクスの一本化(再計算モデルを正)
+    type: θ
+    status: Approved
+    ratified_by: COCOQ-gh
+    ratified_at: 2026-06-12
+    supersedes: []
+    body: bodies/HH-001.md
+  - id: HH-002
+    title: layer_active_cap の削除(未実装デッド設定)
+    type: θ
+    status: Approved
+    ratified_by: COCOQ-gh
+    ratified_at: 2026-06-12
+    supersedes: []
+    body: bodies/HH-002.md
+  - id: HH-003
+    title: HH-000 の記載訂正(継承資材3件)
+    type: 憲法(訂正)
+    status: Approved
+    ratified_by: COCOQ-gh
+    ratified_at: 2026-06-12
+    supersedes: []
+    body: bodies/HH-003.md
+  - id: HH-004
+    title: R6 3回ルールの一時停止(作成段階)
+    type: 憲法
+    status: Approved
+    ratified_by: COCOQ-gh
+    ratified_at: 2026-06-12
+    supersedes: []
+    body: bodies/HH-004.md
+  - id: HH-005
+    title: framework-change の深度判定の精緻化
+    type: ループ定義
+    status: Approved
+    ratified_by: COCOQ-gh
+    ratified_at: 2026-06-12
+    supersedes: []
+    body: bodies/HH-005.md
+  - id: HH-006
+    title: standard 深度への D2/D6 条件付き追加
+    type: ループ定義
+    status: Approved
+    ratified_by: COCOQ-gh
+    ratified_at: 2026-06-12
+    supersedes: []
+    body: bodies/HH-006.md
+  - id: HH-007
+    title: observation 鋳造時のタグ制約緩和
+    type: θ
+    status: Approved
+    ratified_by: COCOQ-gh
+    ratified_at: 2026-06-12
+    supersedes: []
+    body: bodies/HH-007.md
+  - id: HH-008
+    title: 成果指標を θ レビュー信号に追加
+    type: θ
+    status: Approved
+    ratified_by: COCOQ-gh
+    ratified_at: 2026-06-12
+    supersedes: []
+    body: bodies/HH-008.md
+  - id: HH-009
+    title: 「適用(seen)」定義の厳格化(反証可能性)
+    type: θ
+    status: Approved
+    ratified_by: COCOQ-gh
+    ratified_at: 2026-06-12
+    supersedes: []
+    body: bodies/HH-009.md
+  - id: HH-010
+    title: standard 深度への P2 追加
+    type: ループ定義
+    status: Approved
+    ratified_by: COCOQ-gh
+    ratified_at: 2026-06-13
+    supersedes: []
+    body: bodies/HH-010.md
+  - id: HH-011
+    title: 変種創設 variant/claude-codex(オーケストレータ分離)
+    type: 変種創設
+    status: Approved
+    ratified_by: COCOQ-gh
+    ratified_at: 2026-06-13
+    supersedes: []
+    body: bodies/HH-011.md
+  - id: HH-012
+    title: survey / trial Work Order の新設
+    type: 変種統治
+    status: Approved
+    ratified_by: COCOQ-gh
+    ratified_at: 2026-06-13
+    supersedes: []
+    body: bodies/HH-012.md
+  - id: HH-013
+    title: 初回読込み時の実行可能構造の検証
+    type: 憲法(環境制約)
+    status: Approved
+    ratified_by: COCOQ-gh
+    ratified_at: 2026-06-14
+    supersedes: []
+    body: bodies/HH-013.md
+  - id: HH-014
+    title: 憲法 axiom5 の HH-004 状態記述の更新
+    type: 憲法
+    status: Approved
+    ratified_by: COCOQ-gh
+    ratified_at: 2026-06-14
+    supersedes: []
+    body: bodies/HH-014.md
+  - id: HH-015
+    title: 同一ブランチ並行セッションの運用プロトコル
+    type: 運用規約
+    status: Approved
+    ratified_by: COCOQ-gh
+    ratified_at: 2026-06-14
+    supersedes: []
+    body: bodies/HH-015.md
+  - id: HH-016
+    title: 知識螺旋の簡素化(整数ゲート→ノート台帳)
+    type: 憲法級
+    status: Approved
+    ratified_by: COCOQ-gh
+    ratified_at: 2026-06-16
+    supersedes: []
+    body: bodies/HH-016.md
+  - id: HH-017
+    title: executor の timeout / watchdog(background 委任の無限待ち防止)
+    type: 変種統治(agent-roles)
+    status: Approved
+    ratified_by: COCOQ-gh
+    ratified_at: 2026-06-19
+    supersedes: []
+    body: bodies/HH-017.md
+  - id: HH-018
+    title: R6 状態の是正(variant→main 統合の矛盾解消)
+    type: 憲法
+    status: Approved
+    ratified_by: COCOQ-gh
+    ratified_at: 2026-06-16
+    supersedes: []
+    body: bodies/HH-018.md
+  - id: HH-019
+    title: セキュリティの公理の新設(秘密の生記載禁止)
+    type: 憲法
+    status: Approved
+    ratified_by: COCOQ-gh
+    ratified_at: 2026-06-17
+    supersedes: []
+    body: bodies/HH-019.md
+  - id: HH-020
+    title: セキュリティの公理に対話的シークレット取り扱い追加
+    type: 憲法
+    status: Approved
+    ratified_by: COCOQ-gh
+    ratified_at: 2026-06-17
+    supersedes: []
+    body: bodies/HH-020.md
+  - id: HH-021
+    title: HyperHelix-only 作業ディレクトリでの R6 延期
+    type: 憲法
+    status: Approved
+    ratified_by: COCOQ-gh
+    ratified_at: 2026-06-19
+    supersedes: []
+    body: bodies/HH-021.md
+  - id: HH-022
+    title: micro task mode の新設
+    type: ループ定義
+    status: Approved
+    ratified_by: COCOQ-gh
+    ratified_at: 2026-06-19
+    supersedes: []
+    body: bodies/HH-022.md
+  - id: HH-023
+    title: review-only 記録の分離(台帳/R6 を増やさない)
+    type: 憲法+カウンタ意味論
+    status: Approved
+    ratified_by: COCOQ-gh
+    ratified_at: 2026-06-19
+    supersedes: []
+    body: bodies/HH-023.md
+  - id: HH-024
+    title: amendments 索引化 + 読み込み順の階層化
+    type: 運用規約(読込プロトコル)
+    status: Approved
+    ratified_by: COCOQ-gh
+    ratified_at: 2026-06-19
+    supersedes: []
+    body: bodies/HH-024.md
+  - id: HH-025
+    title: main の用途に「ユーザー指示による直接的フレームワーク改善」を追加 + main で R6 停止
+    type: 憲法(統治の公理5/R6)+ ブランチモデル
+    status: Approved
+    ratified_by: COCOQ-gh
+    ratified_at: 2026-06-19
+    supersedes: []
+    body: bodies/HH-025.md
+  - id: HH-026
+    title: framework-review への R7(systemic value/absence/frame レンズ)追加
+    type: 統治変更(framework-review 機構)
+    status: Approved
+    ratified_by: COCOQ-gh
+    ratified_at: 2026-06-19
+    supersedes: []
+    body: bodies/HH-026.md
+  - id: HH-027
+    title: 実行原則「minimal-first」の憲法明記
+    type: 憲法(実行原則)
+    status: Approved
+    ratified_by: COCOQ-gh
+    ratified_at: 2026-06-19
+    supersedes: []
+    body: bodies/HH-027.md
+  - id: HH-028
+    title: 検出器実装時の陽性テスト必須化(evaluate.md V1)
+    type: フレームワーク資材(evaluate.md)
+    status: Approved
+    ratified_by: COCOQ-gh
+    ratified_at: 2026-06-19
+    supersedes: []
+    body: bodies/HH-028.md
+  - id: HH-029
+    title: ツール呼び出し書式崩れを致命的失敗として明示(実行規律)
+    type: 憲法(実行原則)
+    status: Approved
+    ratified_by: COCOQ-gh
+    ratified_at: 2026-06-20
+    supersedes: []
+    body: bodies/HH-029.md
+  - id: HH-030
+    title: 重大発見の即時パーキング規則(チャット中の発見の捕捉)
+    type: 統治変更(capture 規律)
+    status: Approved
+    ratified_by: COCOQ-gh
+    ratified_at: 2026-06-20
+    supersedes: []
+    body: bodies/HH-030.md
+  - id: HH-031
+    title: タスクブリーフの剪定/アーカイブ(検索負荷削減)
+    type: 統治変更(記録規律)
+    status: Approved
+    status_label: Approved (Phase1+2)
+    ratified_by: COCOQ-gh
+    ratified_at: 2026-06-21
+    supersedes: []
+    body: bodies/HH-031.md
+  - id: HH-032
+    title: フラット・ノート台帳の多プロジェクト累積(HH-016 スコープ再導入)
+    type: 統治変更(知識螺旋)
+    status: Approved
+    ratified_by: COCOQ-gh
+    ratified_at: 2026-06-21
+    supersedes: []
+    body: bodies/HH-032.md
+  - id: HH-033
+    title: gates.yaml の strength_start デッド設定の撤去
+    type: θ(gates)変更
+    status: Approved
+    ratified_by: COCOQ-gh
+    ratified_at: 2026-06-20
+    supersedes: []
+    body: bodies/HH-033.md
+  - id: HH-034
+    title: /sync ツール化に伴う push 人間ゲートの緩和(sync ツール経由は自動可)
+    type: 運用規約(git-conventions)
+    status: Approved
+    ratified_by: COCOQ-gh
+    ratified_at: 2026-06-20
+    supersedes: []
+    body: bodies/HH-034.md
+  - id: HH-035
+    title: Plan が機械的 change-list を出し Execute は rote 適用に限定
+    type: ループ定義変更
+    status: Approved
+    ratified_by: COCOQ-gh
+    ratified_at: 2026-06-22
+    supersedes: []
+    body: bodies/HH-035.md
+  - id: HH-036
+    title: フェーズ仕様監査 B群の loop コア是正(gate/required_steps/depth)
+    type: ループ定義変更
+    status: Approved
+    ratified_by: COCOQ-gh
+    ratified_at: 2026-06-22
+    supersedes: []
+    body: bodies/HH-036.md
+  - id: HH-037
+    title: Search が P6 の入力(対象資材の現状・anchor)を産むよう拡張
+    type: ループ定義変更
+    status: Approved
+    ratified_by: COCOQ-gh
+    ratified_at: 2026-06-22
+    supersedes: []
+    body: bodies/HH-037.md
+  - id: HH-038
+    title: main では R7d(自己参照/ROI レンズ)を STOPPED
+    type: 統治変更(R7d 状態)+ ブランチモデル
+    status: Approved
+    ratified_by: COCOQ-gh
+    ratified_at: 2026-06-22
+    supersedes: []
+    body: bodies/HH-038.md
+  - id: HH-039
+    title: 能力追加時の消費者配線ゲート(宣言と消費者を同一変更で配線)
+    type: ループ定義(P6 規律)
+    status: Approved
+    ratified_by: COCOQ-gh
+    ratified_at: 2026-06-22
+    supersedes: []
+    body: bodies/HH-039.md
+  - id: HH-040
+    title: 整理機構(R8 統廃合レンズ + consolidation-report + backlog 焼却 + 跨タスク創発)
+    type: 統治変更(framework-review R8)+ ツール
+    status: Approved
+    ratified_by: COCOQ-gh
+    ratified_at: 2026-06-22
+    supersedes: []
+    body: bodies/HH-040.md
+  - id: HH-041
+    title: "task-level WO 新設: Codex が E+V1+V2 を一括実行(D1-D3 はオーケストレータ残留)"
+    type: 変種統治(agent-roles) — HH-011/012 executor スコープ拡張
+    status: Approved
+    ratified_by: COCOQ-gh
+    ratified_at: 2026-06-23
+    supersedes: []
+    body: bodies/HH-041.md
+  - id: HH-042
+    title: "承認ゲートの技術的可視化: 人間承認証跡フィールドの追加"
+    type: 運用規約・統治変更(提案フォーマット + validate)
+    status: Approved
+    ratified_by: COCOQ-gh
+    ratified_at: 2026-06-24
+    supersedes: []
+    body: bodies/HH-042.md
+  - id: HH-043
+    title: Distill の失敗資材化を閉ループ強制(初回手戻り/失敗も必須 + validate DISTILL_CAPTURE)
+    type: 統治変更(Distill enforcement)
+    status: Approved
+    ratified_by: COCOQ-gh
+    ratified_at: 2026-06-27
+    supersedes: []
+    body: bodies/HH-043.md
+  - id: HH-044
+    title: 未解決マージ競合マーカーの検出(validate CONFLICT_MARKER)
+    type: 統治変更(integrity guard)
+    status: Approved
+    ratified_by: COCOQ-gh
+    ratified_at: 2026-06-27
+    supersedes: []
+    body: bodies/HH-044.md
+  - id: HH-045
+    title: ノート台帳の索引層化(playbook トピック) + project 別ファイル分割 + strength を last_used 事実へ置換
+    type: 統治変更(知識螺旋構造 — HH-016/032 と同格)+ θ・ツール
+    status: Approved
+    ratified_by: COCOQ-gh
+    ratified_at: 2026-06-28
+    supersedes: []
+    body: bodies/HH-045.md
+  - id: HH-046
+    title: ガバナンス承認シグナルの誠実化(自己認証問題の解決 — HH-042 の再定義。arm B=誠実なラベリングを採択)
+    type: 憲法・統治変更
+    status: Approved
+    ratified_by: COCOQ-gh
+    ratified_at: 2026-06-28
+    supersedes: []
+    body: bodies/HH-046.md
+  - id: HH-047
+    title: micro タスクの brief をコミットへ畳む(儀式削減 — 独立 tasks/ ファイル不要化)
+    type: ループ定義変更(depth_modes.micro 記録先)
+    status: Approved
+    ratified_by: COCOQ-gh
+    ratified_at: 2026-06-28
+    supersedes: []
+    body: bodies/HH-047.md
+  - id: HH-048
+    title: 外部価値ゲート(N /cycle 毎に実プロジェクト消費タスクを要求 — main R6/R7d STOPPED 下での axiom-5 運用化)
+    type: 統治変更(framework-review + constitution 公理5 運用)
+    status: Approved
+    ratified_by: COCOQ-gh
+    ratified_at: 2026-06-28
+    supersedes: []
+    body: bodies/HH-048.md
+  - id: HH-049
+    title: amendments の現行ルール digest(意味の索引化 — HH-024 の semantic 版。決定記録と現行有効ルールの分離)
+    type: 統治変更(amendments 構造・大規模)
+    status: Approved
+    ratified_by: COCOQ-gh
+    ratified_at: 2026-06-28
+    supersedes: []
+    body: bodies/HH-049.md
+  - id: HH-050
+    title: 収束指標にラチェット(measurement に action trigger — 連続増で焼却/slim を必須化)
+    type: 統治変更(framework-review R7a/R8c trigger)+ θ
+    status: Approved
+    ratified_by: COCOQ-gh
+    ratified_at: 2026-06-28
+    supersedes: []
+    body: bodies/HH-050.md
+  - id: HH-051
+    title: コミット構築時のシェルインジェクション防止(引用符付きヒアドキュメント必須 + 未信頼内容の非埋め込み + AP-008)
+    type: 運用規約変更(git-conventions コミットゲート)+ セキュリティ公理 HH-019 の運用化
+    status: Approved
+    ratified_by: COCOQ-gh
+    ratified_at: 2026-06-28
+    supersedes: []
+    body: bodies/HH-051.md
+  - id: HH-052
+    title: 外部価値ゲートに main 例外を適用(HH-048 を R6/R7d と同じ branch context に — main は STOPPED・measurement のみ)
+    type: 統治変更(framework-review R7c + constitution 公理5 + HH-048 scope)
+    status: Approved
+    ratified_by: COCOQ-gh
+    ratified_at: 2026-06-28
+    supersedes: []
+    body: bodies/HH-052.md
+  - id: HH-053
+    title: 蒸留の検索→適用ループを閉じる(ノート帰属 --use/--miss の必須化 + validate NOTE_ATTRIBUTION)+ 書き込み時 dedup 提示
+    type: ループ定義変更(D7/evaluate ノート帰属)+ ツール
+    status: Approved
+    ratified_by: COCOQ-gh
+    ratified_at: 2026-06-28
+    supersedes: []
+    body: bodies/HH-053.md
+  - id: HH-054
+    title: トークン効率委任姿勢の既定化(survey WO で読取委任 + task WO 実行委任を既定 + ガバナンス境界 + terser orch 出力)
+    type: 変種統治(agent-roles §3c)— HH-011/012/041 の委任既定強化
+    status: Approved
+    ratified_by: COCOQ-gh
+    ratified_at: 2026-06-28
+    supersedes: []
+    body: bodies/HH-054.md
+  - id: HH-055
+    title: compaction-recovery フックの framework 統合(.claude/settings.json を /sync・reflux の framework パスに追加 + bootstrap 検証 + auto-run セキュリティ記録)
+    type: 統治変更(sync/reflux 伝播 + session-bootstrap)+ セキュリティ運用
+    status: Approved
+    ratified_by: COCOQ-gh
+    ratified_at: 2026-06-28
+    supersedes: []
+    body: bodies/HH-055.md
+  - id: HH-056
+    title: R7d の分割 — 鐙検出器(敵対的類推/フレーム却下)を main で再活性化・ROI 半分は外部価値ゲートへ委譲・別モデル委託を推奨(HH-038 supersede)
+    type: 統治変更(framework-review R7d + constitution 公理5 + agent-roles)
+    status: Approved
+    ratified_by: COCOQ-gh
+    ratified_at: 2026-07-08
+    supersedes:
+      - HH-038
+    body: bodies/HH-056.md
+  - id: HH-057
+    title: knowledge.yaml カウンタの導出化(手書きキャッシュ撤去 → git 実体から都度計算・突合工程の撤去)
+    type: θ(counters スキーマ)+ 運用規約(sync/reflux 手順)+ ツール
+    status: Approved
+    ratified_by: COCOQ-gh
+    ratified_at: 2026-07-08
+    supersedes: []
+    body: bodies/HH-057.md
+  - id: HH-058
+    title: "並行 /helix の資材衝突回避 — L1: P6 素集合ゲート + pathspec commit + D7 直列化 / L2: worktree 隔離(還元は既存 reflux)"
+    type: 運用規約(concurrency HH-015 拡張 + git-conventions + plan.md P6)
+    status: Approved
+    ratified_by: COCOQ-gh
+    ratified_at: 2026-07-08
+    supersedes: []
+    body: bodies/HH-058.md
+  - id: HH-059
+    title: エントリポイントの正本一元化 — 中立名 entrypoint.md を正本に新設(ロールは WO 有無の機能決定)+ プラットフォーム md(CLAUDE.md/AGENTS.md 等)は薄いリダイレクト専用
+    type: 憲法(環境制約公理)+ 運用規約 + validate ENTRYPOINT
+    status: Approved
+    ratified_by: COCOQ-gh
+    ratified_at: 2026-07-16
+    supersedes: []
+    body: bodies/HH-059.md
+  - id: HH-060
+    title: ガバナンスの技術的職務分離 — CODEOWNERS(統治・制御面)+ required CI(L1〜L4)+ branch protection(ユーザー操作)で人間ゲートを技術的強制に(HH-046 補強・R7d-frame 初回 finding 由来)
+    type: 憲法(統治公理2 注記)+ 外部統治機構 + CI
+    status: Approved
+    ratified_by: COCOQ-gh
+    ratified_at: 2026-07-16
+    supersedes: []
+    body: bodies/HH-060.md
+  - id: HH-061
+    title: "プロジェクトブランチのノート仮採番(N-<proj>-NNN)— 還元時に main の next-id で正式採番し ID 玉突き衝突を根絶(HH 番号衝突により HH-059 から再採番。**HH-064 が置換**)"
+    type: 運用規約・統治変更(ノート ID 規約 + sync/reflux 手順 + ツール)
+    status: Approved
+    ratified_by: COCOQ-gh
+    ratified_at: 2026-07-16
+    supersedes: []
+    body: bodies/HH-061.md
+  - id: HH-062
+    title: "蒸留インボックス — compact 発火時は台帳へ書かず知見候補を state file `## Distill Inbox` へ退避し、次の正規 D フェーズで蒸留/破棄(compact 時の D1〜D7 完全統合は却下)"
+    type: 運用規約(compact-prep + distill 手順)+ ツール(skeleton 拡張)
+    status: Approved
+    ratified_by: COCOQ-gh
+    ratified_at: 2026-07-16
+    supersedes: []
+    body: bodies/HH-062.md
+  - id: HH-063
+    title: 委任のハングアップ検知の仕込み — WO に progress beacon 義務 + dispatch 時に liveness 監視を張り、出力停滞(stall 閾値)でハング扱い=§9c 前倒し発動(HH-017 deadline 型 watchdog の前倒し検知化)
+    type: 変種統治(agent-roles §3/§9)— HH-017 拡張
+    status: Approved
+    ratified_by: COCOQ-gh
+    ratified_at: 2026-07-16
+    supersedes: []
+    body: bodies/HH-063.md
+  - id: HH-064
+    title: "ノート ID の衝突フリー化(恒久 ID 方式)— 連番 N-NNN + 仮採番/還元時 adopt を廃し、生成時に**日付+ブランチ由来の恒久 ID**(例 `N-era-20260716a`)を割り当てる。ブランチ跨ぎで永久に衝突せず、還元時の採番・[[参照]]置換工程が消える(HH-061 の「案2」を昇格・起票)"
+    type: 運用規約・統治変更(ノート ID 規約 + ツール + 全ノートの移行)
+    status: Approved
+    ratified_by: COCOQ-gh
+    ratified_at: 2026-07-17
+    supersedes:
+      - HH-061
+    body: bodies/HH-064.md
+  - id: HH-065
+    title: "恒久 ID パターンの横展開 — ①タスク ID にブランチ由来 slug を挿入(`TASK-<proj>-YYYYMMDD-NNN`)しブランチ跨ぎ衝突を根絶 ②HH 番号は起票時に origin/main と max 突合+衝突時再採番を規約化(恒久 ID 化はしない — 序数の可読性優先)。HH-064 の同型残穴(TASK-20260716-016 / HH-059 の実衝突)を塞ぐ"
+    type: 運用規約・統治変更(タスク ID 規約 + brief/bump/finish ツール + HH 起票手順)
+    status: Approved
+    ratified_by: COCOQ-gh
+    ratified_at: 2026-07-17
+    supersedes: []
+    body: bodies/HH-065.md
+  - id: HH-066
+    title: 契約変更ゲートと多層検証 — 識別子・固定語彙・CLI・ロール等の契約変更に影響マップと R1-R3 証跡を必須化し、機械可読な正本・回帰テスト・finish/CI 強制で AP-003 の未検知を防ぐ
+    type: ループ定義変更・運用規約・統治変更
+    status: Approved
+    ratified_by: COCOQ-gh
+    ratified_at: 2026-07-17
+    supersedes: []
+    body: bodies/HH-066.md
+  - id: HH-067
+    title: 構造化正本移行の権威境界(SC-00)— 実行事実は構造化正本・文章は intent/理由/生成 view。governance/(registry + HH 別本文)は amendments の付属構造化正本とし、amendments.md は SC-04 で registry 生成 view 化。yaml + Ajv 2件限定の dependency 導入も承認(実装は SC-01〜08)
+    type: 統治変更(権威境界の裁可)・運用規約
+    status: Approved
+    ratified_by: COCOQ-gh
+    ratified_at: 2026-07-17
+    supersedes: []
+    body: bodies/HH-067.md
+  - id: HH-068
+    title: review/capture transaction semantics — 重大発見の記録深度をmicroから分離し、review-onlyをsession baselineとtask-owned write-setで判定する
+    type: ループ定義変更・運用規約・統治変更(HH-023/030の精緻化)
+    status: Approved
+    ratified_by: COCOQ-gh
+    ratified_at: 2026-07-18
+    supersedes: []
+    body: bodies/HH-068.md
+  - id: HH-069
+    title: CODEOWNER必須承認の緩和 — 統治PRは同一publisherを許可し、required CI後の人間手動merge待ちとする
+    type: 統治変更(HH-060の技術的職務分離を、PR+required CI強制とhonor-based人間mergeへ縮小)
+    status: Approved
+    ratified_by: COCOQ-gh
+    ratified_at: 2026-07-18
+    supersedes:
+      - HH-060
+    body: bodies/HH-069.md
+  - id: HH-070
+    title: private/free運用の受容 — branch protection必須を撤回し、main統治をhonor-basedへ移す
+    type: 統治変更(HH-069のPR+required CI外部強制を、private/free上のツール規律+人間運用へ縮小)
+    status: Approved
+    ratified_by: COCOQ-gh
+    ratified_at: 2026-07-18
+    supersedes:
+      - HH-069
+    body: bodies/HH-070.md
+  - id: HH-071
+    title: 運用コスト削減 — 内容同一性に基づく検証再利用・差分review・bounded R8・record-only task運用
+    type: ループ定義変更・運用規約・統治変更(安全ゲートを維持した重複作業の削減)
+    status: Approved
+    ratified_by: COCOQ-gh
+    ratified_at: 2026-07-19
+    supersedes: []
+    body: bodies/HH-071.md
+  - id: HH-072
+    title: フレームワークレビュー期限の共通判定・起動通知・先送り管理
+    type: ループschema表現変更・運用規約・θ変更・統治変更(review cadenceの意味不変)
+    status: Approved
+    ratified_by: COCOQ-gh
+    ratified_at: 2026-07-19
+    supersedes: []
+    body: bodies/HH-072.md
+  - id: HH-073
+    title: 収束ラチェット(常時必読の膨張検知)の尺度を行数から実コスト(文字数)へ拡張 — cost-report に文字数記録を追加し、convergence_ratchet の判定基準を段階的に移行する
+    type: θ(gates.yaml 意味変更)+ ツール拡張
+    status: Approved
+    ratified_by: COCOQ-gh
+    ratified_at: 2026-07-19
+    supersedes: []
+    body: bodies/HH-073.md
+  - id: HH-074
+    title: 改正履歴の憲法・core本文からの分離 — 各公理・コメントを「現行ルール+HHポインタ」形式へ再記述し、経緯説明は governance/amendments/bodies/ の正本へ委ねる(意味不変。HH-073 は open PR #3 が使用中のため欠番採番)
+    type: 憲法(表現変更・意味不変)+ AI層 core 資材のコメント履歴削減
+    status: Approved
+    ratified_by: COCOQ-gh
+    ratified_at: 2026-07-19
+    supersedes: []
+    body: bodies/HH-074.md
+  - id: HH-075
+    title: graph形validate guard(7種)の単一typed-edge registry+generic checkerへの統合 — R7d-frame(HH-056 別モデル委任)由来の簡素化候補。edge dataは資材から自動抽出・依存追加時はHH-067改定を含む・陽性fixture parity後に旧guard撤去
+    type: 統治変更(validate guard 構造)+ ツール(依存方針)
+    status: Approved
+    ratified_by: COCOQ-gh
+    ratified_at: 2026-07-28
+    supersedes: []
+    body: bodies/HH-075.md
+  - id: HH-076
+    title: S/P(調査・計画)フェーズ並行実施の一般許容 — plan-aheadの「委任待ち」条件を撤廃し、E進行時のanchor鮮度ゲートを前提1行で追加(D7直列・committed-only読取・WO上限3は不変。新機構なし)
+    type: ループ定義変更(async_delegation)+ 運用規約(concurrency §7 / execute precondition)
+    status: Approved
+    ratified_by: COCOQ-gh
+    ratified_at: 2026-08-11
+    supersedes: []
+    body: bodies/HH-076.md
+  - id: HH-077
+    title: D7「ノート移動は最大1件」と HH-053 ノート帰属義務の両立不能の解消 — 枠を裁量的移動(add / 証拠に基づかない strength 調整)に限定し、notes.applied に対応する --use/--miss は枠外と明示する(意味の限定。新機構・validate 変更なし)
+    type: ループ定義変更(D7 move 枠の定義)+ 運用規約(distill.md D7 / evaluate.md ノート帰属節)
+    status: Approved
+    ratified_by: COCOQ-gh
+    ratified_at: "2026-08-21"
+    supersedes: []
+    body: bodies/HH-077.md
+  - id: HH-078
+    title: 共有索引ドキュメントの衝突は直列化せず「個別に作成してマージ」— pathspec commit は自分専有ファイル限定とし、共有ファイルはハンク単位で index に載せてからパススペック無しで commit する(運用規約。新機構・validate 変更なし)
+    type: 運用規約(concurrency.md §4 / §8 L1・L2)+ アンチパターン是正手順(AP-018)
+    status: Approved
+    ratified_by: COCOQ-gh
+    ratified_at: "2026-08-22"
+    supersedes: []
+    body: bodies/HH-078.md
+  - id: HH-079
+    title: 圧縮契約はモデルへ渡らない — PreCompact の hookSpecificOutput は schema 違反で全出力が破棄される。契約の担い手を state file(+ Codex の compact-prompt.md)へ一本化し、PreCompact はトップレベル systemMessage と未記入セクションの刻印のみを出す
+    type: 統治変更(compaction 権威境界)+ AI層資材(compaction.md / session-bootstrap.md)+ ツール(compaction-hooks.mjs)
+    status: Approved
+    ratified_by: COCOQ-gh
+    ratified_at: "2026-08-22"
+    supersedes: []
+    body: bodies/HH-079.md
+  - id: HH-080
+    title: review cadence へ producer を導入 — counters.review_ordinal(bump --review が +1・high-water)。every-5th 判定を「(ordinal+1) % 5 == 0」へ機械化し手動導出 6 行を削除。θ=5 とレンズ構成は不変(Codex 外部レビュー C-3/D-2 の裁定 = 選択肢 C)
+    type: counters スキーマ変更(HH-057 系)+ cadence 判定の機械化(θ 不変)
+    status: Approved
+    ratified_by: COCOQ-gh
+    ratified_at: 2026-08-23
+    supersedes: []
+    body: bodies/HH-080.md
+  - id: HH-081
+    title: task transaction の正本をローカル制御面から外部(GitHub Issue/PR)へ移す提案 — R7d-frame(別モデル委託)が指摘した「記録者・実行者・判定者が同じ故障領域にいる」欠落への対処。**実測により branch protection は本アカウントで利用不可(403 Pro required)・ホスト repo は remote 無し** ∴ 外部 fail-closed 強制は現状得られず、得られるのは識別子と保管の簡素化のみ。選択肢 A(Pro/public 化)・B(識別子のみ)・C(保留)を提示 → **2026-10-02 B で裁可**(8/26 の C を再検討トリガ③の実測で置換。強制力は honor-based のまま・実装は別タスク)→ **同日追補** — 設計 spike を受け、ホストを含め記録をコミット本文(YAML ブロック)へ統一・Issue は framework repo の ID 採番/claim のみ
+    type: 統治変更(task transaction の権威境界)+ ツール(tools/ は main 所有)+ AI層資材(routing / git-conventions / concurrency)
+    status: Approved
+    ratified_by: COCOQ-gh
+    ratified_at: 2026-10-02
+    supersedes: []
+    body: bodies/HH-081.md
+  - id: HH-082
+    title: 起動時実読コストの死角を塞ぐ — 索引読み冒頭をラチェット対象へ(A)・ノート本文の長さに目安(B)
+    type: θ(gates.yaml convergence_ratchet の対象拡大)+ 運用規約(ノートスキーマの目安)
+    status: Approved
+    ratified_by: COCOQ-gh
+    ratified_at: 2026-10-02
+    supersedes: []
+    body: bodies/HH-082.md

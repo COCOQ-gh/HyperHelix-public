@@ -4,7 +4,7 @@ HyperHelix treats prompt/process materials as executable governance assets. Plea
 
 ## Supported Versions
 
-Until the first tagged release, security fixes target the default development line and the active public-release preparation branch.
+Security fixes target the default development line and the public clean line (`public/**`). Public tags are cut from the clean line; the current one is recorded in `PUBLIC_RELEASE.md`.
 
 ## Reporting a Vulnerability
 

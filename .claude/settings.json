@@ -1,5 +1,15 @@
 {
   "hooks": {
+    "PreCompact": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"$CLAUDE_PROJECT_DIR/.claude/commands/hooks/precompact-save-state.sh\""
+          }
+        ]
+      }
+    ],
     "PostCompact": [
       {
         "hooks": [

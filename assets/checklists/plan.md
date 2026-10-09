@@ -23,6 +23,7 @@
 
 ## P5 — Validation plan (BEFORE any edit)
 - [ ] Check types chosen per core/routing.yaml `validation.by_change_type`.
+- [ ] **Host-index folding (2026-08-23 / Project001 §X①)**: if the host project keeps a delegation-ready index (e.g. `doc/project-notes/TODO.md` §0.5), a task that completes or reclassifies one of its units MUST carry the index fold (row removal / summary recount / checkbox / block→completion record / §3 line) as a P6 change-list unit in the SAME commit. Completion is NOT reportable while the index still lists the unit as open — the index is a consumer of the task result (AP-003 declare↔consume applied to project indexes; N-Project001-20260817a).
 - [ ] Mixed-type tasks: classify PER UNIT; the task's validation set is the UNION of each unit's change-type checks (the brief's single `<type>` is shorthand — record per-unit types when they differ).
 - [ ] Anticipated skips recorded with reason and residual risk.
 
@@ -30,7 +31,9 @@
 - [ ] Each Execute unit resolved to a mechanical change: target file + exact anchor (existing text/line to match) + new content or transform.
 - [ ] Execute will APPLY this list, not discover. P6 COMPOSES the change-list from the S4 target-state survey (HH-037); it does not re-investigate. A unit whose target/anchor cannot be resolved is not ready — return to Search S4 for the missing anchor, or route a genuine unknown to EX-5/spike.
 - [ ] (Discovery surfacing mid-Execute = a P6 gap → E4 returns to Plan.)
-- [ ] **Capability-addition wiring gate (HH-039)**: if this change ADDS a tool subcommand, a validate check, a knowledge.yaml schema field, or ratifies an HH, the change-list MUST also include the edits that wire its CONSUMERS — the materials / procedures / enumerations that reference it (e.g. new subcommand → README + the checklist that invokes it; new validate guard → framework-review R1; new note field → D7 procedure). L1 validators (TOOL_DOC_CONSISTENCY / CHECK_DOC_CONSISTENCY / NOTE_FIELD_SCHEMA) enforce the mechanical subset; this gate covers the rest.
+- [ ] **Parallel-dispatch gate (HH-058)**: before running this task in PARALLEL with another in-flight task (or dispatching executor WOs concurrently), verify the two P6 change-list target-file sets are DISJOINT (knowledge.yaml and each task's own brief excluded — those are serialized by concurrency.md §6). Overlap → serialize. Authority: concurrency.md §8 L1.
+- [ ] **Contract Change Gate (add/modify/remove/migrate; supersedes addition-only scope)**: any contract, command, schema, anchor, lifecycle section, validator, or generated-doc contract change MUST inventory authority, old/new, every producer/consumer, docs/templates, legacy allowlist, forbidden live expressions, and tracked tests in the hh-record `contract_impact` rows. Retrieve N-059/N-011/N-019 as the migration bundle. A detector/validator change includes a positive test that proves the detector fires. The P6 change-list wires every listed consumer in the SAME commit; mechanical subsets remain enforced by validators.
+- [ ] **Framework evidence gate**: if any path classified by `tools/lib/framework-evidence.mjs isFrameworkEvidencePath` changes, plan the exact R1-R3 commands/search scope and complete the hh-record `framework_check` rows; project code-only tasks require no extra evidence table work.
 
 ## Exit
 - [ ] Artifacts present: work plan, task list, acceptance criteria, risk list, validation plan, mechanical change-list.

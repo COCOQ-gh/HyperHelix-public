@@ -1,0 +1,23 @@
+# HyperHelix knowledge manifest (SC-05a / HH-067). Declares the ledger list and
+# project ownership — the knowledge repository (tools/lib/knowledge.mjs) reads
+# ONLY the ledgers listed here; an unlisted *.yaml in this directory is an error
+# (fail-closed). Exactly one ledger has role `main` and holds the counters.
+# A project slug is owned by exactly one ledger; notes must live in the ledger
+# that owns their `project:` (absent project == shared).
+schema_version: 1
+ledgers:
+  - file: core/knowledge.yaml
+    role: main
+    projects: [hyperhelix, shared]
+  - file: core/knowledge/Project001.yaml
+    role: leaf
+    projects: [Project001]
+  - file: core/knowledge/Project007.yaml
+    role: leaf
+    projects: [Project007]
+  - file: core/knowledge/Project003-lab-h.yaml
+    role: leaf
+    projects: [Project003-lab-h]
+  - file: core/knowledge/Project005.yaml
+    role: leaf
+    projects: [Project005]

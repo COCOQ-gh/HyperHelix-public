@@ -37,19 +37,14 @@ problem during a task
 
 ## EX-4 — Time pressure (light mode)
 
-| Phase | standard/full | light | Risk accepted |
-|---|---|---|---|
-| Search | S1-S3 | S1 only | missed existing assets, reinvention |
-| Plan | P1-P6 | P1, P3, P5, P6 | unhandled risks, missed dependencies |
-| Execute | E1-E3 | E2, E3 | coarse changes, hard rollback |
-| Evaluate | V1-V3 | V1, V2 | unverified intent fidelity |
-| Distill | D1-D7 | D7 + triage of D2/D3/D5/D6 | lessons not assetized |
-
-The columns are `core/loop.yaml` depth modes (the authority): "standard/full" = the full
-step set; "light" = `depth_modes.light` (its `minimum_outputs`). micro is smaller still
-(HH-022) and needs no EX-4 shortcut. Rules: record the reason for light mode in the brief;
-backfill the skipped distill steps in the next unhurried task. Light mode is forbidden for
-the cases listed in `core/loop.yaml depth_modes.light.forbidden_when`.
+Do not maintain a second step list here. At the moment EX-4 is invoked, read the
+current definitions in `core/loop.yaml depth_modes.standard`,
+`depth_modes.full`, and `depth_modes.light`; those fields are the sole authority
+for required steps, minimum outputs, and forbidden cases. Record the switch and
+reason in the brief, explicitly record every omitted output and its accepted
+risk, and backfill skipped Distill work in the next unhurried task. EX-4 cannot
+override any `depth_modes.light.forbidden_when` condition. `micro` is a separate
+classification (HH-022), not an EX-4 shortcut.
 
 ## EX-5 — Exploration loop
 

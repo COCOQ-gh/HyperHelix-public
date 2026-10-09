@@ -1,9 +1,6 @@
 # =============================================================================
 # HyperHelix — core/loop.yaml
-# Task loop definition. AI-facing artifact (English only).
-#
-# Synthesis (HH-000): phase model from MetaHelix with Evaluate made explicit
-# (Helix_Reflex); planning depth modes from HelixPDCA; exceptions from MetaHelix.
+# Task loop definition. AI-facing artifact (English only). Origin: HH-000.
 # Changing the phase structure or gate rules is an amendment-class change
 # (amendments.md).
 # =============================================================================
@@ -15,23 +12,24 @@ loop:
     - "Every task passes all five phases. Depth modes shrink steps inside a phase; they never delete a phase."
     - "Each phase produces artifacts. Each artifact is evaluated."
     - "Improvements discovered in any phase are captured and routed through the distill pipeline (core/routing.yaml)."
+    - "Capture is a transaction purpose, not a depth mode (HH-068): significant-discovery capture uses the standard/full depth selected by routing and never overrides micro forbidden_when."
     - "Mistakes are process problems, never executor problems. The improvement target is always the process."
 
-# --- depth modes (from HelixPDCA) ---
+# --- depth modes ---
 depth_modes:
   micro:
-    # HH-022: smaller than light, for enumerated trivial fixes only. use_when is a
+    # Smaller than light, for enumerated trivial fixes only (HH-022). use_when is a
     # FIXED VOCABULARY (no subjective "small") so the phase-gate stays unambiguous (R4).
     use_when: [typo-fix, link-fix, heading-number-fix, obvious-removed-term-replacement, readme-1-2-line]
     forbidden_when: [ambiguous, destructive, security-sensitive, user-facing-behavior-change, cross-module, durable-rule-likely, any-logic-change, any-gate-or-axiom-touch]
     minimum_outputs: [objective, change, validation, D7]
-    record_in: "commit-message-body OR brief file (HH-047: a micro task needs NO separate tasks/ brief file — the objective/change/validation/D7 lines MAY live in the commit body; the commit IS the task record per routing.yaml. standard+ still require a brief file). Format: assets/workflows/git-conventions.md (micro commit body). DISTILL_CAPTURE / archive-briefs operate on brief FILES and simply do not apply to a briefless micro — acceptable because micro forbids any-logic-change / security-sensitive, so failure-capture scenarios are out of scope by construction."
+    record_in: "the commit body — one hh-record block with depth_mode: micro (HH-047 / HH-081). Format: assets/workflows/git-conventions.md Commit-body record."
     note: "Phases are not deleted (S/P/E/V/D spirit kept). Record the depth decision with the matched fixed-vocabulary term (in the brief OR the commit body). A misclassification escalates to standard in the next task (distill via D2)."
   light:
     use_when: [small, reversible, low-risk]
     forbidden_when: [ambiguous, destructive, security-sensitive, user-facing-behavior-change, cross-module, durable-rule-likely]
     minimum_outputs: [objective, acceptance_criteria, validation_plan, result_summary]
-    note: "Record the reason for light mode in the task brief; backfill skipped distill steps in the next unhurried task."
+    note: "Record the reason for light mode in the task record; backfill skipped distill steps in the next unhurried task."
   standard:
     use_when: [normal-implementation, normal-document-change, framework-application-change]
     # framework-application-change (HH-005): applying ratified changes, annotations,
@@ -49,7 +47,7 @@ depth_modes:
     deliverable: "findings document only; no code and no NEW framework materials / structural edits (D7 counter bookkeeping in core/knowledge.yaml still applies — every task counts)"
     handoff: "carry findings into the next task's S1 as Known/Assumptions"
 
-# --- phase gate (from MetaHelix) ---
+# --- phase gate ---
 phase_gate:
   rule: >
     Before starting any phase, verify the artifacts of all earlier phases exist
@@ -80,15 +78,16 @@ phases:
         explicit assumptions or one concise clarification question.
       S2: >
         Query existing assets BEFORE searching anew: tag-match core/knowledge.yaml
-        notes (top gates.search.top_n, ordered by last_used desc = recency, HH-045;
-        playbook notes are the primary target, scoped to the current project + shared
-        per gates.search.project_scope, HH-032) — the PRIMARY
-        retrieval layer — and check assets/ai/anti-patterns.md. Past task briefs are
+        notes via `node tools/hyperhelix.mjs notes --tags a,b --project <slug>`
+        (the tool applies the retrieval rules deterministically: top gates.search.top_n,
+        ordered by last_used desc = recency, HH-045; playbook notes first, scoped to the
+        current project + shared per gates.search.project_scope, HH-032 — do NOT grep the
+        full ledger) — the PRIMARY retrieval layer — and check assets/ai/anti-patterns.md. Past task records are
         an on-demand audit log: open by explicit task-id, NOT full-text-grepped
         (tasks/ is excluded from default search via tasks/.rgignore, HH-031 Phase 1).
-        Archived briefs (HH-031 Phase 2) are not in tasks/: find them in tasks/INDEX.md
-        and restore via `git show <hash>:tasks/<task-id>.md`.
-        Record retrieved note ids in the task brief (feeds D7 strength updates).
+        Task records live in commit bodies (`git log`, HH-081); pre-HH-081 records are
+        indexed in tasks/INDEX.md — restore one with `git show <hash>:<path>`.
+        Record retrieved note ids in the task record (feeds D7 strength updates).
       S3: "List unknowns; resolve each, or proceed on an assumption with the reason recorded."
       S4: >
         Target-state survey (implementation tasks; HH-037). Read the CURRENT state of the
@@ -116,7 +115,9 @@ phases:
         Search S4 target-state survey (HH-037) — P6 composes, it does not re-investigate.
         If a unit's target/anchor is unresolved, return to S4 — or route a genuine unknown
         to EX-5/spike. A mechanical change-list is what makes Execute delegable (agent-roles
-        implementation WO carries it).
+        implementation WO carries it). For contract add/modify/remove/migrate, the change-list
+        also consumes the task record's contract_impact inventory and wires all producers,
+        consumers, docs/templates, compatibility rules, forbidden live expressions, and tests.
     artifacts: [work-plan, task-list, acceptance-criteria, risk-list, validation-plan, change-list]
     checklist: assets/checklists/plan.md
 
@@ -127,16 +128,19 @@ phases:
       If discovery becomes necessary mid-Execute, that is a Plan gap: E4 -> return to Plan.
     agent_roles: assets/workflows/agent-roles.md   # HH-011: orchestrator/executor delegation contract
     async_delegation: >
-      When every Execute unit for a task is delegated to an executor, the
-      orchestrator may begin the NEXT task's Search and Plan before the executor
-      finishes (plan-ahead pattern; concurrency.md §7). Invariants: (1) D7
-      counter update (task_index +1) is gated on V+D completion, never on P
-      completion; (2) the next task's S/P must not read uncommitted executor
-      output (concurrency.md §5 applies across async tasks too).
+      Search and Plan are read-only phases (plus the task's own record) and MAY
+      run in parallel with ANY phase of other tasks in the session — delegation
+      wait is NOT a precondition (HH-076 generalizes the plan-ahead pattern;
+      concurrency.md §7). Invariants: (1) D7 counter update (task_index +1) is
+      gated on V+D completion, never on P completion; (2) parallel S/P reads
+      only COMMITTED state (concurrency.md §5 applies across tasks); (3)
+      entering Execute from a parallel-built plan passes the dispatch freshness
+      gate — HH-058 L1 disjoint P6 target sets AND every P6 anchor still
+      resolving uniquely at current HEAD; a stale anchor returns to S4.
     steps:
       E1: "Change one minimal unit at a time; never bundle unrelated changes."
       E2: "Verify each change against its acceptance criterion before moving to the next."
-      E3: "Record actions, results, and failure cases (EX-5 log) in the task brief."
+      E3: "Record actions, results, and failure cases in task record phase_evidence.execute."
       E4: >
         Rework / judgment-error gate (conditional). When rework, a premise error,
         unnecessary work, or a repeated judgment error is detected during Execute,
@@ -151,7 +155,7 @@ phases:
     steps:
       V1: >
         Run machine signals: tests / lint / run. When framework materials changed,
-        also run: node tools/hyperhelix.mjs validate. SECURITY (constitution
+        also run the layered verify (finish / verify --base). SECURITY (constitution
         security axiom, HH-019): before any commit, run the secret scan
         (core/routing.yaml validation.secret_scan) over the staged diff; a raw
         credential is a hard block, never a warning. Commit variable names /
@@ -183,20 +187,22 @@ phases:
       D6: "Anti-pattern any confirmed failure case (assets/ai/anti-patterns.md schema). Skip if none; MANDATORY (cannot record 'none') if the case is a re-occurrence of a previously fixed failure — see distill.md D6 for the full sub-rule (TASK-289)."
       D7: >
         Apply this task's deltas in core/knowledge.yaml (HH-016 note ledger):
-        counters.task_index +1; AT MOST ONE note move — add a note (id from
-        counters.next_note_id, then next_note_id +1; set project: <current-slug>
-        or `shared`, HH-032) OR nudge an existing note's
-        strength +/-1 with last_used. No recompute, no derived fields. Tool:
+        counters.task_index +1; AT MOST ONE DISCRETIONARY note move (HH-077) — add a note
+        (id from `hyperhelix.mjs next-id` = permanent branch/date id (HH-064); set
+        project: <current-slug> or `shared`, HH-032) OR a strength +/-1 nudge made for a
+        reason OTHER than HH-053 attribution. The HH-053 attribution nudges (`--use`/
+        `--miss` for each notes.applied entry) are mandatory and evidence-driven: they do
+        NOT count against this budget. No recompute, no derived fields. Tool:
         node tools/hyperhelix.mjs bump --task ID [--use N-..|--miss N-..] [--review];
         then: node tools/hyperhelix.mjs validate.
     artifacts: [lessons, note-updates, counter-updates]
     checklist: assets/checklists/distill.md
 
-# --- exceptions (from MetaHelix; details in assets/workflows/exception-handling.md) ---
+# --- exceptions (details in assets/workflows/exception-handling.md) ---
 exceptions:
   reference: assets/workflows/exception-handling.md
   EX-1: {name: block,         action: "log it; transient -> retry max 3 (1/5/15 min); fundamental -> back to S1; impossible -> EX-3"}
-  EX-2: {name: scope-change,  action: "append to brief (keep history); structural -> redo P1-P4; criteria-only -> redo P3; resume execute"}
+  EX-2: {name: scope-change,  action: "append to brief (keep history); structural -> redo P1-P6; criteria-only -> redo P3 (+P6 if anchors shift); resume execute"}
   EX-3: {name: abort,         action: "record state + resume conditions; light distill triage (D2/D3/D5/D6); mint a material if the lesson is durable"}
   EX-4: {name: time-pressure, action: "switch to light mode; record the reason; backfill distill in the next unhurried task"}
   EX-5: {name: exploration,   action: "hypothesis -> trial -> failure log -> next plan reads the log; >3 stalls -> back to S2/S3; failures are artifacts, never deleted"}
@@ -209,7 +215,6 @@ meta_strand:
     separate gates — notes carry framework-related tags and a strength sort-hint.
   review_triggers:
     - "every-5-tasks: counters.task_index - counters.last_framework_review >= 5 (counter set by framework-review.md Completion)"
-    - after-framework-material-change
     - judgment-hesitation
     - same-problem-twice
   review: assets/checklists/framework-review.md

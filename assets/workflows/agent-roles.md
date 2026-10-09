@@ -6,31 +6,32 @@ Branch model: assets/workflows/git-conventions.md.
 
 ## 1. Roles
 
-| Role | Agent | Owns |
+| Role | Invocation context | Owns |
 |---|---|---|
-| Orchestrator | Claude | phase gates, briefs, Search/Plan, work-order issuing, D1-D3 (analysis/proposals), D4-D7, counters (core/knowledge.yaml), amendments, commits |
-| Executor | Codex (or any coding agent) | Execute units per P6 change-list; V1 machine checks + V2 acceptance reporting when a task-type WO is used (§3b, HH-041); nothing else |
+| Orchestrator | Primary session, not invoked with a Work Order | phase gates, briefs, Search/Plan, work-order issuing, evidence re-verification, D1-D3 (analysis/proposals), D4-D7, counters (core/knowledge.yaml), amendments, commits |
+| Executor | Session invoked with a Work Order | Execute units per P6 change-list; run planned V1 machine checks and report raw output; evaluate planned V2 acceptance criteria when a task-type WO is used (§3b, HH-041); nothing else |
 
-Entry points: CLAUDE.md is the orchestrator entry; AGENTS.md is the executor entry.
+Entry point: entrypoint.md is the single platform-neutral canon (HH-059); CLAUDE.md /
+AGENTS.md are thin redirects to it. Role is determined by INVOCATION CONTEXT, not
+platform: a session invoked WITH a work order = executor (scope-restricted, §2);
+any primary session = orchestrator. Platform names never fix the role.
 
-Executor model selection (2026-06-19, user-specified; revises 2026-06-15):
-- `gpt-5.3-codex-spark` is preferred ONLY for tasks that REPEAT SIMPLE WORK
-  (bulk renames, mechanical edits, applying an established pattern across many
-  units — low/medium effort, §10b). It is fast and cheap for rote loops but too
-  slow / shallow for complex reasoning (a deep R7-design review under spark stalled
-  past the 10-min budget, 2026-06-19).
-- For COMPLEX tasks (surveys/reviews, design critique, novel or ambiguous
-  implementation — high/xhigh/max effort), use a capable model: pin
-  `-m gpt-5.5` (the user's global default in `~/.codex/config.toml`) or omit `-m`
-  to inherit that default.
-Delegate with the model pinned explicitly when it differs from the global default,
-e.g. `codex exec -m gpt-5.3-codex-spark -C <repo> --sandbox workspace-write "..."`
-for rote work. The global default is left unchanged.
+Executor model selection — **the user's `~/.codex/config.toml` default is the rule; do NOT
+pin a model from memory** (2026-08-25, user-specified; supersedes the 2026-06-19 spark/5.5
+split). Model names in a checklist go stale silently while the config keeps moving: the entry
+here named `gpt-5.3-codex-spark` / `gpt-5.5` for weeks after the default became
+`gpt-5.6-sol` (reasoning effort `xhigh`).
+- **Default: omit `-m`** — `codex exec -C <repo> --sandbox workspace-write "..."` inherits the
+  user's configured model and effort. This is correct for both rote and complex work.
+- Pin `-m` ONLY when you have a measured reason to deviate for this one dispatch, and say
+  which model and why in the task record.
+- Before pinning anything, READ the current default (`~/.codex/config.toml`) rather than
+  recalling it.
 
 ## 2. Hard boundaries (executor)
 
 - Edits ONLY files listed in the work order `scope`.
-- NEVER edits: constitution.md, amendments.md, core/**, assets/**, tasks/**,
+- NEVER edits: constitution.md, amendments.md, entrypoint.md, core/**, assets/**, tasks/**,
   tools/hyperhelix.mjs, AGENTS.md, CLAUDE.md, .claude/**.
 - Never commits, never updates counters, never writes the task brief.
 - May READ framework materials for context; change authority stays with the
@@ -61,6 +62,7 @@ scope:            <editable files/dirs — exhaustive; survey/trial: read-only t
 out_of_scope:     <explicitly forbidden targets/behaviors>
 acceptance_check: <observable check (P3)>
 validation:       <commands the executor must run before returning>
+progress_beacon:  <emit one "[WO-BEAT] <unit>" line per completed unit/check (§9e liveness); "n/a" only for short foreground runs whose harness timeout already detects a hang>
 context:          <statements/constraints the orchestrator chose to pass>
 ```
 
@@ -82,6 +84,38 @@ The `effort` field controls how much thinking depth and token budget the executo
 allocates. The orchestrator sets it per WO; omitting it means the type default
 above applies. Override guidance: use `low` for mechanical/rote work (bulk renames,
 trivial formatting); use `xhigh`/`max` for novel, ambiguous, or safety-critical units.
+
+### 3a. WO authoring rules (measured over 6 delegations, 2026-08-24/25)
+
+In that batch **every discrepancy an executor reported was an ORCHESTRATOR error** — a value
+transcribed wrong or a document that had gone stale (an EV pair inverted against its own
+design doc; `WHILE < 29` when HEAD read `< 25`; a footer `< 10` that was `< 9`; a figure whose
+neutral value the implementation had superseded; a figure drawing an item the code excludes).
+The implementation side contributed **zero**. These four rules turn that from luck into structure.
+
+- **State an AUTHORITY ORDER and require dissent.** Rank the sources (design doc > HEAD > this
+  WO) and write: *"if they disagree, follow the higher authority and REPORT the disagreement."*
+  Without it, a wrong number in the WO enters the code silently; with it, it comes back as a
+  report. This fired on 3 of 6 WOs.
+- **Do not transcribe specification values or line numbers into the WO — point at where to read
+  them.** Line numbers rot fastest: a file under active work moved four times in one session, so
+  anchors recorded by an S4 survey were already invalid. Have the executor take anchors as
+  STRINGS at HEAD. The one WO written with no numbers at all produced zero orchestrator errors.
+- **When a unit's risk concentrates in ONE unknown, make step 1 "measure that unknown" and say
+  what to do if it fails** ("if they cannot coexist, STOP and report — do not break either
+  side"). Measured: an executor built a throwaway probe (one control button + a real keystroke
+  injection), confirmed coexistence, removed the probe, and only then implemented 16 sites.
+- **Require a "what I deliberately did NOT change, and why" section in the result.** It is the
+  cheapest check on judgment quality: it surfaced 20 lines correctly left alone because renaming
+  them would break a different contract, and a material that is only CHECKED rather than
+  consumed — which changed what the shipped description had to say.
+- **Parallel WOs: assign disjoint name prefixes for anything they both append to.** Two WOs given
+  the same shared test file wrote into it simultaneously; the per-WO assert prefixes made the
+  commit split mechanical. See concurrency.md §4 for the split itself — and note the prefix is a
+  CLASSIFICATION aid, not a separation guarantee (git still fused the appends into one hunk).
+- **State where results go**: "report in your final reply; if you need a scratch file, put it under
+  <scratch dir>" — otherwise an executor may create a report file at the repository root, which a
+  second parallel WO can then overwrite.
 
 ### 3b. Task-type WO (HH-041) — one WO covers all E units + V1 + V2 for a task
 
@@ -108,7 +142,7 @@ units:
 
 # Scope: union of all unit scopes (exhaustive — executor edits ONLY these)
 scope:  [<file/dir>, ...]
-out_of_scope: [constitution.md, amendments.md, core/**, assets/**, tasks/**,
+out_of_scope: [constitution.md, amendments.md, entrypoint.md, core/**, assets/**, tasks/**,
                tools/hyperhelix.mjs, AGENTS.md, CLAUDE.md, .claude/**]
 
 # V1: commands executor must run after ALL E units complete
@@ -133,10 +167,10 @@ not re-issued.
 
 ### 3c. Token-efficiency delegation posture (HH-054) — DEFAULT to delegating
 
-To conserve the ORCHESTRATOR's (Claude's) tokens, delegation is the DEFAULT posture,
+To conserve the orchestrator session's tokens, delegation is the DEFAULT posture,
 not the exception (this strengthens §3's "delegation is a choice"). The orchestrator's
 token sinks are reading large materials, applying edits, and running validate — all
-delegable to the executor (Codex, separate budget).
+delegable to a separate executor session and budget.
 
 Standard token-saving loop:
 
@@ -161,6 +195,18 @@ the reason in `delegate_decision` (§3). Codex unavailable / erroring -> §7 deg
 
 Complementary lever (executor-independent): keep orchestrator briefs and user-facing
 output TERSE — signal, not ceremony (N-021 / HH-047). A 100-line brief is itself a token sink.
+
+### 3d. Different-model delegation for adversarial analogy (HH-056) — R7d-frame
+
+The framework-review R7d-frame check (adversarial analogy / stirrup detector) SHOULD be
+delegated to a DIFFERENT-MODEL agent, not merely a different context of the same model.
+Rationale: frame lock-in is the orchestrator's OWN blind spot; a same-model self-critique
+tends to share it, so an independent model's perspective breaks it best (diversity over
+redundancy). This is a survey-class WO (read-only reasoning; the delegate produces the
+fixed-form (a)-(d) answer, the orchestrator adjudicates the finding — judgement is never
+delegated, §2/§3-boundary). Recommended, not mandatory: if a different model is unavailable,
+the orchestrator runs it and records that in the /cycle R7d-frame entry. Single authority for
+the check itself: assets/checklists/framework-review.md R7d-frame.
 
 ## 4. Result (executor -> orchestrator)
 
@@ -196,9 +242,15 @@ open: <questions / blockers for orchestrator>
 
 ## 5. Verification rules (orchestrator)
 
-- Executor results are UNTRUSTED until re-verified: re-run every validation
-  command yourself. `never_claim_unrun_checks_passed` applies across agents —
-  executor-reported results are claims, not evidence.
+- Executor results are UNTRUSTED until reviewed. The executor MUST run the
+  planned V1 commands and V2 criteria and return their raw evidence; a summary
+  without raw command output is not evidence. `never_claim_unrun_checks_passed`
+  applies across agents.
+- The orchestrator MUST inspect all returned raw evidence, then independently
+  re-run failed or skipped checks, checks covering high-risk changes, and at
+  least one representative boundary case for each changed behavior. It MAY
+  sample additional passing checks when risk warrants. It neither blindly
+  re-runs every passing command nor accepts executor output without a re-check.
 - V2 checks each task-list row's acceptance_check; a failing row returns the
   work order (revised) or goes back to Plan. Failures land in the
   failure-case log (EX-5 schema: hypothesis / trial / expected / actual).
@@ -208,9 +260,10 @@ open: <questions / blockers for orchestrator>
   sources; a claim without a resolvable `file:line` source is not adopted.
 - trial results (HH-012): require raw self_checks output; re-run the trial
   yourself before acting on its outcome (a trial result is a claim, not evidence).
-- task results (HH-041): the orchestrator REVIEWS the returned `v1_raw` and
-  `v2_results` rather than re-running all V1 commands. Spot-check unexpected
-  outcomes (e.g. validate passes on a large multi-file diff — scan the output).
+- task results (HH-041): the orchestrator applies the common evidence-review
+  and risk-based re-verification rule above to `v1_raw` and `v2_results`.
+  Unexpected outcomes (e.g. validate passes on a large multi-file diff) are
+  high-risk and therefore require an independent re-run and output inspection.
   E4 flags return affected units to Plan (issue a follow-up WO; §3b). A scope
   violation still triggers whole-result rejection. D1-D3 analysis remains the
   orchestrator's sole responsibility — never delegated even in task-type WOs.
@@ -252,7 +305,9 @@ orchestrator MUST NOT wait passively.
 
 Set a wall-clock budget BEFORE dispatching. Default: **5 minutes** for an
 implementation WO on an established pattern (N-008 class); **10 minutes** for
-survey/trial or novel work. Record the budget in the brief's Execute section.
+survey/trial or novel work; **30 minutes** for a full-repo review survey
+(R1-R7 class — measured twice at 20-30 min, TASK-20260716-009/-016).
+Record the budget in the brief's Execute section.
 
 ### 9b. Watchdog check
 
@@ -281,6 +336,29 @@ When operating under an autonomous-execution mandate (user sleeping), the
 watchdog is MANDATORY — the user cannot intervene. Never enter an unbounded
 wait. If ScheduleWakeup is unavailable, poll at the budget deadline inline
 before proceeding to the next task.
+
+### 9e. Dispatch-time hang instrumentation (HH-063)
+
+§9a/9b are deadline-based: a job that hangs 30 seconds in still "runs" until the
+budget expires. Instrument liveness AT dispatch so a hang surfaces in minutes:
+
+1. **No fire-and-forget.** Every dispatch writes to an observable channel
+   (background output file / log). Record the path + issued_at in the brief's
+   Execute section.
+2. **Progress beacons.** The WO carries `progress_beacon` (§3): the executor
+   emits one `[WO-BEAT] <unit>` line per completed unit/check. `n/a` only for
+   short foreground runs whose harness timeout already detects a hang.
+3. **Liveness watch armed at dispatch.** Standard mechanism:
+   `node tools/hyperhelix.mjs wo-watch <output-file> --budget <§9a seconds>`
+   run in the background right after dispatching (exit 2 = stall/hang, exit 3 =
+   budget exceeded while alive, exit 0 = done marker). Fallback when the tool is
+   unavailable: Monitor / until-loop / inline mtime poll. **Stall threshold:
+   3 minutes with no new output.** Output growth counts as liveness even
+   without beacons (a forgotten beacon must not cause a false kill).
+
+Decision rule: output/beacons flowing → still working, keep waiting within the
+§9a budget. No new output ≥ stall threshold → treat as a HANG and start §9c
+escalation immediately — do not wait out the remaining budget.
 
 ## 10. Effort-based capacity management (TASK-20260616-104)
 
@@ -436,118 +514,15 @@ further delegation or should be handled directly.
 These thresholds are guidance, not gates. The orchestrator may override them
 with a recorded reason (e.g. "remaining 15% but this is the final critical WO").
 
-### 10g. Managed Agents integration (TASK-20260616-106)
+### 10g. Managed Agents integration — REMOVED 2026-08-24 (/cycle TASK-Project001-20260824-006)
 
-This section specifies how HyperHelix integrates with Anthropic Managed Agents
-for real-time capacity tracking. This is an OPTIONAL enhancement path — the
-local orchestration model (Claude Code + Codex CLI, §1–§9) remains the primary
-execution mode. Implementation requires a separate task.
+An OPTIONAL, never-implemented integration path (concept mapping, SSE event contract, agent
+definition schema, capacity-record shape) occupied 115 lines = 19.1% of this live contract.
+A contract for an unbuilt path is not a live contract; it is a design note that every reader
+of §1-§9 pays for. Removed as pure subtraction (external review TASK-main-20260823-002 finding ①,
+adopted; no ratification needed for a subtraction).
 
-#### Concept mapping
-
-| HyperHelix concept | Managed Agents concept | Notes |
-|---|---|---|
-| Orchestrator (Claude Code) | Coordinator agent | `multiagent: {type: "coordinator", agents: [...]}` |
-| Executor (Codex / coding agent) | Subagent | created via `agents.create`, up to 20 per coordinator |
-| Work order (WO) | Thread | coordinator creates a thread per WO, passes instructions |
-| WO result | Thread completion + artifacts | result harvested from thread events and shared filesystem |
-| Session token ledger (§10e) | SSE `model_usage` aggregation | replaces estimation with measurement |
-| WO `tokens_used` | `span.model_request_end` → `model_usage` sum | input_tokens + output_tokens per request |
-
-#### SSE-based real-time token tracking
-
-When using Managed Agents, the orchestrator subscribes to the session's SSE
-event stream. Token tracking replaces the estimation fallback in §10d:
-
-1. On each `span.model_request_end` event, extract `model_usage.input_tokens`
-   and `model_usage.output_tokens`.
-2. Accumulate per-thread (= per-WO) totals. Update the WO's `tokens_used`
-   with measured values (no `(est)` suffix).
-3. Feed measured `tokens_used` into the session token ledger (§10e) using the
-   same update rules — the ledger is agnostic to measured vs. estimated input.
-4. Calibrate the §10d estimation table by comparing measured actuals against
-   estimates over time. Adjust the table when systematic bias is observed.
-
-#### Per-agent capacity model
-
-Each subagent has its own capacity state, extending the session-level model:
-
-```
-Agent capacity record
-agent_id:         <Managed Agents agent ID>
-agent_name:       <human-readable label, e.g. "impl-high", "survey-light">
-model:            <model ID pinned to this agent>
-effort_range:     <effort levels this agent handles, e.g. [low, medium]>
-limit_remaining:  <lowest relevant external limit percent, e.g. weekly 18%>
-limit_window:     <minute | hourly | daily | weekly | project | session | unknown>
-limit_reset_at:   <window reset timestamp if known>
-limit_source:     <api_header / admin_usage_api / telemetry / provider_ui / user_report / oauth_internal_experimental / unknown>
-limit_confidence: <measured / inferred / user_report / stale / unknown>
-limit_observed_at:<timestamp if known>
-cumulative:       <tokens consumed by this agent across all WOs in this session>
-active_threads:   <count of running threads (= in-flight WOs)>
-max_threads:      <concurrency limit for this agent (≤25 total across coordinator)>
-```
-
-The orchestrator maintains one record per active subagent. Records are
-session-local (not committed).
-
-#### Multi-agent dispatch routing
-
-When multiple subagents are available, the orchestrator routes WOs by matching
-effort level to agent specialization:
-
-| WO effort | Preferred agent | Fallback |
-|---|---|---|
-| low / medium | lightweight agent (smaller model, lower cost) | any available agent |
-| high | standard agent (capable model) | orchestrator direct (§7) |
-| xhigh / max | premium agent (most capable model) | orchestrator direct (§7) |
-
-Routing rules:
-1. Refresh or estimate each candidate's external limits before dispatch when
-   the information is available. Record `limit_snapshot` with source,
-   confidence, and observation time. If the relevant remaining limit is `< 20%`,
-   skip that agent for this WO.
-2. Match effort to agent's `effort_range`. If multiple agents match, prefer
-   the one with lower `cumulative` (balance load).
-3. If a candidate's limit source is `oauth_internal_experimental`, use it only
-   as an optional hint. Do not let OAuth endpoint failure block dispatch; degrade
-   to `unknown` and apply the conservative rows in §10f.
-4. If the matched agent's `active_threads` equals `max_threads`, queue the WO
-   or route to the next matching agent.
-5. If no agent has capacity or all matching agents are below the external-limit
-   threshold, the orchestrator executes directly (degraded §7).
-6. The §10f dispatch thresholds (>50% / 20–50% / <20%) apply to BOTH the AGENT's
-   cumulative share and its external limit state, not just the session total —
-   an agent nearing its share of the ceiling or provider cap gets deprioritized.
-
-#### Execution modes
-
-HyperHelix supports two execution modes. The orchestrator selects per-session
-based on availability and user preference:
-
-| Mode | How it works | Token tracking | When to use |
-|---|---|---|---|
-| **local** (default) | Claude Code orchestrates; executors via CLI (`codex exec`) or Agent tool | estimation (§10d) + ledger (§10e) | always available; no API dependency |
-| **managed** | orchestrator creates Managed Agents coordinator; dispatches WOs as threads | SSE measurement (§10g) + per-agent capacity | Anthropic API direct access; need real-time tracking or multi-agent parallelism |
-
-Switching modes mid-session is allowed: the orchestrator can dispatch some WOs
-locally and others via Managed Agents. The session token ledger (§10e) accepts
-both estimated and measured values — just mark the source.
-
-Mode selection: the DEFAULT is `local` and needs NO brief field. The
-`execution_mode` header field is CONDITIONAL — add `execution_mode: managed | mixed`
-next to `委任状態` ONLY when managed/mixed mode is actually used. Managed mode is the
-optional, not-yet-implemented enhancement path (see "Implementation prerequisites"
-above — it requires a separate task), so this field is intentionally ABSENT from the
-default brief template until that path is built.
-
-#### Implementation prerequisites (not in this task)
-
-Implementing managed mode requires:
-1. A tool or script to create/configure agents from a definition file.
-2. SSE client logic in the orchestrator to subscribe and parse events.
-3. Thread creation and result harvesting logic for WO dispatch.
-4. Agent capacity record maintenance during the session.
-
-These are implementation tasks. This section defines the contract they must fulfill.
+If Managed Agents integration is ever built, recover the specification from git history
+(`git log -p -- assets/workflows/agent-roles.md`, last present at commit `8b8916b`) and
+re-design it against the runtime that exists at that time — a 2026-06 contract for an
+unreleased API would need re-deriving anyway.

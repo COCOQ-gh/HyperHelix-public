@@ -8,7 +8,8 @@ This checklist tracks the work needed before making HyperHelix broadly public.
 - Publication branch: use a public-clean release line rather than exposing the full internal working history as-is.
 - Task briefs: publish `tasks/INDEX.md` and a few representative briefs; reduce or omit the bulk task corpus from the public release line.
 - Knowledge notes: keep HyperHelix/shared notes and representative examples; compress project-specific notes into generic public examples/playbooks.
-- Project names: anonymize project-specific names in public materials as `Project001`, `Project002`, and subsequent placeholders.
+- Project names: anonymize project-specific names in public materials as `Project001`, `Project002`, and subsequent placeholders. The mapping is kept outside the public line; placeholders are assigned in first-publication order and never reused. Files named after a project (for example project knowledge ledgers under `core/knowledge/`) are renamed to the placeholder as well.
+- Refresh: the public line is regenerated from the internal development line (not merged), so its history stays free of pre-anonymization content. Each refresh is recorded in the Refresh Log below.
 - Pending governance items: keep them visible as Pending, with status clearly labeled.
 
 ## Blockers
@@ -50,3 +51,14 @@ Suggested GitHub topics:
 - [x] History-wide secret scan
 - [x] Fresh clone smoke test — 2026-07-05: local clone smoke passed with the staged public-release diff applied.
 - [x] GitHub Actions green on the public branch — 2026-07-05: validation workflow passed on the public-clean branch.
+
+## Refresh Log
+
+### 2026-10-09 — refresh from the development line
+
+- Source: internal `main` as of 2026-10-07 (228 commits after the first public line). The tree was regenerated and anonymized; the previous public commit remains the parent so the public history is a clean linear line.
+- Structural changes carried over: `entrypoint.md` as the platform-neutral entry point, `governance/amendments/` as the structured amendment canon with `amendments.md` generated from it, `core/contracts.json` and `core/knowledge/` leaf ledgers, `tools/lib/`, `test/` and `test-e2e/` suites, and `package.json` (runtime dependencies: `yaml` + `ajv`).
+- Placeholders extended to `Project005`–`Project010` for projects that appeared after the first public line. Four project knowledge ledgers were renamed to their placeholders.
+- Public-only materials (`LICENSE`, `GETTING_STARTED.md`, `SECURITY.md`, `CONTRIBUTING.md`, `CODE_OF_CONDUCT.md`, this file) were re-applied and updated for the current commands; the CI workflow now runs on `public/**` as well as `main`.
+- Verification on the regenerated tree: residual project-name scan 0 hits; secret / local-path scan 0 hits; `node tools/hyperhelix.mjs validate` 0 error; `contract-doc --check` and `amendments-doc --check` current; unit suite 195 pass / 1 skipped / 0 fail; e2e suite 10 pass / 0 fail.
+- Known follow-ups: `docs/qiita-draft.md` figures were not re-measured for this refresh; project knowledge ledgers are anonymized rather than compressed into generic playbooks.

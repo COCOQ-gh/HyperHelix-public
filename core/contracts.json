@@ -1,0 +1,66 @@
+{
+  "schema_version": 1,
+  "identifiers": {
+    "note": {
+      "legacy_pattern": "^N-(\\d{3})$",
+      "permanent_pattern": "^N-([A-Za-z0-9]+)-(\\d{8})([a-z]+)$",
+      "provisional_pattern": "^N-([A-Za-z0-9]+)-(\\d{3})$"
+    },
+    "branch_slug": {
+      "escape_prefix": "z",
+      "safe_ascii_pattern": "^[A-Za-z0-9]$"
+    },
+    "task": {
+      "legacy_pattern": "^TASK-(\\d{8})-(\\d{3})$",
+      "permanent_pattern": "^TASK-([A-Za-z0-9]+)-(\\d{8})-(\\d{3})$"
+    },
+    "hh": {
+      "pattern": "^HH-(\\d{3})$"
+    }
+  },
+  "structures": {
+    "task_claim": {
+      "sidecar_dir": "tasks/records/.claims"
+    },
+    "framework_evidence": {
+      "path_prefixes": ["core/", "assets/", "tools/", "test/", ".claude/commands/", ".codex/", ".github/", "docs/", "governance/"],
+      "root_files": ["constitution.md", "amendments.md", "entrypoint.md", "AGENTS.md", "CLAUDE.md", "README.md", ".claude/settings.json"],
+      "bookkeeping_exclusions": ["core/knowledge.yaml"],
+      "bookkeeping_exclusion_prefixes": ["core/knowledge/"],
+      "contract_impact_headers": ["contract", "change_kind", "authority", "old_new", "producer", "consumer", "docs_templates", "legacy_allowlist", "forbidden_live_expressions", "tracked_tests"],
+      "framework_check_headers": ["exact_command", "scope_exclusion", "expected", "actual_hit_count", "classification", "exit_code", "r2_mapping", "r3_result"]
+    },
+    "amendments_lifecycle": {
+      "pending_heading": "## 承認待ち(Pending)",
+      "approved_heading": "## 承認済みログ(新しい裁可が上、創設 HH-000 が末尾)",
+      "required_consumers": [
+        { "path": "core/routing.yaml", "needle": "amendments.md Pending", "min_hits": 2 },
+        { "path": "assets/workflows/review-only.md", "needle": "amendments.md` Pending", "min_hits": 1 },
+        { "path": "tools/lib/governance.mjs", "needle": "AMENDMENTS_LIFECYCLE", "min_hits": 2 }
+      ]
+    },
+    "governance": {
+      "registry": "governance/amendments/registry.yaml",
+      "bodies_dir": "governance/amendments/bodies",
+      "view_template": "governance/amendments/view-template.md",
+      "view": "amendments.md",
+      "statuses": ["Pending", "Approved", "Rejected", "Deferred"],
+      "placeholders": ["{{INDEX_TABLE}}", "{{PENDING_BODIES}}", "{{APPROVED_BODIES}}"]
+    },
+    "knowledge": {
+      "manifest": "core/knowledge/manifest.yaml",
+      "main_ledger": "core/knowledge.yaml",
+      "ledger_dir": "core/knowledge",
+      "states": ["active", "archived"],
+      "kinds": ["playbook", "leaf"],
+      "note_text_soft_max": { "chars": 800, "since": "20261002" }
+    },
+    "epochs": {
+      "states": ["legacy-read-write", "dual-read-legacy-write", "dual-read-new-write", "semantic-parity-confirmed", "new-read-write", "legacy-adapter-removed"],
+      "domains": {
+        "governance": "semantic-parity-confirmed",
+        "knowledge": "legacy-adapter-removed"
+      }
+    }
+  }
+}
