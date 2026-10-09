@@ -62,3 +62,4 @@ Suggested GitHub topics:
 - Public-only materials (`LICENSE`, `GETTING_STARTED.md`, `SECURITY.md`, `CONTRIBUTING.md`, `CODE_OF_CONDUCT.md`, this file) were re-applied and updated for the current commands; the CI workflow now runs on `public/**` as well as `main`.
 - Verification on the regenerated tree: residual project-name scan 0 hits; secret / local-path scan 0 hits; `node tools/hyperhelix.mjs validate` 0 error; `contract-doc --check` and `amendments-doc --check` current; unit suite 195 pass / 1 skipped / 0 fail; e2e suite 10 pass / 0 fail.
 - Known follow-ups: `docs/qiita-draft.md` figures were not re-measured for this refresh; project knowledge ledgers are anonymized rather than compressed into generic playbooks.
+- Release tag: `v0.2.0` on this refreshed line (CI verify green on ubuntu and windows).
