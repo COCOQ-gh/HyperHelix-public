@@ -42,7 +42,7 @@ Suggested GitHub topics:
 ## Documentation
 
 - [x] Update `README.md` with public-user onboarding.
-- [x] Review `docs/qiita-draft.md` numbers immediately before publication. 2026-07-05: refreshed task index, HH count, backlog, always-read cost, and validate result.
+- [x] Review `docs/qiita-draft.md` numbers immediately before publication. 2026-07-05: refreshed task index, HH count, backlog, always-read cost, and validate result. 2026-10-16: re-measured on the refreshed line (see Refresh Log).
 - [x] Add a short "what to read first" guide if README remains too dense for new users.
 
 ## Verification
@@ -63,3 +63,11 @@ Suggested GitHub topics:
 - Verification on the regenerated tree: residual project-name scan 0 hits; secret / local-path scan 0 hits; `node tools/hyperhelix.mjs validate` 0 error; `contract-doc --check` and `amendments-doc --check` current; unit suite 195 pass / 1 skipped / 0 fail; e2e suite 10 pass / 0 fail.
 - Known follow-ups: `docs/qiita-draft.md` figures were not re-measured for this refresh; project knowledge ledgers are anonymized rather than compressed into generic playbooks.
 - Release tag: `v0.2.0` on this refreshed line (CI verify green on ubuntu and windows).
+
+### 2026-10-16 — public documentation update (no regeneration)
+
+- Scope: public-facing explanation materials only (`README.md`, `GETTING_STARTED.md`, `docs/qiita-draft.md`, this file). No framework rule, tool, or governance file changed.
+- `docs/qiita-draft.md`: closes the 2026-10-09 follow-up. Figures re-measured (task_index 1138, HH-000–HH-082 all Approved, process-backlog open 14, start-up read cost 59,691 characters, validate 0 error / 0 warning). Descriptions updated for the registry-based amendments canon (HH-067), character-based convergence ratchet (HH-050/073/082), approved R7d split (HH-056), honor-based governance after HH-070, commit-body task records (HH-081), edge-registry validation (HH-075), and permanent note IDs (HH-064). The validator excerpt now quotes the current code.
+- `README.md` / `GETTING_STARTED.md`: note-budget wording aligned with HH-053/077, commit-body record and `finish` flow (HH-081), the pre-push hook, and namespaced launcher names (`/skills:helix`).
+- Verification: `validate` 0 error / 0 warning; `contract-doc --check` and `amendments-doc --check` current; unit suite 196 pass / 0 fail; e2e suite 10 pass / 0 fail.
+- Carry-over: these edits were made on the public line. The next refresh regenerates `README.md` and `docs/` from the internal line, so carry the same updates into the internal line or re-apply them during that refresh.

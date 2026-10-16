@@ -35,7 +35,8 @@
 - **実行螺旋** — すべてのタスクは Search → Plan → Execute → Evaluate → Distill を通る。
   深度モード(micro / light / standard / full / spike)で工程は縮むが、フェーズは消えない。
 - **知識螺旋** — 経験は学習ノートとして台帳化され、`strength` を並び順のヒントにして次タスクへ渡す。
-  自動昇格・自動降格は行わず、1タスクにつき最大1つのノート追加または `strength +/-1` に留める。
+  自動昇格・自動降格は行わず、裁量的なノート操作は1タスクにつき最大1つ(ノート追加または `strength +/-1`)に留める。
+  ただし実際に適用したノートの帰属記録(`--use` / `--miss`)は証拠に基づく必須処理で、この枠に数えない(HH-053/077)。
 - **統治螺旋** — 影響の大きい変更(ノートのルール昇華、θ変更、ハード削除・大規模統廃合、憲法変更)
   だけが `amendments.md` の単一窓口で人間承認される。それ以外の軽量なノート操作は自動。
 
@@ -78,7 +79,7 @@ core/                  # AI層(英語・execution の権威)
 └── routing.yaml       #   情報ルーティングと検証ポリシー
 assets/
 ├── checklists/        #   phase-gate / search / plan / execute / evaluate / distill / framework-review
-├── workflows/         #   exception-handling / git-conventions / task-list-schema / concurrency / compaction
+├── workflows/         #   session-bootstrap / git-conventions / agent-roles / concurrency / compaction / exception-handling ほか
 └── ai/                #   anti-patterns.md(アンチパターン集)
 tasks/                 # HH-081 以前の作業記録の凍結済み目録(INDEX.md)。現行の作業記録はコミット本文の hh-record
 tools/hyperhelix.mjs   # 検証・D7カウンタ更新ツール(Node.js + package依存 yaml/Ajv で動作)
@@ -100,6 +101,9 @@ test/                  # Node標準node:testの回帰テストとfixture helper
 
 または手動で: `entrypoint.md`(正本)の読み込み順序に従って資材を読み、`assets/checklists/phase-gate.md`
 からループを開始する。
+
+> 起動コマンドの実体は `.claude/commands/skills/*.md` にあるため、Claude Code の版によっては
+> `/skills:helix`・`/skills:cycle` のように名前空間付きで表示される。中身は同じ。
 
 **フレームワークを点検・改善する**
 
@@ -165,5 +169,6 @@ GitHubの技術的拒否ではなく、ツールと人間のhonor-based規律で
   **`main` はフレームワーク開発ブランチのため R6 は STOPPED**(この強制・警告・連続数記録なし。ROI 判断は人間の運用判断。HH-025)。
   また HyperHelix しか存在しない作業ディレクトリでは調整用セッションとして実タスク必須判定を延期する。
   ライブ状態と連続回数の単一権威は `assets/checklists/framework-review.md` R6。
-- **git 運用**: 1タスク=1コミット(validate パス後・サマリ前)。main の履歴は監査証跡の一部であり書き換えない。
-  規約は [assets/workflows/git-conventions.md](assets/workflows/git-conventions.md)。
+- **git 運用**: 1タスク=1コミット。作業記録はコミット本文の `hh-record` ブロックが正本で(HH-081)、
+  `brief` で ID を claim し、`finish` が L1-L4 verify → 秘密scan → bump → commit を fail-closed で一括実行する。
+  main の履歴は監査証跡の一部であり書き換えない。規約は [assets/workflows/git-conventions.md](assets/workflows/git-conventions.md)。

@@ -104,10 +104,10 @@ counters:
   # (HH-067: machine values never live in prose。実測 2026-08-29 /cycle ordinal 13 —
   #  review_ordinal のコメントが「次回 heavy レンズは ordinal 10」のまま陳腐化し、
   #  そのまま読むと cadence を誤算する罠になっていた)。
-  task_index: 1138 # マージ時 high-water(HH-057)
+  task_index: 1139 # マージ時 high-water(HH-057)
   last_framework_review: 1136 # マージ時 high-water(HH-057)
   review_ordinal: 19 # HH-080 producer: bump --review が +1(high-water merge)。heavy レンズは (ordinal+1) % 5 == 0 の回
-  last_bump_task: TASK-Project008-20261002-003 # bump 冪等性の provenance(SC-05b)
+  last_bump_task: TASK-publicz2fv0z2e1z2e0z2dclean-20261016-001 # bump 冪等性の provenance(SC-05b)
   last_always_read_lines: 464 # convergence R7a baseline: written ONLY by `cost-report --write-baseline` (/cycle only; plain runs are read-only — TASK-20260715-005)
   last_always_read_chars: 34031 # convergence R7a ratchet gauge, always-read part, in characters (HH-073): written ONLY by `cost-report --write-baseline` (/cycle only); null until the first /cycle seeds it
   last_index_read_chars: 25651 # convergence R7a ratchet gauge, index-read heads part (HH-082 A): same writer; judged as the sum with last_always_read_chars

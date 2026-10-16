@@ -23,6 +23,12 @@ npm run test:all
 
 Expected result for a clean framework state is `0 error(s)`. Warnings should be read and reported rather than ignored.
 
+Optionally enable the tracked pre-push gate once per clone, so `validate` and `verify --base` run before every push:
+
+```powershell
+git config core.hooksPath tools/hooks
+```
+
 ## 3. Understand the Loop
 
 The core task loop is:
@@ -35,13 +41,15 @@ The detailed definition lives in `core/loop.yaml`. Checklists in `assets/checkli
 
 ## 4. Try a Small Task
 
-Use `/helix <task>` when the slash command is installed in your agent environment. If not, follow the reading order in `entrypoint.md`, then use the phase gate checklist:
+Use `/helix <task>` when the slash command is installed in your agent environment. The launchers live in `.claude/commands/skills/`, so some Claude Code versions list them with a namespace (`/skills:helix`); it is the same command. If no launcher is available, follow the reading order in `entrypoint.md`, then use the phase gate checklist:
 
 ```text
 assets/checklists/phase-gate.md
 ```
 
 Keep the first task small and reversible. The goal is to see the evidence flow, not to exercise every governance feature at once.
+
+A task leaves no separate brief file. `node tools/hyperhelix.mjs brief --date YYYYMMDD` claims a task id and prints an `hh-record` skeleton; fill it as the phases progress, then commit through `node tools/hyperhelix.mjs finish --task <id> --message "..." --commit`, which verifies, scans for secrets, updates counters, and commits in one fail-closed step. The format is in `assets/workflows/git-conventions.md` ("Commit-body record").
 
 ## 5. Public-Release Notes
 

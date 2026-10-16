@@ -75,18 +75,21 @@ Search → Plan → Execute → Evaluate → Distill
 
 高影響変更（新しいルールの追加・ゲートパラメータ変更・大規模統廃合）だけを `amendments.md` に集約し、必ず人間承認を経由します。
 
-承認の証跡には `ratified_by` / `ratified_at` フィールドを付与します（HH-042）。これにより「AI が自己承認した」か「人間が承認した」かが視覚的・機械的に区別できます。
+承認の証跡には `ratified_by` / `ratified_at` フィールドを付与します（HH-042、HH-046 で再定義）。現在は各提案の状態を構造化正本 `governance/amendments/registry.yaml` に持ち、`amendments.md` はそこから生成される閲覧用の view です（HH-067。手編集すると validate が drift として落とします）。
 
-```markdown
-## HH-042 — 承認ゲートの技術的可視化
-
-**Status:** Approved(2026-06-24 ユーザー承認)
-**ratified_by:** COCOQ-gh
-**ratified_at:** 2026-06-24
-**種別:** 運用規約・統治変更
+```yaml
+# governance/amendments/registry.yaml（抜粋）
+- id: HH-042
+  title: "承認ゲートの技術的可視化: 人間承認証跡フィールドの追加"
+  type: 運用規約・統治変更(提案フォーマット + validate)
+  status: Approved
+  ratified_by: COCOQ-gh
+  ratified_at: 2026-06-24
+  supersedes: []
+  body: bodies/HH-042.md
 ```
 
-validate コマンドが **`AMEND_RATIFIED_BY_EMPTY` チェック**を自動実行し、`ratified_by` 欄が空の Approved エントリを警告します。
+validate コマンドが **`AMEND_RATIFIED_BY_EMPTY` チェック**を自動実行し、`ratified_by` / `ratified_at` が空の Approved エントリを警告します。逆に Pending なのに承認証跡を持つエントリはエラーです。
 
 この設計の動機は、「AI に絶対に自己承認させない技術的な鍵」を作れたからではありません。むしろ逆で、AI がリポジトリに書き込める限り、承認フィールドは技術的には偽造可能です。だから HyperHelix はこれを **self-attested approval** と呼び、強制ではなく監査可能性を上げる仕組みとして扱います。脆弱性を隠さず、可視化できるところから機械チェックへ寄せていく、という方針です。
 
@@ -106,7 +109,7 @@ L3: post-merge Codex 敵対的監査（機械が捕えない意味的漏れを�
 
 たとえば、ツールに新しいサブコマンドを追加しても、README や評価チェックリストや補完用 Skill に反映されなければ、実際の運用者はその機能に気づけません。HyperHelix では、そうした「宣言したが消費者がいない」状態を AP-003 として扱います。
 
-最近の改善では、`update-codex-skill --check` を追加しただけでなく、README と evaluate checklist も同じ変更で更新しました。機能を足した瞬間に、その機能を呼ぶ人間・AI・検証器の経路まで同時に配線する、という考え方です。
+たとえば `update-codex-skill --check` を追加したときは、ツールだけでなく、README と evaluate checklist も同じ変更で更新しました。機能を足した瞬間に、その機能を呼ぶ人間・AI・検証器の経路まで同時に配線する、という考え方です。
 
 ```mermaid
 flowchart LR
@@ -123,18 +126,20 @@ flowchart LR
 フレームワーク自身の「コスト」と「冗長性」を定期測定するための 2 本の計測ツールを持ちます。
 
 ```
-node tools/hyperhelix.mjs cost-report          # 常時必読資材の行数・複雑度測定
-node tools/hyperhelix.mjs consolidation-report # 冗長クラスタ・lifecycle drift 測定
+node tools/hyperhelix.mjs cost-report          # 起動時に読む資材の文字数・ツール面の規模を測定
+node tools/hyperhelix.mjs consolidation-report # 冗長クラスタ・lifecycle drift・backlog 件数を測定
 ```
 
-さらに、**収束指標**として前回 `/cycle` 比のトレンド差分を自動記録します。
+さらに、**収束指標**として前回 `/cycle` 比のトレンド差分を記録します（ベースラインを書き込むのは `/cycle` 時の `--write-baseline` だけ）。
 
 ```
-R7a: 常時必読 452行  [直近ベースライン]     ← cost-report が knowledge.yaml に自動記録
-R8c: process-backlog 18件 [直近ベースライン] ← consolidation-report が記録
+R7a: 起動時の実読コスト 59,691 文字 = 常時必読 34,031 + 索引読み冒頭 25,660  ← cost-report
+R8c: process-backlog open 14 件(うちこのブランチで焼却可能 12 件)           ← consolidation-report
 ```
 
-`▲` が続くなら肥大化シグナル、`▼` が続くなら焼却進行中という判断ができます。**改善行為そのものが肥大化する問題を、フレームワーク内部のレンズで収束値として捕捉する**構造です。
+当初は行数で測っていましたが、1行の長さで実コストがぶれるため文字数へ切り替え（HH-073）、さらに「冒頭だけ読む索引」も計測対象に入れました（HH-082）。
+
+`▲` が続くなら肥大化シグナル、`▼` が続くなら焼却進行中という判断ができます。測るだけでは終わらせず、**同じ指標が 3 回連続で増えたら、次の `/cycle` は新規追加より先に削減を行うことを義務化**しています（収束ラチェット、HH-050）。**改善行為そのものが肥大化する問題を、フレームワーク内部のレンズで収束値として捕捉し、行動まで強制する**構造です。
 
 ---
 
@@ -158,7 +163,7 @@ AI エージェントが自分のプロンプト最適化に閉じることへ�
 
 ただし、ここで一度設計ミスが起きました。R7d という「敵対的類推」レンズは、本来は「この設計を却下する競合フレームは何か」を問うためのものでした。ところが運用中に、実プロジェクト未適用・ROI 未実証を指摘するレンズとしても使われ、2つの役割が混ざりました。
 
-その結果、ROI 側の誤検知を避けるために R7d 全体を `main` で停止したところ、同時に「より単純な設計はないか」と問うフレーム却下機能まで止まってしまいました。HH-056 はこの混線を分割し、ROI は外部価値ゲートへ委譲しつつ、フレーム却下レンズだけを復活させる提案です。HyperHelix では、こうした「よいチェックを束ねすぎて片方の問題で全体が死ぬ」失敗も、プロセスの改善対象になります。
+その結果、ROI 側の誤検知を避けるために R7d 全体を `main` で停止したところ、同時に「より単純な設計はないか」と問うフレーム却下機能まで止まってしまいました。HH-056（承認済み）はこの混線を分割し、ROI は外部価値ゲートへ委譲しつつ、フレーム却下レンズだけを `main` で復活させました。このレンズは自己参照の盲点を避けるため、別モデルへ委託して回すことを推奨しています。HyperHelix では、こうした「よいチェックを束ねすぎて片方の問題で全体が死ぬ」失敗も、プロセスの改善対象になります。
 
 ---
 
@@ -170,61 +175,69 @@ AI エージェントが自分のプロンプト最適化に閉じることへ�
 |--------|------|-----------|
 | 認証情報の漏洩 | HH-019/020：コミット前の secret scan 必須、AI は生値を扱わない | **強** |
 | 破壊的操作 | git 可逆性 + 人間ゲート | **中** |
-| 自己承認（AI がルール変更を自己裁可） | amendments.md の `ratified_by` フィールド + validate 警告 | **中**（可視化止まり） |
+| 自己承認（AI がルール変更を自己裁可） | registry の `ratified_by` 証跡 + validate 警告 + 統治 PR は CI 後に人間が手動 merge | **中**（可視化止まり） |
 | プロンプトインジェクション | search.md S4 に警戒ライン追加（外部ファイル読取時の指示様テキスト検出） | **中** |
+| シェルインジェクション | コミット構築は引用符付きヒアドキュメント必須・未信頼内容は埋め込まない（HH-051） | **中**（規律ベース） |
 | 自律暴走（自己目的化） | R6 + 憲法 axiom-5（honour-based） | **中** |
-| 監査可能性 | git 履歴 + task brief が全記録 | **強** |
+| 監査可能性 | git 履歴 + コミット本文の `hh-record`（作業記録をコミットと一体化、HH-081） | **強** |
 
-重要なのは「最大のガバナンス脆弱性が honor-based（AI の遵守が前提）である」という現実を正直に認識していることです。技術的強制より「可視性の向上」を優先し、後続の validate ルールで徐々に機械的な防衛線を追加していく設計思想です。
+重要なのは「最大のガバナンス脆弱性が honor-based（AI の遵守が前提）である」という現実を正直に認識していることです。一度は branch protection と CODEOWNERS で人間ゲートを技術的に強制する案（HH-060）も採りましたが、private/free 運用では branch protection が使えないことが実測で分かり、HH-070 で「PR + CI + 人間の手動 merge」という honor-based 運用へ戻しました。強制できないものを強制できると書かない、という判断です。技術的強制より「可視性の向上」を優先し、後続の validate ルールで徐々に機械的な防衛線を追加していく設計思想です。
 
 ---
 
 ## 知識管理の設計思想
 
-`core/knowledge.yaml` にフラットなノート台帳を持ちます。
+`core/knowledge.yaml`（と project 別の `core/knowledge/` 台帳）にフラットなノート台帳を持ちます。
 
 ```yaml
 - id: N-041
+  text: "Framework AP-003 (a declaration shipped without its consumer ...) is the MOST-recurring framework miss; ..."
+  tags: [framework, ap-003, declare-consume, detection, validator]
   project: shared
-  tags: [cross-reference, AP-003, validation]
-  strength: 5
+  strength: 8
+  last_used: 518
   state: active
-  text: "宣言↔消費の整合は機械チェック(L1)＋P6ゲート(L2)＋敵対監査(L3)の3層で守る。..."
 ```
 
-ポイントは **自動昇格・降格を廃止**（HH-016）したこと。`strength` は検索順位のヒントに過ぎず、ルールへの昇華は人間が手動で判断します。「AI が自分でルールを書き換える」というリスクを意図的に排除しています。
+ポイントは **自動昇格・降格を廃止**（HH-016）したこと。`strength` は並び順のヒントに過ぎず、ルールへの昇華は人間が手動で判断します。「AI が自分でルールを書き換える」というリスクを意図的に排除しています。
+
+検索は `node tools/hyperhelix.mjs notes --tags ...` で行い、現在のプロジェクトと共有（`shared`）のノートだけを、最後に使われた順（`last_used`）に上位 6 件まで返します（HH-032/045）。台帳が育っても 1 タスクあたりの読み込みコストは一定です。ノート ID は新規分から `N-<ブランチ>-<日付><英字>` 形式（例: `N-Project008-20261002c`）の恒久 ID になり、ブランチをまたいでも衝突しません（HH-064。上の `N-041` は移行前の旧形式）。
 
 ---
 
 ## 機械バリデーターの実装例
 
 ```javascript
-// tools/hyperhelix.mjs（抜粋）
-
-// Approved な HH エントリに ratified_by が空なら警告（HH-042）
-function validateAmendRatifiedBy() {
-  const logSection = text.slice(text.indexOf("## 承認済みログ"));
-  for (const entry of parseHHEntries(logSection)) {
-    if (!entry.isApproved) continue;
-    if (!entry.ratifiedBy || entry.ratifiedBy.startsWith("(")) {
-      issues.push(warn("AMEND_RATIFIED_BY_EMPTY",
-        `${entry.id} is Approved but ratified_by is empty`));
-    }
+// tools/lib/governance.mjs（抜粋・簡略化）
+// registry の lifecycle state と承認証跡の整合を検査する（HH-046/067）
+for (const entry of registry.entries) {
+  if (entry.status === "Pending" && (entry.ratified_by !== null || entry.ratified_at !== null)) {
+    errors.push(`${entry.id} is Pending but carries ratification attestation`);
+  }
+  if (entry.status === "Approved" && (!entry.ratified_by || !entry.ratified_at)) {
+    warnings.push(`${entry.id} is Approved but ratified_by/ratified_at is empty`); // → AMEND_RATIFIED_BY_EMPTY
   }
 }
 
+// tools/lib/edge-model.mjs（抜粋・簡略化）
 // validate の各チェックコードが framework-review R1 に列挙されているか
-function validateCheckDoc() {
-  for (const code of allCheckCodes) {
-    if (!reviewContent.includes(code)) {
-      issues.push(warn("CHECK_DOC_CONSISTENCY",
-        `guard '${code}' is not listed in R1`));
+{
+  code: "CHECK_DOC_CONSISTENCY",
+  edge: "validate.guard-code --listed-by--> framework-review R1 enumeration",
+  check(root, ctx) {
+    const review = ctx.read("assets/checklists/framework-review.md");
+    for (const c of codes.filter((c) => !BASIC.has(c))) {
+      if (!review.includes(c)) issues.push(wrn("CHECK_DOC_CONSISTENCY", `validate guard '${c}' is not listed in ... R1`));
     }
-  }
+  },
 }
 ```
 
 「フレームワークの記述とコードの実装が乖離する」という AP-003 型の漏れを、ツールが自動検出します。さらに validate 自身の健全性（チェックコードの列挙漏れ）も validate が検出するというメタ構造を持っています。
+
+こうした「資材 A が資材 B を参照しているはず」という検査は、当初は個別の関数として増えていきましたが、HH-075 で「型付きの辺（edge）の登録表 + 汎用チェッカー」に統合しました。上の `edge:` 行がその辺の宣言です。チェックを足すたびに検査器そのものが肥大化する、という問題への対処でもあります。
+
+さらに `finish` コマンドが、タスク完了時に L1 構造 → L2 契約 → L3 挙動（テスト）→ L4 証跡（コミット本文の作業記録）の 4 層検証・秘密スキャン・カウンタ更新・コミットを fail-closed で一括実行します。push 前の Git フックと CI も同じ 4 層検証（`verify --base`）を走らせます。
 
 ---
 
@@ -270,15 +283,15 @@ HyperHelix 全体を最初から持ち込む必要はありません。最小構
 2. `validate` に相当する機械チェックを置く  
    ルール・テンプレート・コマンド・ドキュメントの食い違いを、完了前に落とします。
 
-3. タスクブリーフを1枚だけ残す  
-   目的、受入条件、変更リスト、検証結果、学びを短く記録します。長い日報ではなく、次の AI が使うための証跡です。
+3. 作業記録を1件だけ残す<br>
+   目的、受入条件、変更リスト、検証結果、学びを短く記録します。長い日報ではなく、次の AI が使うための証跡です。HyperHelix 自身は当初これを `tasks/` 配下のブリーフファイルにしていましたが、現在はコミット本文の `hh-record` ブロックに書き、変更と記録を1つのコミットにまとめています（HH-081）。
 
 4. D7 的な最後の処理を固定する  
    「検証した」「学びを残した」「コミットした」を、毎回同じ順で閉じます。
 
 ```mermaid
 flowchart TD
-  A["AGENTS / CLAUDE<br/>入口と権限"] --> B["Task Brief<br/>目的・計画・検証"]
+  A["AGENTS / CLAUDE<br/>入口と権限"] --> B["作業記録<br/>目的・計画・検証"]
   B --> C["validate<br/>機械チェック"]
   C --> D["D7<br/>学び・カウンタ・commit"]
   D --> B
@@ -300,7 +313,7 @@ HyperHelix は「AI が賢くなれば解決する」方向ではなく、「プ
 
 <!-- 編集メモ / 残りタスク -->
 <!--
-[DRAFT NOTE - 2026-07-05 更新]
+[DRAFT NOTE - 2026-10-16 更新]
 現状: HyperHelix の概要記事として本文骨格 + 具体例 + 最小導入ガイドまで成立。公開直前に可変数値だけ再確認する。
 
 ## 残りタスク
@@ -310,7 +323,7 @@ HyperHelix は「AI が賢くなれば解決する」方向ではなく、「プ
 - [x] ratified_by 導入の動機を補う。
 - [x] 「自分のプロジェクトでどう使うか」セクションを追加。
 - [x] 図解を追加: 三重螺旋、宣言↔消費の3層防御、最小導入ループ。
-- [ ] 数値を公開直前に再確認: task_index / HH 件数 / process-backlog / 常時必読コスト / validate 結果。
+- [x] 数値を再確認: task_index / HH 件数 / process-backlog / 常時必読コスト / validate 結果(2026-10-16。公開直前にもう一度確認する)。
 - [x] 古い内部語や固有セッション依存表現を削る。
 - [x] タグ・タイトル・サムネイル案を決める。
 
@@ -326,10 +339,10 @@ HyperHelix は「AI が賢くなれば解決する」方向ではなく、「プ
 - セクション 6（セキュリティ）は新規追加。ユニークな切り口になる可能性が高い
 - 「honor-based のガバナンスを自認しつつ機械化を積み上げる」という誠実さが差別化ポイント
 
-## 最新の状態（2026-07-05 時点）
-- task_index: 503 / HH 総数: 057 件(HH-000〜HH-056、HH-056 は Pending)
-- process-backlog open: 18 件
-- 常時必読コスト: 452 行
+## 最新の状態（2026-10-16 時点・公開 clean line)
+- task_index: 1138 / HH 総数: 083 件(HH-000〜HH-082、すべて Approved・Pending なし)
+- process-backlog open: 14 件(うち dest:main 2 件)
+- 起動時の実読コスト: 59,691 文字(常時必読 34,031 文字 / 464 行 + 索引読み冒頭 25,660 文字)
 - validate: 0 error / 0 warning
-- 直近の主要追加: HH-055 compaction-recovery hooks、HH-056 R7d 分割 Pending、brief 採番の git log 走査、Codex Skill 更新チェック
+- 直近の主要追加: HH-067 amendments の構造化正本(registry)化、HH-070 private/free の honor-based 統治、HH-075 edge registry 統合、HH-079 圧縮契約の state file 一本化、HH-081 作業記録のコミット本文化、HH-082 索引読みコストのラチェット対象化
 -->
