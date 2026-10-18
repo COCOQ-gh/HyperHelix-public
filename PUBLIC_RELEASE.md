@@ -10,6 +10,8 @@ This checklist tracks the work needed before making HyperHelix broadly public.
 - Knowledge notes: keep HyperHelix/shared notes and representative examples; compress project-specific notes into generic public examples/playbooks.
 - Project names: anonymize project-specific names in public materials as `Project001`, `Project002`, and subsequent placeholders. The mapping is kept outside the public line; placeholders are assigned in first-publication order and never reused. Files named after a project (for example project knowledge ledgers under `core/knowledge/`) are renamed to the placeholder as well.
 - Refresh: the public line is regenerated from the internal development line (not merged), so its history stays free of pre-anonymization content. Each refresh is recorded in the Refresh Log below.
+- Public-only materials: `LICENSE`, `GETTING_STARTED.md`, `SECURITY.md`, `CONTRIBUTING.md`, `CODE_OF_CONDUCT.md`, this file, and `dist/` (the distributable `/hh-apply` skill, which clones the public repository rather than the internal one). They exist only on the public line and are re-applied on every refresh.
+- Distribution repository: the public line is published as `main` of `https://github.com/COCOQ-gh/HyperHelix-public` (the internal repository stays private). `dist/skills/hh-apply` points at that URL, so for its users `origin/main` is the public line and the main-based tooling (`bootstrap`, pre-push hook, `sync-conflict-guide.md` B) works unchanged.
 - Pending governance items: keep them visible as Pending, with status clearly labeled.
 
 ## Blockers
@@ -71,3 +73,10 @@ Suggested GitHub topics:
 - `README.md` / `GETTING_STARTED.md`: note-budget wording aligned with HH-053/077, commit-body record and `finish` flow (HH-081), the pre-push hook, and namespaced launcher names (`/skills:helix`).
 - Verification: `validate` 0 error / 0 warning; `contract-doc --check` and `amendments-doc --check` current; unit suite 196 pass / 0 fail; e2e suite 10 pass / 0 fail.
 - Carry-over: these edits were made on the public line. The next refresh regenerates `README.md` and `docs/` from the internal line, so carry the same updates into the internal line or re-apply them during that refresh.
+
+### 2026-10-18 — distributable `/hh-apply` skill added (no regeneration)
+
+- Added `dist/skills/hh-apply/` (SKILL.md, README.md, `scripts/status.mjs`, `scripts/wire-host-hooks.mjs`, `references/host-wiring.md`): the public variant of the maintainer's personal `hh-apply` skill. Differences from the internal variant: clone source is `https://github.com/COCOQ-gh/HyperHelix-public.git` (`main`), no lookup of pre-existing `project/*` branches on the remote, and no outward operations (no push / PR / `reflux` proposals — `project/<slug>` stays local). Internal project names were removed from the examples.
+- Consumers wired: `README.md` file tree + 「自分のプロジェクトへ導入する」 section, `GETTING_STARTED.md` §5, and the publication policy above (public-only materials now include `dist/`).
+- Verification: smoke test against a local bare repository standing in for `HyperHelix-public` (clone → `bootstrap --project <slug> --host <host>` → `wire-host-hooks.mjs` → `status.mjs` all green, nested `validate` 0 error); `validate` 0 error / 0 warning on this tree; unit and e2e suites green.
+- Pending maintainer action: `HyperHelix-public` `main` is still at `v0.1.0` (794bd76). Fast-forward it to this line so the skill's clone source carries the current framework.

@@ -51,7 +51,11 @@ Keep the first task small and reversible. The goal is to see the evidence flow, 
 
 A task leaves no separate brief file. `node tools/hyperhelix.mjs brief --date YYYYMMDD` claims a task id and prints an `hh-record` skeleton; fill it as the phases progress, then commit through `node tools/hyperhelix.mjs finish --task <id> --message "..." --commit`, which verifies, scans for secrets, updates counters, and commits in one fail-closed step. The format is in `assets/workflows/git-conventions.md` ("Commit-body record").
 
-## 5. Public-Release Notes
+## 5. Apply It to Your Own Project
+
+HyperHelix is meant to be nested inside a host project (default `doc/HyperHelix/`), with only thin launchers and compaction hooks on the host side. The Claude Code skill in `dist/skills/hh-apply/` automates that plumbing: copy the directory to `~/.claude/skills/hh-apply/`, open your project in Claude Code, and ask `/hh-apply`. It clones this repository, runs `bootstrap`, wires the host hooks, verifies the layout, and merges upstream updates. Your `project/<slug>` branch stays local; the skill never proposes pushing to this repository. See [dist/skills/hh-apply/README.md](dist/skills/hh-apply/README.md).
+
+## 6. Public-Release Notes
 
 This branch is the public clean line, regenerated from the internal development line with project names replaced by placeholders (`Project001`, `Project002`, ...). The adopted publication policy, verification record, and refresh log are tracked in `PUBLIC_RELEASE.md`.
 

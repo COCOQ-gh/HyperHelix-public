@@ -89,7 +89,16 @@ test/                  # Node標準node:testの回帰テストとfixture helper
 .claude/settings.json  # Claude の圧縮hook adapter(共有Node runtimeへ接続)
 .codex/                # Codex の圧縮hook adapter・compact prompt・config
 .github/workflows/     # GitHub Actions で verify(L1-L4)と e2e を実行(main と public/** が対象)
+dist/skills/hh-apply/  # 配布用 Claude Code スキル /hh-apply(他プロジェクトへの導入・検証・更新取り込み。公開ライン専用)
 ```
+
+## 自分のプロジェクトへ導入する(/hh-apply)
+
+HyperHelix は導入先のプロジェクト(ホスト)に **ネスト配置**(既定 `doc/HyperHelix/`)で clone し、
+ホスト側には薄い起動コマンドと compaction フックだけを置く。その配管を自動化する Claude Code スキルが
+[dist/skills/hh-apply/](dist/skills/hh-apply/README.md) にある。`~/.claude/skills/hh-apply/` へコピーして、
+導入したいプロジェクトのルートで `/hh-apply` と頼むと、clone → `bootstrap` → フック配線 → 検証 → 更新取り込みまでを行う。
+`project/<slug>` ブランチは利用者のローカル専用で、公開リポジトリへの push や PR は提案しない。
 
 ## クイックスタート
 
