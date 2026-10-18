@@ -6,7 +6,8 @@
 > **Public release status:** 公開用 clean line(内部開発線から匿名化して再生成)。ライセンスは MIT です。
 > 検証記録と公開方針は [PUBLIC_RELEASE.md](PUBLIC_RELEASE.md) を参照。
 
-初めて読む場合は [GETTING_STARTED.md](GETTING_STARTED.md) から始めると、最小の検証手順と読む順序だけを追える。
+**自分のプロジェクトに入れたいだけなら [INSTALL.md](INSTALL.md)** — Claude Code で 1 行貼るだけで導入が終わる。
+仕組みを知りたい場合は [GETTING_STARTED.md](GETTING_STARTED.md) から始めると、最小の検証手順と読む順序だけを追える。
 
 > **HH-011 は main へ統合済み** — 起動文脈で orchestrator / executor を決める
 > 2ロール運用を含む（プラットフォーム名には固定しない）。ロール規約の正本は
@@ -64,6 +65,7 @@ governance/
 entrypoint.md          # エントリポイント正本(プラットフォーム中立・HH-059)
 AGENTS.md / CLAUDE.md  # プラットフォーム md(entrypoint.md への薄いリダイレクト)
 LICENSE                # MIT License
+INSTALL.md             # 他プロジェクトへの最短導入手順(人間は 1 行貼るだけ・残りは AI が実行)
 GETTING_STARTED.md     # 初回導入ガイド
 PUBLIC_RELEASE.md      # 公開方針・検証記録・更新履歴
 SECURITY.md            # 脆弱性報告と秘密情報取り扱い
@@ -92,13 +94,17 @@ test/                  # Node標準node:testの回帰テストとfixture helper
 dist/skills/hh-apply/  # 配布用 Claude Code スキル /hh-apply(他プロジェクトへの導入・検証・更新取り込み。公開ライン専用)
 ```
 
-## 自分のプロジェクトへ導入する(/hh-apply)
+## 自分のプロジェクトへ導入する
 
 HyperHelix は導入先のプロジェクト(ホスト)に **ネスト配置**(既定 `doc/HyperHelix/`)で clone し、
-ホスト側には薄い起動コマンドと compaction フックだけを置く。その配管を自動化する Claude Code スキルが
-[dist/skills/hh-apply/](dist/skills/hh-apply/README.md) にある。`~/.claude/skills/hh-apply/` へコピーして、
-導入したいプロジェクトのルートで `/hh-apply` と頼むと、clone → `bootstrap` → フック配線 → 検証 → 更新取り込みまでを行う。
-`project/<slug>` ブランチは利用者のローカル専用で、公開リポジトリへの push や PR は提案しない。
+ホスト側には薄い起動コマンドと compaction フックだけを置く。
+
+- **最短:** 導入したいプロジェクトを Claude Code で開き、[INSTALL.md](INSTALL.md) 冒頭の 1 行を貼る。
+  AI が clone → `bootstrap` → フック配線 → 検証 → 報告まで行う。事前の読み物やスキルの導入は不要。
+- **繰り返し使う:** 同じ手順をスキル化した `/hh-apply` が [dist/skills/hh-apply/](dist/skills/hh-apply/README.md) にある。
+  `~/.claude/skills/hh-apply/` へコピーしておくと、以後は各プロジェクトで `/hh-apply` と頼むだけでよい。
+
+どちらでも `project/<slug>` ブランチは利用者のローカル専用で、公開リポジトリへの push や PR は提案しない。
 
 ## クイックスタート
 

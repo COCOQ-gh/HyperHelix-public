@@ -53,7 +53,7 @@ A task leaves no separate brief file. `node tools/hyperhelix.mjs brief --date YY
 
 ## 5. Apply It to Your Own Project
 
-HyperHelix is meant to be nested inside a host project (default `doc/HyperHelix/`), with only thin launchers and compaction hooks on the host side. The Claude Code skill in `dist/skills/hh-apply/` automates that plumbing: copy the directory to `~/.claude/skills/hh-apply/`, open your project in Claude Code, and ask `/hh-apply`. It clones this repository, runs `bootstrap`, wires the host hooks, verifies the layout, and merges upstream updates. Your `project/<slug>` branch stays local; the skill never proposes pushing to this repository. See [dist/skills/hh-apply/README.md](dist/skills/hh-apply/README.md).
+HyperHelix is meant to be nested inside a host project (default `doc/HyperHelix/`), with only thin launchers and compaction hooks on the host side. The shortest path needs no reading and no skill install: open your project in Claude Code and paste the one line at the top of [INSTALL.md](INSTALL.md). The agent clones this repository, runs `bootstrap`, wires the host hooks, verifies the layout, and reports. If you do this often, the same steps are packaged as the `/hh-apply` skill in `dist/skills/hh-apply/` (copy it to `~/.claude/skills/hh-apply/`). Either way your `project/<slug>` branch stays local; nothing proposes pushing to this repository.
 
 ## 6. Public-Release Notes
 
