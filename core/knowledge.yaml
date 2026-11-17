@@ -1,0 +1,512 @@
+# =============================================================================
+# HyperHelix — core/knowledge.yaml
+# Learning-note ledger. AI-facing artifact (English only).
+#
+# MODEL (HH-016): flat notes, not tiered materials. Purpose is narrow — at task
+# start, surface relevant past lessons so the next task is a little better.
+# No automatic ranking/promotion. "Don't aim for perfect; improve a bit next time."
+#
+# INDEX / 索引 (retrieval — this ledger is NOT read in full): S2 retrieves notes by
+# TAG MATCH (core/gates.yaml search.top_n, ordered by last_used desc = recency,
+# HH-045; active only). The tag set IS the index; only the header + counters below
+# are always-read. INDEX TIER (HH-045): playbook notes (kind: playbook) are the
+# PRIMARY retrieval target — one authoritative note per recurring topic, pointing
+# via `leaves:` to its leaf notes (kind: leaf) for drill-down. This mirrors
+# amendments.md's HH-024 index→drill (HH-026 R7b: a mandatory-tier file's index need
+# not be a literal table when tag-search is its lookup). Grep a tag to find a
+# playbook (or a plain note); open its leaves only when you need the evidence.
+#
+# NOTE FIELDS (10; kind/leaves/topic are the HH-045 playbook tier, OPTIONAL):
+#   id        : new notes take a permanent N-<proj>-<YYYYMMDD><letters> id from
+#               `hyperhelix.mjs next-id` (branch-derived slug; fixed at creation and
+#               collision-free, HH-064). Legacy N-NNN ids remain valid and unchanged.
+#               HH-061 provisional ids are deprecated and rejected on main; migrate
+#               at the producer with `next-id`. `adopt-notes` is a no-op alias.
+#   text      : ONE lesson and when it applies, on one line. Operating language OK.
+#               New notes have a soft maximum length (validate NOTE_TEXT_LENGTH warn,
+#               set in core/contracts.json note_text_soft_max, HH-082). Put the evidence
+#               (measurements, history) in a leaf note or the commit hh-record.
+#   tags      : free words (>=1), for retrieval match. No dictionary gate.
+#               PROHIBITION notes: always tag the PROHIBITED term (not just the
+#               preferred alternative) — searchers look for what they're about
+#               to use, not its replacement (measured: a note about an API
+#               lacked the tag naming that API → S2 miss even if run).
+#   project   : OPTIONAL scope slug (HH-032). The project the lesson belongs to
+#               (e.g. my-app, hyperhelix) or `shared` for cross-project. ABSENT ==
+#               shared (backward-compatible). S2 retrieves only current-project +
+#               shared notes (core/gates.yaml search.project_scope). Free string, no gate.
+#   strength  : integer legacy hint. start 1; +1 when the note helped a passing
+#               artifact; -1 when it was wrong/insufficient on a failing one.
+#               Not a gate; not auto-promoted (avoids Goodhart; HH-009 spirit).
+#               HH-045: DEMOTED from primary sort key to a secondary tiebreak.
+#   last_used : counters.task_index when last used. HH-045: PRIMARY retrieval sort
+#               key (recency desc) — a fact, not a score. Also the prune hint.
+#   state     : active | archived. Archiving is a HUMAN action at /cycle (glance
+#               stale / least-recently-used notes). No automatic orphaning.
+#   kind      : playbook | leaf (HH-045 index tier, OPTIONAL; absent == plain note).
+#               playbook = authoritative topic note (S2 primary target). leaf =
+#               evidence note folded under a playbook. Plain notes omit kind.
+#   leaves    : playbook only — inline single-line list of leaf ids it indexes
+#               (e.g. [N-011, N-019]). Keep single-line flow style (readability;
+#               the SC-05 formal parser reads any YAML, N-005's parser limit is gone).
+#   topic     : leaf only — the playbook id this note drills down from (e.g. N-059).
+#
+# PER-TASK (D7): at most one move — add a note, or nudge a note's strength +/-1
+# (with last_used). No recompute, no derived fields, no global consistency pass.
+# See core/loop.yaml D7 and assets/checklists/distill.md.
+#
+# CANON LIVES IN THE USER LAYER: when a lesson is important/durable enough, a
+# human lifts it into constitution.md or files it via amendments.md. There is no
+# automatic axiom path here. The ledger is working memory, not law.
+#
+# CONCURRENCY (HH-015 / HH-057): task_index & last_framework_review are HIGH-WATER
+# (max) marks, NOT cross-branch accumulators — a merge/reflux takes max(ours,theirs)
+# (reflux auto-resolves this; no base+Σδ formula). They are branch-local monotonic
+# counters used only for cadence + note recency; the absolute value carries no
+# cross-branch meaning. Permanent IDs are fixed at creation, so they need neither
+# derivation nor sequential allocation (HH-064); `hyperhelix.mjs next-id` is a generator.
+# FILE ROUTING (HH-045 (2)): each note lives in the ledger file matching `project:`.
+# Shared and hyperhelix notes (including playbooks such as N-059) stay here; project
+# leaves live at core/knowledge/<project>.yaml. Merge each file by union of its notes.
+# Counters exist only in this main ledger. Strength nudges are last-writer-small and
+# tolerated (imperfection is acceptable — fix next time).
+# MANIFEST (SC-05a): core/knowledge/manifest.yaml declares the ledger list and
+# project ownership; the formal reader (tools/lib/knowledge.mjs, validate
+# KNOWLEDGE_READER) reads only declared ledgers. Adding a project ledger =
+# add the file AND its manifest entry in the same change.
+# WRITER (SC-05b): every ledger write (bump counters/nudges, baseline counters,
+# reflux counter merge) goes through the repository's atomic commit — validate
+# the post-state, same-directory temp file, fsync, fixed-order rename; a failed
+# write leaves nothing partially visible. Direct writeFileSync on a ledger is a
+# forbidden live expression in the notes/next-id/bump/sync/reflux/report paths.
+#
+# REVIEW-ONLY (HH-023/068): a pure inspect-and-report session with ZERO session-
+# owned repository writes does NOT increment task_index (it is not a task).
+# Pre-existing/verified-foreign dirtiness alone does not promote it; baseline +
+# ownership journal proves the boundary. Any owned write is a task, while unknown
+# or same-path ownership fails closed. Authority: assets/workflows/review-only.md.
+# =============================================================================
+schema_version: 1
+
+# --- persistent counters (HH-057: high-water marks; next_note_id derived) ---
+counters:
+  # HH-057: task_index & last_framework_review are HIGH-WATER (max on merge), NOT
+  # accumulators. reflux auto-resolves counter conflicts by max. Permanent IDs are
+  # fixed at creation, so next_note_id is neither stored nor derived; `next-id` generates them (HH-064).
+  # HH:ACTIVE-SCAN-ALLOW reason="names the HH-016-abolished counters as history"
+  # (Legacy: old-schema counters tasks_since_tuning / tuning_signals / id_seq are abolished by HH-016.)
+  # /HH:ACTIVE-SCAN-ALLOW
+  # SC-05b: last_bump_task is the bump idempotency provenance (the task that last
+  # incremented task_index) as a STRUCTURED field — per-task inline comments on
+  # these counters are retired (machine values never live in prose, HH-067).
+  # Review-source provenance lives in the task record (d7.review).
+  # 各コメントは「値の意味」だけを述べる。過去の値・次回予定などの機械値を書かない
+  # (HH-067: machine values never live in prose。実測 2026-08-29 /cycle ordinal 13 —
+  #  review_ordinal のコメントが「次回 heavy レンズは ordinal 10」のまま陳腐化し、
+  #  そのまま読むと cadence を誤算する罠になっていた)。
+  task_index: 1222 # マージ時 high-water(HH-057)
+  last_framework_review: 1172 # マージ時 high-water(HH-057)
+  review_ordinal: 20 # HH-080 producer: bump --review が +1(high-water merge)。heavy レンズは (ordinal+1) % 5 == 0 の回
+  last_bump_task: TASK-publicz2fshowcase-20261116-001 # bump 冪等性の provenance(SC-05b)
+  last_always_read_lines: 464 # convergence R7a baseline: written ONLY by `cost-report --write-baseline` (/cycle only; plain runs are read-only — TASK-20260715-005)
+  last_always_read_chars: 34031 # convergence R7a ratchet gauge, always-read part, in characters (HH-073): written ONLY by `cost-report --write-baseline` (/cycle only); null until the first /cycle seeds it
+  last_index_read_chars: 25663 # convergence R7a ratchet gauge, index-read heads part (HH-082 A): same writer; judged as the sum with last_always_read_chars
+  last_backlog_open_count: 15 # convergence R8c baseline: SYNC-20260823b で ours(27)を採用。**次 /cycle の初回計測は main 由来の open 行を含むため一度だけ上振れする** — 累積(accretion)ではなくマージ由来なのでラチェット発火は棄却してよい
+
+# --- learning notes (flat; retrieval sorts by last_used desc = recency, HH-045) ---
+notes:
+  - id: N-main-20261002b
+    text: "資材や機構を撤去したタスクの後は、参照パスの実在を機械的に掃く。HH-081 段階 4 の撤去後、同日に 3 件の参照切れ(routing の宛先・task-list-schema の正本・e2e テストの import)が、別々の手動点検で 1 件ずつ見つかった。手順資材の範囲は validate REF_PATH_EXISTS が検出する。その範囲外(テストや tools の import・台帳)は、撤去タスクの P6 で撤去対象の名前を grep する。"
+    tags: [hyperhelix, removal, dangling-reference, declare-consume, ap-003, ref-path-exists, validate, hh-081, cleanup, framework, scope:framework]
+    project: hyperhelix
+    strength: 1
+    last_used: 1136
+    state: active
+  - id: N-main-20261002a
+    text: "文字数を測るときは `wc -m` を使わない — Git Bash ではロケール次第でバイト数を返す(実測 2026-10-02: amendments.md 冒頭 154 行が `wc -m` 25,348 / 実際は 15,517 文字 / 25,347 バイト。日本語資材で約 1.6 倍の過大)。必読コストは `cost-report` の値を使う(JS の文字数で常時必読と索引読み冒頭を同じ単位で出す)。"
+    tags: [hyperhelix, measurement, cost-report, wc, characters, bytes, git-bash, locale, r7a, gauge, framework, scope:framework]
+    project: hyperhelix
+    strength: 1
+    last_used: 1131
+    state: active
+  - id: N-001
+    text: "Wrap idempotent network calls in bounded exponential-backoff retry; cap attempts and surface the final failure."
+    tags: [retry, network, backoff]
+    project: hyperhelix
+    strength: 2
+    last_used: 184
+    state: archived
+
+  - id: N-002
+    text: "Build the minimal working implementation first; expand only after it runs."
+    tags: [implementation, minimal-first]
+    project: shared
+    strength: 9
+    last_used: 335
+    state: archived
+
+  - id: N-003
+    text: "Read requirements before planning to avoid missed specs."
+    tags: [search, requirements]
+    project: shared
+    strength: 2
+    last_used: 188
+    state: archived
+
+  - id: N-004
+    text: "Confirm phase-gate evidence exists before starting a later phase; an empty template is not evidence."
+    tags: [phase-gate, evidence]
+    project: hyperhelix
+    strength: 4
+    last_used: 273
+    state: active
+
+  - id: N-005
+    text: "Keep inline arrays in core YAML on a single line; the fixed-schema parser does not read multi-line flow sequences."
+    tags: [parser, yaml]
+    project: hyperhelix
+    strength: 2
+    last_used: 205
+    state: archived
+
+  - id: N-006
+    text: "Under same-branch parallel sessions, automate per-task counter bookkeeping (hyperhelix.mjs bump) to cut friction and arithmetic errors."
+    tags: [concurrency, counters]
+    project: hyperhelix
+    strength: 2
+    last_used: 267
+    state: active
+
+  - id: N-011
+    text: "After a framework schema/tooling migration (e.g. HH-016), grep removed-term dangling refs across ALL materials: templates, checklists, workflows, entry points (AGENTS/CLAUDE), README, anti-patterns — and duplicated command files. .claude/commands/{cycle,helix}.md exists in BOTH the outer project AND the nested framework repo; fix both."
+    tags: [framework, migration, dangling-refs]
+    project: hyperhelix
+    kind: leaf
+    topic: N-059
+    strength: 8
+    last_used: 559
+    state: active
+
+  - id: N-014
+    text: "After dispatching a background executor job (codex exec with run_in_background), schedule a watchdog check at the wall-clock budget deadline (default 5 min for pattern work, 10 min for novel). Completion notifications can be silently lost to context compaction or sandbox crashes. Never enter an unbounded wait — especially under autonomous-execution mandates where the user cannot intervene."
+    tags: [delegation, timeout, watchdog, autonomous]
+    project: shared
+    strength: 1
+    last_used: 300
+    state: active
+
+  - id: N-015
+    text: "Branch-context governance status goes stale on merge: a flag set with a branch-specific rationale (e.g. R6 SUSPENDED because 'this branch has no real project') becomes false when merged into a branch with different reality (main has real project tasks). After merging, re-verify status-bearing governance text (constitution toggles, checklist enable/suspend flags) against the TARGET branch's facts, not the source branch's."
+    tags: [merge, governance, consistency]
+    project: shared
+    strength: 4
+    last_used: 590
+    state: active
+
+  - id: N-016
+    text: "When direct measurement is unavailable (no API usage endpoint, no token count in tool results), use effort-based estimation with order-of-magnitude accuracy. Record estimates distinctly from measurements (e.g. '(est)' suffix) so future calibration can separate the two. Precision matters less than having a directional signal for capacity decisions."
+    tags: [estimation, capacity, tokens, delegation]
+    project: shared
+    strength: 4
+    last_used: 512
+    state: active
+
+  - id: N-017
+    text: "Before implementing a tool/format design, delegate an independent read-only review (survey WO) to a separate executor (e.g. Codex). It catches design holes the orchestrator missed — e.g. a re-run double-count in a counter bump that the orchestrator's own ordering fix did not cover. Spot-check every cited file:line (HH-012 §5) before adopting, but the second pair of eyes pays for itself on pre-implementation design review. Playbook for the wider delegated-review practice: value (this note) is bounded by two guardrails — a reviewer's suggestion can undo an ALREADY-settled design decision if not checked against the record ([[N-020]]), and a reviewer's NEGATIVE claims and secondhand numbers need the same file:line verification as its positive ones before they land in a deliverable ([[N-068]])."
+    tags: [delegation, survey, review, design]
+    project: shared
+    kind: playbook
+    leaves: [N-020, N-068]
+    strength: 10
+    last_used: 1214
+    state: active
+
+  - id: N-018
+    text: "When implementing a DETECTOR (validator scan, anchor parser, lint rule), always write a positive test — an input that SHOULD be flagged — not just a negative one. A silent miss looks identical to 'clean'. Example: a marker name regex [A-Z_]+ silently skipped HH:D7 because the name has a digit; only a positive test caught it. Also: a detector that scans active docs will flag its own spec and migration-explanation comments — give it a file-level + range allow mechanism and dogfood it."
+    tags: [validator, detector, testing, tooling]
+    project: shared
+    strength: 15
+    last_used: 514
+    state: archived
+
+  - id: N-019
+    text: "When adding a new enumerated value (e.g. a depth mode like 'micro'), update EVERY place that enumerates it, not just the authority file: core/loop.yaml AND the brief template's depth-mode line AND README's depth-mode list AND any checklist. The active-term scan catches REMOVED vocabulary, not enumeration drift of CURRENT values — that still needs manual R1 review (or a future dedicated cross-enumeration check)."
+    tags: [framework, consistency, enumeration, depth-mode]
+    project: hyperhelix
+    kind: leaf
+    topic: N-059
+    strength: 6
+    last_used: 546
+    state: active
+
+  - id: N-059
+    text: "フレームワーク資材を変更したら、その全消費側を同一変更で更新する(AP-003 declare↔consume の playbook)。移行/用語撤去後は全資材を grep して dangling ref を除去し(N-011)、列挙値を追加したら authority だけでなく列挙する全箇所(loop.yaml/brief テンプレ/README/checklist)を更新する(N-019)。新規 declaration は宣言と同じ change-list で consumer を配線する。"
+    tags: [framework, consistency, cross-reference, ap-003, declare-consume]
+    project: hyperhelix
+    kind: playbook
+    leaves: [N-011, N-019, N-060]
+    strength: 22
+    last_used: 932
+    state: active
+
+  - id: N-060
+    text: "新スキーマ概念(例 HH-045 の playbook/leaf)を追加したら、validate/checklist だけでなく informational レポート(consolidation-report 等)の検出器も同一変更で配線する。HH-045 は playbook↔leaf を consolidation-report の note-merge 検出が false-positive 化させた(AP-003 declare↔consume の漏れ・次 /cycle で自己検出)。"
+    tags: [framework, ap-003, declare-consume, consolidation-report, schema]
+    project: hyperhelix
+    kind: leaf
+    topic: N-059
+    strength: 4
+    last_used: 560
+    state: active
+
+  - id: N-061
+    text: "新しい enforcement 機構(ゲート/レンズ)を設計したら、main の branch-context 例外(R6/R7d STOPPED — framework 開発が目的なので enforcement 停止・measurement 継続・人間の運用判断に委ねる)との整合を必ず確認する。HH-048 外部価値ゲートは main で R4 unverified を毎 /cycle マークし、この例外規則と矛盾した(HH-052 で是正)。"
+    tags: [framework, branch-context, governance, consistency, enforcement]
+    project: hyperhelix
+    strength: 3
+    last_used: 590
+    state: active
+
+  - id: N-062
+    text: "フック(.claude/commands/hooks)は jq に依存しない — JSON 処理は node(framework の保証依存・session-bootstrap §3)で行う。別セッションが jq 依存の compaction フックを出荷したが jq 未導入の環境で全フックが session_id を読めず無音 fail-open し、60% 警告も復旧も一切発火しなかった(HH-055 subsystem)。外部ツール依存のフック/スクリプトは、その依存が環境保証されるかを配線時に確認する。"
+    tags: [hooks, dependency, jq, node, fail-open, compaction]
+    project: hyperhelix
+    strength: 3
+    last_used: 551
+    state: active
+
+  - id: N-063
+    text: "transcript の .jsonl は追記専用ログで /compact しても縮まない。だから transcript ファイルサイズを context 占有率の代理にすると初回充填にしか正しく効かず、圧縮後も高いまま = 警告が嘘をつく(圧縮したのに未圧縮に見える)。是正: PostCompact フックで圧縮時点サイズを baseline 記録し、context-warn は『現在サイズ − baseline』= 圧縮後の増分で測る(delta-baseline)。単調増加ログをレベル指標に使うときは基準点を圧縮境界でリセットせよ。"
+    tags: [hooks, context, compaction, transcript, delta-baseline, monotonic]
+    project: hyperhelix
+    strength: 3
+    last_used: 523
+    state: active
+
+  - id: N-064
+    text: "手書きカウンタは『git から導出できる事実のキャッシュ』であり、分岐で必ず drift し、その補償として突合工程が生まれる。是正の第一手はキャッシュ自体を消すこと(next_note_id → 台帳 max+1 の導出)。ただし全カウンタが導出可能とは限らない — task_index は全ブランチ横断の accumulator で main 一本の git 履歴からは再構成不能(実測 510≠232)だった。しかし用途を精査すると cadence と note recency の順序付けだけで、cross-branch の絶対値は誰も使っていなかった。そこで accumulator を捨て branch-local high-water(max)へ。『動いている自作機構が必要』という思い込み(frame lock-in)は、実際の消費者を数えて破る。HH-057・[[N-063]](単調増加の基準点)と同系。"
+    tags: [counters, derivation, cache, frame-lock-in, high-water, sync, HH-057]
+    project: hyperhelix
+    strength: 4
+    last_used: 530
+    state: active
+
+  - id: N-065
+    text: "スキル/手順のトークン消費は『本文注入(毎回)』と『手順の tool 往復』に分解して測る。注入コストは fast path で読まれない部分(コンフリクト解決ガイド等)を on-demand 資材へ分離して削る(sync.md 10055→1295 chars: fail 時のみ Read)。往復コストは決定的な規則(S2 の top_n/recency/scope/playbook 優先)をツール化して 1 コマンドに畳む(`notes`/`compact-prep` サブコマンド)。判定基準: 手順のうち機械的に決定できる部分はツールへ、意味判断だけをモデルに残す。副次効果: ルールのツール実装は解釈ゆらぎも消す。"
+    tags: [tokens, skills, batch-tool, injection, on-demand, retrieval, efficiency]
+    project: hyperhelix
+    strength: 1
+    last_used: 512
+    state: active
+
+  - id: N-066
+    text: "1つのチェック/機構が複数機能を束ねていると、片方だけが問題でも『丸ごと停止』され、無害な方が理由なく道連れになる(HH-038 が R7d の ROI 半分の誤検知を理由に鐙検出の frame 半分まで main で殺した)。停止・削除の前に機能を分解し、停止理由が本当にどの部分に掛かるかを確かめる(HH-056 で分割・frame を再活性化)。加えて、フレーム固着(鐙問題)の批評は自己批評では同じ盲点を共有するため、別モデルのエージェントへ委託するのが最も破りやすい(diversity over redundancy)。[[N-064]](frame lock-in を消費者計数で破る)と同系。"
+    tags: [framework-review, r7d, unbundle, frame-lock-in, different-model, delegation, stirrup, HH-056]
+    project: hyperhelix
+    strength: 3
+    last_used: 589
+    state: active
+
+  - id: N-073
+    text: "計測/記帳ツールの副作用(convergence baseline の書込等)は、それを消費する手順(/cycle)専用のフラグ配下へ置き既定を読み取り専用にする。実害: cost-report が baseline を every run で無条件 write していたため、別タスクの Search 中の探索実行が 452→455 を消費し、無関係コミットへ混入 → 次 /cycle が真の +3 を『±0』と読んだ(『growing = finding』シグナルの喪失)。**本質はフラグの有無ではなく宣言と実装の食い違い** — コメントは『written by cost-report each /cycle run』と宣言しながら実装は every run だった(AP-003 の宣言↔実装版)。**既定を反転するだけでは不十分**: 『無音で書く』を『無音で捨てる』に置換すると罠が裏返るだけなので、書かなかった時は『baseline N は未更新』と明示表示する。検証は HH-028 に従い陽性/陰性の両方向(baseline を意図的にずらして SHA256 で不変/変化を実証)— 片方向だけでは『そもそも書けない実装』と区別できない。[[N-064]](手書きカウンタはキャッシュ)と同系。"
+    tags: [tooling, side-effect, baseline, convergence, cost-report, consolidation-report, cycle, declare-consume, silent-failure, ap-003, ap-010, framework]
+    project: hyperhelix
+    strength: 7
+    last_used: 1134
+    state: active
+
+  - id: N-067
+    text: "検出器の基準点/閾値ロジックを修正したとき、修正は『次のイベントから有効』になりがちで、既存セッション(旧ロジックの汚染状態: 偽警告が消費した cooldown・未記録の baseline)は自己回復しない(移行ギャップ)。delta-baseline 修正後も当該セッションは baseline 無し+cooldown 消費済みで警告が完全沈黙した。設計原則: (1) 汚染状態を検出したら無音で基準点を再設定する lazy 回復パスを検出器自身に持たせる(baseline 無し+cooldown 無し+異常値→rebase)。(2) 一回きりの通知は無視シナリオで死ぬ — 増分ステップごとの再通知にする。[[N-063]](基準点は圧縮境界でリセット)の続編。"
+    tags: [hooks, migration-gap, self-healing, detector, baseline, cooldown, re-warn]
+    project: hyperhelix
+    strength: 2
+    last_used: 523
+    state: active
+
+  - id: N-075
+    text: "同一ワーキングツリーの並行作業で git のマージ層は守ってくれない — 解決はコミット後にしか効かず、コミット前に3つの衝突面が残る: (1) 同時 Edit の lost update (2) 共有 index を bare `git commit` が丸ごと拾い他セッションの staged を巻き込む (3) 変更対象の重複を検出する機構が無い。対策(HH-058): (2) は pathspec commit(`git commit -m .. -- <paths>`)で完治、(3) は P6 change-list の素集合判定(既存成果物が並行安全性の判定入力になる)、(1) は共有台帳の D7→commit critical section 化。完全並行が要るなら git worktree(ネイティブの鐙)で構造ごと消す — 自作ロック registry は作らない。"
+    tags: [concurrency, parallel, git, worktree, pathspec, lost-update, index, HH-058]
+    project: hyperhelix
+    strength: 2
+    last_used: 576
+    state: active
+
+  - id: N-076
+    text: "エージェント入口ファイルにロールや本文を書くと『どのプラットフォームが読むか』にロールと内容が焼き付き、主体 AI の切替で齟齬る(CLAUDE.md=orchestrator / AGENTS.md=executor の固定が Codex 主体化を阻害した)。設計原則(HH-059): (1) 正本は**どのプラットフォーム規約にも属さない中立名**(entrypoint.md)に置く — AGENTS.md も Codex 系の規約ファイルであり正本にすると従属が残る(ユーザー指摘)。(2) プラットフォーム md は正本への薄いリダイレクトのみ(重複記述=drift 源)。(3) ロールはプラットフォーム名でなく**起動文脈**(WO を渡されたか)で決める。(4) 階層は validator で検査(正本→憲法・リダイレクト→正本・本文重複の検出)。"
+    tags: [entrypoint, platform, redirect, role, drift, canon, claude-md, agents-md, HH-059]
+    project: hyperhelix
+    strength: 3
+    last_used: 570
+    state: active
+
+  - id: N-077
+    text: "R7d-frame 初回(別モデル=Sonnet 委託・HH-056 dogfood)の finding capture: branch protection + CODEOWNERS + required CIによる技術的職務分離をHH-060で裁可・実装したが、GOV-01 dogfoodで唯一のCODEOWNER/publisher分離とprivate/freeでのbranch protection非提供が運用阻害になった。HH-069は独立Approveを撤回し、HH-070はprivate/freeを優先してbranch protectionを任意hardeningへ降格した。教訓: access-control強化案は裁可前に実在identityだけでなくhosting plan/費用/visibility制約でもrehearsal可能か確認する。現在はtool経由PR、CI checks待機、統治PR自動merge禁止、direct-main/force-push/rebase禁止を維持するが、server enforcementのないhonor-based規律である。"
+    tags: [r7d-frame, governance, branch-protection, codeowners, separation-of-duties, honor-based, stirrup, HH-046, HH-056]
+    project: hyperhelix
+    strength: 9
+    last_used: 592
+    state: active
+
+  - id: N-078
+    text: "『自動発火』の実装は権限面で3分割する: (1) フックで完全自動化できる機械部(PreCompact で state skeleton 保存 — auto-compact でも確実に走る・既存 state は上書きせずモデル記述を保護)、(2) モデルにしか出来ない意味部は additionalContext を推奨形でなく**指示形(standing 指示・確認不要・同一ターン内)**にして自動発火させる、(3) ユーザー操作にしか出来ない部分(/compact 起動)は要請として残し、内蔵 auto-compact をフォールバックに位置づける。『どの主体がその操作を実行できるか』で分割してから各層を最強の自動化にする。"
+    tags: [hooks, automation, precompact, standing-instruction, compact-prep, authority-split]
+    project: hyperhelix
+    strength: 3
+    last_used: 917
+    state: active
+
+  - id: N-020
+    text: "Before a change that REVERSES a prior reasoned decision, check the design doc / amendments for a settled ruling first. A cross-session review (e.g. another branch's task) re-added brief anchors that the doc explicitly excluded with reasons (HH:COMMIT circularity, FRAMEWORK_REVIEW bloat) — it 'aligned to the design' but missed that the design had already settled the opposite. A second pair of eyes catches real bugs but can also undo deliberate decisions; reconcile against the written ruling, not the older intent."
+    tags: [review, design, consistency, regression]
+    project: shared
+    kind: leaf
+    topic: N-017
+    strength: 7
+    last_used: 930
+    state: active
+
+  - id: N-021
+    text: "Chat output to the user should carry ONLY user-facing information — outcomes, decisions, things to confirm, final results — in user-facing form. Do NOT narrate work steps ('first I'll…', 'next…'), echo raw tool output, or emit AI self-talk. Still make the tool calls; just keep the accompanying prose minimal or absent. Narration is ceremony, not signal (same spirit as brief lightweighting)."
+    tags: [communication, reporting, user-facing, signal-vs-ceremony]
+    project: shared
+    strength: 1
+    last_used: 343
+    state: active
+
+  - id: N-038
+    text: "多部にわたるユーザー指示(『効率順に〜まで実装』等)は1タスクに束ね、スコープを完了させてからコミットする(repo毎に1コミット)。指示を小タスクに刻んで各々逐次 micro-commit すると履歴が細切れになりレビュー困難。複数の実装単位は1タスクの TL として扱い、外側repoとネストrepoで各1コミットに集約する。例外: 真に独立した別タスクは別コミットで可(細切れとは別物)。"
+    tags: [git, commit-granularity, workflow, task-scoping]
+    project: shared
+    strength: 1
+    last_used: 404
+    state: active
+
+  - id: N-039
+    text: "ツール呼び出しは常に正規の function-call 書式のみで出力する。呼び出し直前に余計なトークン(例: 'count')を置かない/素の <invoke>・<parameter> タグを単独で出さない。書式崩れは致命的=未パースで未実行→ターンがサイレント終了し作業停止・直前編集が未コミットで放置・状態不整合になる(AP-007, 人間ゲート HH-029)。『malformed』を受けたら即座に正規書式で再送し、実行成立を確認してから次へ進む。"
+    tags: [tool-call, execution, fatal, serialization, discipline]
+    project: shared
+    strength: 2
+    last_used: 406
+    state: active
+
+  - id: N-041
+    text: "Framework AP-003 (a declaration shipped without its consumer — a dead gate param, a brief/template field nothing fills, a dangling destination like 'project TODO', a declared-but-unconsumed action like prune) is the MOST-recurring framework miss; omissions (a rule not covering all states, e.g. S2 retrieval ignoring archived) are its cousin. Routine catches: framework-review R1 declare↔consume + omission sweep (manual) and validate GATE_DEAD_CONFIG (gate params unreferenced in core/assets/tools). Semantic/omission cases that resist a mechanical check need a periodic Codex adversarial audit (process-backlog standing practice). Always wire declaration + consumer in the SAME change."
+    tags: [framework, ap-003, declare-consume, detection, validator]
+    project: shared
+    strength: 8
+    last_used: 518
+    state: active
+
+  - id: N-042
+    text: "After a long run of framework-only self-improvement (audit -> fix -> add detector -> audit again), R7d/R7e flag a SELF-REFERENTIAL cadence: validate is green and mechanical checks pass, but external ROI is unproven and per-task ceremony keeps growing. The tell is N consecutive framework-only tasks + new required steps each cycle. On main R6 is STOPPED (no auto-enforcement), so the HUMAN decides — SURFACE it, don't bury it: the fix is to apply the framework to a REAL project and validate ROI before adding more rigor (constitution governance axiom 5 spirit)."
+    tags: [framework, roi, self-referential, r7, governance]
+    project: shared
+    strength: 3
+    last_used: 590
+    state: active
+
+  - id: N-043
+    text: "PowerShellで読み取り補助の短い関数名(例 Rd/R/Cp/Mv)を定義すると組込みエイリアス(rd=Remove-Item, ri=Remove-Item, cp=Copy-Item, mv=Move-Item, sc=Set-Content等)に解決され、意図せず破壊的コマンドが走る。実例: 読み取り用のつもりで定義した短い名前の関数が削除コマンドに解決され、tracked なファイルを消した。対策: 補助関数は破壊的動詞と衝突しない明確な独自名(ReadData 等)にする。誤削除した tracked file は `git checkout HEAD -- <file>` で復元。回帰テストが silent data loss の即時検知に有効。非 ASCII のパスは『ファイル不在』に見え原因を取り違えやすい→git status の D 行で削除を確認する。"
+    tags: [powershell, alias, destructive, data-loss, tooling, discipline]
+    project: shared
+    strength: 1
+    last_used: 415
+    state: active
+
+  - id: N-068
+    text: "サブエージェント調査レポートの『負の主張』(未実装・呼出元なし)と伝聞数値(閾値・頻度)は、成果物へ採録する前に必ず自分で grep/コード照合する。実際に、誤った負の主張と誤った頻度の 2 件がレポートに混入し、後者は前タスクの資料まで汚染していた。複数レポート間の矛盾は照合すべき箇所のシグナル。"
+    tags: [delegation, survey, verification, negative-claim, false-report, docs]
+    project: shared
+    kind: leaf
+    topic: N-017
+    strength: 1
+    last_used: 503
+    state: active
+
+  - id: N-071
+    text: "ツール拡張(既存コマンドへの警告追加・validate check 追加等)は amendment 級ではない — routing の capability-addition。実装コメントに未裁可の HH 番号を発明して付けない(amendment は phase構造/gate規則/θ/憲法/ノート昇華/大規模統廃合のみ)。/cycle の発見は机上でなく直近の実使用(dogfood)で遭遇した摩擦から採ると質が高い(finish の Distill 資材ステージ漏れは実 orphan commit から発見)。"
+    tags: [framework, tooling, amendment-scope, cycle, dogfood, governance]
+    project: hyperhelix
+    strength: 6
+    last_used: 590
+    state: active
+
+  - id: N-084
+    text: "監視・検知器の初回実地適用は『較正イベント』として扱い、偽シグナルを前提に人手プローブ(プロセス生存・出力実体の確認)を併走させる — wo-watch 初回で2つの偽シグナル源が同日に出た: (1) **prompt echo**: codex exec は WO プロンプト本文を出力へ echo するため、非アンカーの完了マーカーが WO 指示文中の文字列に 0 秒でマッチ(偽 DONE)→ マーカーは行頭アンカー化 + 指示文ではマーカーを行頭に書かない。(2) **block buffering**: ファイルリダイレクト時の stdout は約 8KB 単位で flush され、生存・作業中でも数分無出力に見える(偽 STALL)→ ファイル成長だけを liveness にしない(--pid のプロセス生存を副信号に。Git Bash は /proc/$!/winpid の Windows pid を渡す)。机上テスト(自作の整形済み入力)はこの2つを構造的に見逃す — 実戦入力(echo・バッファ・エンコーディング)での較正が別途要る。 encoding を誤った grep と同族。"
+    tags: [detector, calibration, wo-watch, false-positive, prompt-echo, block-buffering, liveness, pid, delegation, HH-063, framework]
+    project: hyperhelix
+    strength: 1
+    last_used: 533
+    state: active
+
+  - id: N-081
+    text: "深度 micro の判定は use_when 固定語彙(typo-fix/link-fix/heading-number-fix/obvious-removed-term-replacement/readme-1-2-line)への**一致照合のみ**で行う — 『変更が小さい/儀式を省きたい』という印象は判定入力ではない。any-logic-change / any-gate-or-axiom-touch は行数に関係なく micro 禁止(ツール・フックの1行変更も logic)。実害: TASK-20260716-007/008(ツール+フック logic・amendments 変更)を brief なし micro で処理し、外部モデルレビュー(Codex R4)で初めて発覚 — 自己判定は自分の省力バイアスに盲目。救済は loop.yaml micro note の規定どおり: 次タスクから standard へエスカレーション + D2 蒸留。判定時は一致した語彙を brief または commit body に明記する(明記できない=micro ではない)。"
+    tags: [depth-mode, micro, phase-gate, fixed-vocabulary, misclassification, self-bias, framework]
+    project: hyperhelix
+    strength: 2
+    last_used: 572
+    state: active
+
+  - id: N-main-20260719a
+    text: "同一のstructured canonを更新するmaintenance commandは、別fieldを触る場合でも同時実行しない。実例: /cycle の cost-report --write-baseline と consolidation-report --write-baseline はどちらも core/knowledge.yaml をread-modify-writeするため、並列dispatchはlost update窓を作る。commandを順次実行し、並列化するならwriter側にatomic mergeとconcurrent positive fixtureを先に用意する。"
+    tags: [framework, tooling, concurrency, canonical-write, baseline, cycle, lost-update]
+    project: hyperhelix
+    strength: 4
+    last_used: 598
+    state: active
+
+  - id: N-main-20260719b
+    text: "epoch/cutover producerの回帰は『新artifactが存在する』だけで閉じず、禁止したlegacy artifactが存在しないことも同じE2Eで主張する。実例: task epochはnew-read-writeだったが、brief実装がdomainEpoch(task)の戻りobjectを文字列と比較し、schema v1 record+Markdown pairを生成した。testはrecord directoryだけを見て通過していた。対策は(1)accessorの戻りshapeをpure selectorへ閉じる、(2)schema/versionの正assert、(3)同ID legacy view不在のnegative assertion、(4)archive後もtest fixtureはlive taskを参照せず自己完結生成する。"
+    tags: [framework, migration, epoch, cutover, producer, negative-assertion, archive, test-fixture]
+    project: hyperhelix
+    strength: 3
+    last_used: 1125
+    state: active
+
+  - id: N-main-20260728a
+    text: "Git Bash(MSYS)は先頭 `/` の CLI 引数を Windows パスへ自動変換する — `bump --review-source /cycle` が `C:/Program Files/Git/cycle` として記録され provenance を汚染した(TASK-main-20260728-002 で是正)。hyperhelix.mjs を Git Bash から呼ぶとき、値が `/` で始まる引数(--review-source /cycle 等)には `MSYS_NO_PATHCONV=1` を付けるか PowerShell から呼ぶ。**ただし `finish` は PowerShell から呼べない**(L3 が pre-push 構文テストで `sh -n` を spawn し、PowerShell セッションでは sh が PATH 未解決 → ENOENT で verify FAIL・fail-closed 中断。実測 2026-08-24)— finish は Git Bash + `MSYS_NO_PATHCONV=1` を使う。PowerShell 可なのは bump 単体等 sh 非依存のサブコマンドのみ。ツール出力・record への書込値は書いた直後に目視確認する(検出は grep 'Program Files' で可能)。"
+    tags: [msys, git-bash, path-conversion, windows, cli, bump, review-source, provenance, framework]
+    project: hyperhelix
+    strength: 3
+    last_used: 1140
+    state: active
+
+  - id: N-main-20260821a
+    text: "**強制機構それ自体が有効かを検査する** — 配線を宣言した資材(session-bootstrap §3c の `core.hooksPath = tools/hooks`)があっても、機械が見ていなければ無効化に誰も気づかない。実例(TASK-main-20260728-011): pre-push gate を強化した直後に、そのクローンで hooksPath が未設定=gate が一度も発火していなかったと判明。宣言→消費者(AP-003)の消費者側が『検査』である場合も同じで、gate/hook/CI の**存在**ではなく**有効性**を検査対象にする。CI や bare checkout を壊さないため warn 級が妥当。関連: [[N-059]](declare↔consume playbook)。"
+    tags: [enforcement, hooks, pre-push, hooks-path, declare-consume, ap-003, validate, guard, bootstrap, framework, session-bootstrap]
+    project: hyperhelix
+    strength: 3
+    last_used: 1083
+    state: active
+
+  - id: N-main-20260821b
+    text: "**恒久 ID へ焼き込む値(日付)はセッションの記憶でなく実時刻から採る** — 1 セッションが実時間で数日〜数週間に跨ると、最初に決めた `--date` を無意識に再利用し、恒久 ID(HH-065 タスク ID)と統治証跡(HH-046 `ratified_at`)に誤った日付が焼き付く。実例(TASK-main-20260821-001): 2026-07-28→08-11→08-21 に跨るセッションで `--date 20260728` を使い続け、タスク ID 5 件と HH-076 の裁可日が最大 24 日ずれた。**ID は改名禁止のため事後訂正できるのは証跡側だけ**(HH-076 は本文へ訂正記録付きで是正)。一般則: 恒久識別子・監査証跡を書く直前に `date`/`next-id` 等で**実時刻を確認**する。`brief --date` は今日から 2 日以上ずれると warn する(ブロックはしない — 意図的なバックデートは正当)。関連: [[N-main-20260728a]](書込値は直後に目視確認)。"
+    tags: [provenance, date, task-id, permanent-id, ratified-at, attestation, long-session, brief, drift, framework, hh-065, hh-046]
+    project: hyperhelix
+    strength: 1
+    last_used: 892
+    state: active
+
+  - id: N-main-20260821c
+    text: "**ローカルゲートは『検査』を前倒しできるが『環境』は前倒しできない** — pre-push で CI と同一の `verify --base` を走らせても、走る場所は自分のクローン(named branch・既存 node_modules・単一 OS)であり、CI は fresh checkout(**detached HEAD**)+ lockfile install + ubuntu/windows 両方。実例(TASK-main-20260821-004): `brief` はブランチ名前空間からタスク ID を採るため detached HEAD で exit 1 になり、それを前提にしなかった CLI テストが**ローカル全 pass・CI 両 fail**になった。対策: 外部コマンドを叩くテストは環境前提(ブランチ・OS・インストール状態)を**明示的に検査して skip** し、環境非依存の純関数側に本体カバレッジを置く。一般則: green なローカルゲートは『検査漏れが無い』証明であって『環境差が無い』証明ではない。関連: [[N-main-20260821a]](強制機構それ自体の有効性を検査する)。"
+    tags: [ci, local-gate, environment-drift, detached-head, actions-checkout, test-design, skip, cross-platform, pre-push, verify, framework]
+    project: hyperhelix
+    strength: 3
+    last_used: 1137
+    state: active
+
+  - id: N-main-20260823a
+    text: "**『構造的に不可能』と書く前に回避策を1つ実測する** — 制約の記述は、試した経路の失敗を制約そのものへ一般化しやすい。実例(TASK-main-20260823-001): backlog の high 行が『finish と archive-briefs は構造的に併用できず、迂回すると L3 が走らない』と断じ、実際に2回連続で迂回して壊れたテストを commit していたが、実装(`fs.existsSync`、tools/hyperhelix.mjs:1631)は**個別ファイルパスのみ**を弾く。親ディレクトリを渡せば `git add <dir>` が削除も stage し、L1-L4 は完走する(実測: ある commit が 40 件の削除を含んで通過)。一般則: 『できない』を資材へ書くときは (1) 失敗した具体的な呼び方 (2) 実装のどの行がそう決めているか (3) 隣接する呼び方を1つ試した結果 を添える。添えられないなら『この呼び方では失敗する』と書く。関連: [[N-main-20260821c]](ローカル green は環境差の証明ではない)・AP-015(負の主張にも証拠を)。"
+    tags: [constraint-claim, workaround, negative-claim, backlog, finish, archive-briefs, path, enforcement-gap, evidence, framework, ap-015]
+    project: hyperhelix
+    strength: 1
+    last_used: 928
+    state: active
+
+  - id: N-hyperhelix-20260831a
+    text: "CLI の list 値フラグを `args.indexOf(flag)` で解決すると、**繰り返し指定の2つ目以降が無言で捨てられる**(/cycle 2026-08-31 実測: `bump --use A --use B` が B を落とし、気づけたのは事後の validate NOTE_ATTRIBUTION warning だけだった)。単発読みは list 値フラグでは欠陥、単一値フラグ(cliFlagValue/strArg/num)では正しい — **フラグの arity で使い分ける**。修正時の教訓が2つ: ①**関数名ではなくパターンで grep する** — `listArg` を追うと inline 実装の `noteLedgerFilesForBump` と転送用 `sliceFlag` を取り逃がす。`indexOf(flag)` で打てば全 hit が出る。②**producer だけ直すと declare↔consume がズレる**(AP-003 型): listArg だけ反復対応にすると『note は両方適用されるがロックする ledger file と finish→bump 転送は1つ目だけ』になる。R1 掃引の (a3)『新機構は同一変更で全 consumer を配線』はこの形を指す。陽性 fixture は『2つ目の出現が効いたこと』を主張する(test/repeated-list-flag.test.mjs RT-21/22)。③`/` 始まり引数の MSYS パス変換も同経路で実測(2026-08-31、stdout エコーのみで台帳無傷)— 詳細と対策は AP-024 が正典。"
+    tags: [framework, tooling, cli, argument-parsing, declare-consume, ap-003, listarg, grep-strategy, positive-fixture, scope:framework, project:hyperhelix]
+    project: hyperhelix
+    strength: 1
+    last_used: 968
+    state: active

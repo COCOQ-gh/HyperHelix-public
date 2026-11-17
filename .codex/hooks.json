@@ -1,0 +1,51 @@
+{
+  "hooks": {
+    "PreCompact": [
+      {
+        "matcher": "manual|auto",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"$(git rev-parse --show-toplevel)/tools/compaction-hooks.mjs\" precompact",
+            "commandWindows": "powershell -NoProfile -Command \"[Console]::OutputEncoding=[Text.Encoding]::UTF8; $hhRoot = git rev-parse --show-toplevel; node (Join-Path $hhRoot 'tools/compaction-hooks.mjs') precompact\""
+          }
+        ]
+      }
+    ],
+    "PostCompact": [
+      {
+        "matcher": "manual|auto",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"$(git rev-parse --show-toplevel)/tools/compaction-hooks.mjs\" postcompact",
+            "commandWindows": "powershell -NoProfile -Command \"[Console]::OutputEncoding=[Text.Encoding]::UTF8; $hhRoot = git rev-parse --show-toplevel; node (Join-Path $hhRoot 'tools/compaction-hooks.mjs') postcompact\""
+          }
+        ]
+      }
+    ],
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"$(git rev-parse --show-toplevel)/tools/compaction-hooks.mjs\" prompt",
+            "commandWindows": "powershell -NoProfile -Command \"[Console]::OutputEncoding=[Text.Encoding]::UTF8; $hhRoot = git rev-parse --show-toplevel; node (Join-Path $hhRoot 'tools/compaction-hooks.mjs') prompt\""
+          }
+        ]
+      }
+    ],
+    "SessionStart": [
+      {
+        "matcher": "compact|resume",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"$(git rev-parse --show-toplevel)/tools/compaction-hooks.mjs\" recover",
+            "commandWindows": "powershell -NoProfile -Command \"[Console]::OutputEncoding=[Text.Encoding]::UTF8; $hhRoot = git rev-parse --show-toplevel; node (Join-Path $hhRoot 'tools/compaction-hooks.mjs') recover\""
+          }
+        ]
+      }
+    ]
+  }
+}
